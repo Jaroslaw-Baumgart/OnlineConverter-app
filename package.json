@@ -1,0 +1,14 @@
+{
+  "name": "onlineconverter-app",
+  "version": "1.0.0",
+  "license": "MIT",
+  "scripts": {
+    "dev": "concurrently \"npm run dev --prefix client\" \"npm run dev --prefix server\""
+  },
+  "devDependencies": {
+    "concurrently": "^9.2.0"
+  },
+  "dependencies": {
+    "file-type": "^15.0.1"
+  }
+}
