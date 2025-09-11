@@ -1,6 +1,7 @@
 import { Router } from "express";
 import { upload } from "../middlewares/upload";
-import { jpgToPng, pngToJpg, jpgToPdf } from "../controllers/imageController";
+import { jpgToPng, pngToJpg} from "../controllers/imageController";
+import { jpgToPdf } from "../controllers/pdfController";
 
 const router = Router();
 

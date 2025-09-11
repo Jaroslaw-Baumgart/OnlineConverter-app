@@ -23,37 +23,32 @@ interface FileConverterProps {
   convertedFile: string | null;
   setConvertedFile: (url: string | null) => void;
   onFileUpload: (file: File) => void;
-  onDownload: () => void; // pozostawiamy, ale nie używamy przy blobowym pobieraniu
+  onDownload: () => void;
   conversionOptions: ConversionOption[];
 }
 
-const readFileAsText = (file: File): Promise<string> => {
-  return new Promise((resolve, reject) => {
+const readFileAsText = (file: File): Promise<string> =>
+  new Promise((resolve, reject) => {
     const reader = new FileReader();
     reader.onload = (e) => resolve(e.target?.result as string);
     reader.onerror = () => reject(reader.error);
     reader.readAsText(file);
   });
-};
 
-const TextPreview = ({ file, isLoading }: { file: File, isLoading: boolean }) => {
-  const [text, setText] = useState<string>('');
+const TextPreview = ({ file, isLoading }: { file: File; isLoading: boolean }) => {
+  const [text, setText] = useState('');
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     if (!isLoading) {
       readFileAsText(file)
         .then(setText)
-        .catch((err) => {
-          console.error("Error reading text file:", err);
-          setError("Failed to load file content");
-        });
+        .catch(() => setError("Failed to load file content"));
     }
   }, [file, isLoading]);
 
   if (isLoading) return <p className="loading-message">Loading text content...</p>;
   if (error) return <p className="error-message">{error}</p>;
-
   return <textarea readOnly value={text} className="text-preview" />;
 };
 
@@ -80,14 +75,14 @@ const UnsupportedPreview = ({ fileType }: { fileType: string }) => (
   </div>
 );
 
-const FileConverter = ({
+export default function FileConverter({
   file,
   convertedFile,
   setConvertedFile,
   onFileUpload,
   onDownload,
   conversionOptions,
-}: FileConverterProps) => {
+}: FileConverterProps) {
   const [isLoadingText, setIsLoadingText] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [convertedPreviewFile, setConvertedPreviewFile] = useState<File | null>(null);
@@ -95,9 +90,7 @@ const FileConverter = ({
 
   useEffect(() => {
     return () => {
-      if (previewUrlRef.current) {
-        URL.revokeObjectURL(previewUrlRef.current);
-      }
+      if (previewUrlRef.current) URL.revokeObjectURL(previewUrlRef.current);
     };
   }, []);
 
@@ -108,8 +101,7 @@ const FileConverter = ({
         try {
           await readFileAsText(file);
           setError(null);
-        } catch (err) {
-          console.error("Error reading text file:", err);
+        } catch {
           setError("Failed to read file content");
         } finally {
           setIsLoadingText(false);
@@ -119,71 +111,72 @@ const FileConverter = ({
     loadTextContent();
   }, [file]);
 
-  const renderFilePreview = useCallback((f: File | null, url: string | null) => {
-    if (!f || !url) return null;
-    previewUrlRef.current = url;
+  const renderFilePreview = useCallback(
+    (f: File | null, url: string | null) => {
+      if (!f || !url) return null;
+      previewUrlRef.current = url;
 
-    const fileType = f.type;
-    const fileName = f.name.toLowerCase();
-    const isImage = fileType.startsWith('image/');
-    const isPDF = fileType === 'application/pdf' || fileName.endsWith('.pdf');
-    const isText = fileType === 'text/plain' || fileName.endsWith('.txt');
-    const isWord = fileName.endsWith('.docx') || fileType.includes('wordprocessingml.document');
+      const fileType = f.type;
+      const fileName = f.name.toLowerCase();
+      const isImage = fileType.startsWith('image/');
+      const isPDF = fileType === 'application/pdf' || fileName.endsWith('.pdf');
+      const isText = fileType === 'text/plain' || fileName.endsWith('.txt');
+      const isWord = fileName.endsWith('.docx') || fileType.includes('wordprocessingml.document');
 
-    return (
-      <div className="file-preview">
-        {isImage ? (
-          <ImagePreview url={url} />
-        ) : isPDF ? (
-          <PDFPreview url={url} />
-        ) : isText ? (
-          <TextPreview file={f} isLoading={isLoadingText} />
-        ) : isWord ? (
-          <WordPreview />
-        ) : (
-          <UnsupportedPreview fileType={fileType} />
-        )}
-      </div>
-    );
-  }, [isLoadingText]);
+      return (
+        <div className="file-preview">
+          {isImage ? (
+            <ImagePreview url={url} />
+          ) : isPDF ? (
+            <PDFPreview url={url} />
+          ) : isText ? (
+            <TextPreview file={f} isLoading={isLoadingText} />
+          ) : isWord ? (
+            <WordPreview />
+          ) : (
+            <UnsupportedPreview fileType={fileType} />
+          )}
+        </div>
+      );
+    },
+    [isLoadingText]
+  );
 
-  const handleFileChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
-    const newFile = e.target.files?.[0];
-    if (newFile) {
-      onFileUpload(newFile);
-      setConvertedFile(null);
-      setConvertedPreviewFile(null);
-      setError(null);
-    }
-  }, [onFileUpload, setConvertedFile]);
+  const handleFileChange = useCallback(
+    (e: React.ChangeEvent<HTMLInputElement>) => {
+      const newFile = e.target.files?.[0];
+      if (newFile) {
+        onFileUpload(newFile);
+        setConvertedFile(null);
+        setConvertedPreviewFile(null);
+        setError(null);
+      }
+    },
+    [onFileUpload, setConvertedFile]
+  );
 
-  // uniwersalny parser odpowiedzi backendu
   const extractFileInfo = (data: any): { path: string; name: string } | null => {
-    
     if (data?.files?.length) {
       const { url, name } = data.files[0];
-      if (url) {
-        return { path: url, name: name || url.split("/").pop() || "converted-file" };
-      }
+      if (url) return { path: url, name: name || url.split("/").pop() || "converted-file" };
     }
-    
     if (data?.outputFile) {
       const name = data.outputFile.split("/").pop() || "converted-file";
       return { path: data.outputFile, name };
     }
-
     if (data?.filename) {
       return { path: `/output/${data.filename}`, name: data.filename };
     }
     return null;
   };
 
-  const toAbsoluteUrl = (maybeRelative: string) => {
-    if (/^https?:\/\//i.test(maybeRelative)) return maybeRelative;
-    return `http://localhost:5000${maybeRelative.startsWith('/') ? '' : '/'}${maybeRelative}`;
-  };
+  const toAbsoluteUrl = (maybeRelative: string) =>
+    /^https?:\/\//i.test(maybeRelative)
+      ? maybeRelative
+      : `http://localhost:5000${maybeRelative.startsWith('/') ? '' : '/'}${maybeRelative}`;
 
-  const handleConvert = async (conversionId: string) => {
+  /** ✅ najważniejsze: wysyłamy także pole `target` */
+  const handleConvert = async (option: ConversionOption) => {
     if (!file) {
       setError("Please upload a file first.");
       return;
@@ -191,26 +184,23 @@ const FileConverter = ({
 
     const formData = new FormData();
     formData.append("file", file);
-    formData.append("conversionType", conversionId);
+    formData.append("conversionType", option.id);
+    formData.append("target", option.to.toLowerCase()); // <--- kluczowa linia
 
     try {
       const res = await fetch("http://localhost:5000/convert", {
         method: "POST",
         body: formData,
       });
-
       if (!res.ok) throw new Error("Conversion failed");
 
       const data = await res.json();
-      console.log("Odpowiedź backendu:", data);
-
       const info = extractFileInfo(data);
       if (!info) throw new Error("Backend nie zwrócił ścieżki do pliku");
 
       const absoluteUrl = toAbsoluteUrl(info.path);
       setConvertedFile(absoluteUrl);
 
-      // pobranie do PREVIEW i późniejszego pobrania
       const fileRes = await fetch(absoluteUrl);
       if (!fileRes.ok) throw new Error("Failed to fetch converted file");
 
@@ -225,7 +215,6 @@ const FileConverter = ({
     }
   };
 
-  // pobieranie
   const handleDownloadBlob = () => {
     if (!convertedPreviewFile) return;
     const blobUrl = URL.createObjectURL(convertedPreviewFile);
@@ -242,7 +231,6 @@ const FileConverter = ({
     <div className="converter-container">
       {error && <div className="error-message">{error}</div>}
 
-      {/* Preview przed konwersją */}
       <div className="upload-section">
         <h2>Upload File</h2>
         <label className="file-input-label">
@@ -253,7 +241,6 @@ const FileConverter = ({
         {file && renderFilePreview(file, URL.createObjectURL(file))}
       </div>
 
-      {/* Opcje konwersji */}
       <div className="options-section">
         <h2>Conversion Options</h2>
         <div className="options-grid">
@@ -265,7 +252,11 @@ const FileConverter = ({
                   <span className="arrow">→</span>
                   <span className="format">{option.to}</span>
                 </div>
-                <button className="convert-btn" onClick={() => handleConvert(option.id)}>
+                <button
+                  className="convert-btn"
+                  onClick={() => handleConvert(option)}
+                  disabled={option.disabled}
+                >
                   Convert
                 </button>
               </div>
@@ -274,16 +265,15 @@ const FileConverter = ({
         </div>
       </div>
 
-      {/* Preview po konwersji */}
       {convertedPreviewFile && convertedFile && (
         <div className="download-section">
           <h2>Download Converted File</h2>
           {renderFilePreview(convertedPreviewFile, convertedFile)}
-          <button onClick={handleDownloadBlob} className="download-btn">Download File</button>
+          <button onClick={handleDownloadBlob} className="download-btn">
+            Download File
+          </button>
         </div>
       )}
     </div>
   );
-};
-
-export default FileConverter;
+}
