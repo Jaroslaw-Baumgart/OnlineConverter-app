@@ -220,3 +220,22 @@
   color: #c62828;
   background: #ffebee;
 }
+.convert-btn {
+  background-color: #4caf50; /* green */
+  color: white;
+  padding: 8px 16px;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background-color 0.3s;
+}
+
+.convert-btn:hover:not(:disabled) {
+  background-color: #45a049;
+}
+
+.convert-btn:disabled {
+  background-color: #ccc; /* grey when disabled */
+  color: #666;
+  cursor: not-allowed;
+}

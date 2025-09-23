@@ -1,14 +1,14 @@
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback, useRef } from "react";
 import "../styles/FileConverter.css";
 
 type ConversionType =
-  | 'pdf-to-jpg'
-  | 'pdf-to-txt'
-  | 'jpg-to-png'
-  | 'png-to-jpg'
-  | 'jpg-to-pdf'
-  | 'txt-to-pdf'
-  | 'docx-to-pdf';
+  | "pdf-to-jpg"
+  | "pdf-to-txt"
+  | "jpg-to-png"
+  | "png-to-jpg"
+  | "jpg-to-pdf"
+  | "txt-to-pdf"
+  | "docx-to-pdf";
 
 interface ConversionOption {
   id: ConversionType;
@@ -36,7 +36,7 @@ const readFileAsText = (file: File): Promise<string> =>
   });
 
 const TextPreview = ({ file, isLoading }: { file: File; isLoading: boolean }) => {
-  const [text, setText] = useState('');
+  const [text, setText] = useState("");
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -71,9 +71,18 @@ const PDFPreview = ({ url }: { url: string }) => (
 const UnsupportedPreview = ({ fileType }: { fileType: string }) => (
   <div className="unsupported-preview">
     <p>Preview not available for this file type</p>
-    <p>Type: {fileType || 'unknown'}</p>
+    <p>Type: {fileType || "unknown"}</p>
   </div>
 );
+
+// Map of allowed conversions based on file extension
+const allowedConversions: Record<string, ConversionType[]> = {
+  pdf: ["pdf-to-jpg", "pdf-to-txt"],
+  jpg: ["jpg-to-png", "jpg-to-pdf"],
+  png: ["png-to-jpg"],
+  txt: ["txt-to-pdf"],
+  docx: ["docx-to-pdf"],
+};
 
 export default function FileConverter({
   file,
@@ -86,17 +95,20 @@ export default function FileConverter({
   const [isLoadingText, setIsLoadingText] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [convertedPreviewFile, setConvertedPreviewFile] = useState<File | null>(null);
+  const [optionsState, setOptionsState] = useState<ConversionOption[]>(conversionOptions);
   const previewUrlRef = useRef<string | null>(null);
 
+  // Clean up object URLs when component unmounts
   useEffect(() => {
     return () => {
       if (previewUrlRef.current) URL.revokeObjectURL(previewUrlRef.current);
     };
   }, []);
 
+  // Handle text file preview loading
   useEffect(() => {
     const loadTextContent = async () => {
-      if (file && (file.type === 'text/plain' || file.name.endsWith('.txt'))) {
+      if (file && (file.type === "text/plain" || file.name.endsWith(".txt"))) {
         setIsLoadingText(true);
         try {
           await readFileAsText(file);
@@ -111,6 +123,24 @@ export default function FileConverter({
     loadTextContent();
   }, [file]);
 
+  // Enable/disable conversion options based on file extension
+  useEffect(() => {
+    if (!file) {
+      setOptionsState(conversionOptions.map((opt) => ({ ...opt, disabled: true })));
+      return;
+    }
+
+    const ext = file.name.split(".").pop()?.toLowerCase();
+    const allowed = ext ? allowedConversions[ext] || [] : [];
+
+    setOptionsState(
+      conversionOptions.map((opt) => ({
+        ...opt,
+        disabled: !allowed.includes(opt.id),
+      }))
+    );
+  }, [file, conversionOptions]);
+
   const renderFilePreview = useCallback(
     (f: File | null, url: string | null) => {
       if (!f || !url) return null;
@@ -118,10 +148,10 @@ export default function FileConverter({
 
       const fileType = f.type;
       const fileName = f.name.toLowerCase();
-      const isImage = fileType.startsWith('image/');
-      const isPDF = fileType === 'application/pdf' || fileName.endsWith('.pdf');
-      const isText = fileType === 'text/plain' || fileName.endsWith('.txt');
-      const isWord = fileName.endsWith('.docx') || fileType.includes('wordprocessingml.document');
+      const isImage = fileType.startsWith("image/");
+      const isPDF = fileType === "application/pdf" || fileName.endsWith(".pdf");
+      const isText = fileType === "text/plain" || fileName.endsWith(".txt");
+      const isWord = fileName.endsWith(".docx") || fileType.includes("wordprocessingml.document");
 
       return (
         <div className="file-preview">
@@ -173,9 +203,8 @@ export default function FileConverter({
   const toAbsoluteUrl = (maybeRelative: string) =>
     /^https?:\/\//i.test(maybeRelative)
       ? maybeRelative
-      : `http://localhost:5000${maybeRelative.startsWith('/') ? '' : '/'}${maybeRelative}`;
+      : `http://localhost:5000${maybeRelative.startsWith("/") ? "" : "/"}${maybeRelative}`;
 
-  /** ✅ najważniejsze: wysyłamy także pole `target` */
   const handleConvert = async (option: ConversionOption) => {
     if (!file) {
       setError("Please upload a file first.");
@@ -185,7 +214,7 @@ export default function FileConverter({
     const formData = new FormData();
     formData.append("file", file);
     formData.append("conversionType", option.id);
-    formData.append("target", option.to.toLowerCase()); // <--- kluczowa linia
+    formData.append("target", option.to.toLowerCase());
 
     try {
       const res = await fetch("http://localhost:5000/convert", {
@@ -196,7 +225,7 @@ export default function FileConverter({
 
       const data = await res.json();
       const info = extractFileInfo(data);
-      if (!info) throw new Error("Backend nie zwrócił ścieżki do pliku");
+      if (!info) throw new Error("Backend did not return output path");
 
       const absoluteUrl = toAbsoluteUrl(info.path);
       setConvertedFile(absoluteUrl);
@@ -237,14 +266,14 @@ export default function FileConverter({
           Choose File
           <input type="file" className="file-input" onChange={handleFileChange} />
         </label>
-        <span className="file-name">{file?.name || 'No file chosen'}</span>
+        <span className="file-name">{file?.name || "No file chosen"}</span>
         {file && renderFilePreview(file, URL.createObjectURL(file))}
       </div>
 
       <div className="options-section">
         <h2>Conversion Options</h2>
         <div className="options-grid">
-          {conversionOptions.map((option) => (
+          {optionsState.map((option) => (
             <div key={option.id} className="option-card">
               <div className="option-content">
                 <div className="option-text">
