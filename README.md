@@ -130,12 +130,6 @@ React + Vite + TypeScript stack for building a modern, fast user interface.
 | **@types/react** | ^19.1.2 | Type definitions for React |
 | **@types/react-dom** | ^19.1.2 | Type definitions for React DOM |
 
-#### **Client Scripts**
-- `npm run dev` → start Vite dev server  
-- `npm run build` → build production version  
-- `npm run preview` → preview production build  
-- `npm run lint` → run ESLint  
-
 ---
 
 ### **🧠 Server (Backend)**
