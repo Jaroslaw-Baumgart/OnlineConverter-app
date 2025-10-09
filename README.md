@@ -267,7 +267,6 @@ OnlineFileConverter/
 ├── package.json
 └── README.md
 
----
 ```
 
 ## 🚀 Local Setup
