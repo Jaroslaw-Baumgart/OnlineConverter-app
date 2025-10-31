@@ -6,37 +6,14 @@ import pdfParse from "pdf-parse";
 import { exec } from "child_process";
 import { OUTPUT_DIR } from "../utils/constants";
 import { safeUnlink } from "../utils/file";
+import { sendResponse } from "../utils/response";
 
-const sendResponse = (
-  res: Response,
-  success: boolean,
-  title: string,
-  fileType: string,
-  fileName?: string,
-  files?: { url: string; name: string }[],
-  error?: string
-) => {
-  if (!success) {
-    return res.status(500).json({
-      success,
-      error: error || "Conversion failed."
-    });
-  }
-  return res.json({
-    success,
-    title,
-    fileType,
-    files:
-      files ||
-      (fileName ? [{ url: `/output/${fileName}`, name: fileName }] : [])
-  });
-};
 
 const getBaseFileName = (file: Express.Multer.File) => {
   return path.parse(file.filename).name;
 };
 
-// PDF → JPG
+// PDF --> JPG
 export const pdfToJpg = async (req: Request, res: Response) => {
   if (!req.file) {
     return sendResponse(res, false, "", "", undefined, undefined, "No PDF file uploaded.");
@@ -76,7 +53,7 @@ export const pdfToJpg = async (req: Request, res: Response) => {
   }
 };
 
-// PDF → TXT
+// PDF --> TXT
 export const pdfToTxt = async (req: Request, res: Response) => {
   if (!req.file) {
     return sendResponse(res, false, "", "", undefined, undefined, "No PDF file uploaded.");
@@ -105,7 +82,7 @@ export const pdfToTxt = async (req: Request, res: Response) => {
   }
 };
 
-// TXT → PDF
+// TXT --> PDF
 export const txtToPdf = async (req: Request, res: Response) => {
   if (!req.file || path.extname(req.file.originalname).toLowerCase() !== ".txt") {
     return sendResponse(res, false, "", "", undefined, undefined, "No TXT file uploaded.");
@@ -147,7 +124,7 @@ export const txtToPdf = async (req: Request, res: Response) => {
   }
 };
 
-// JPG → PDF
+// JPG --> PDF
 export const jpgToPdf = async (req: Request, res: Response) => {
   if (
     !req.file ||
