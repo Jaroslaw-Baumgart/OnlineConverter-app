@@ -54,7 +54,7 @@ Unlike most online converters, **Online File Converter-app** keeps all processin
 - Full control over your files  
 - No risk of leaks or unauthorized access
 
-> **Online File Converter 2.0** — a secure, private, and extensible file conversion tool you can run anywhere.
+> **Online File Converter-app** — a secure, private, and extensible file conversion tool you can run anywhere.
 
 ---
 
@@ -129,12 +129,6 @@ React + Vite + TypeScript stack for building a modern, fast user interface.
 | **globals** | ^16.0.0 | Provides a list of global variables for ESLint |
 | **@types/react** | ^19.1.2 | Type definitions for React |
 | **@types/react-dom** | ^19.1.2 | Type definitions for React DOM |
-
-#### **Client Scripts**
-- `npm run dev` → start Vite dev server  
-- `npm run build` → build production version  
-- `npm run preview` → preview production build  
-- `npm run lint` → run ESLint  
 
 ---
 
@@ -273,8 +267,7 @@ OnlineFileConverter/
 ├── package.json
 └── README.md
 
----
-
+```
 
 ## 🚀 Local Setup
 
@@ -306,7 +299,7 @@ brew install poppler unoconv
 
 **Windows**
 - [LibreOffice](https://www.libreoffice.org/download/download/) → Add to PATH  
-- [Poppler](https://blog.alivate.com.au/poppler-windows/) → Add `C:\poppler\bin` to PATH
+- [Poppler](https://github.com/oschwartz10612/poppler-windows/releases) → Add `C:\poppler\bin` to PATH
 
 4. **Run the app**
 ```bash
