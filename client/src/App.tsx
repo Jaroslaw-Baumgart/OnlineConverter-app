@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import FileConverter from './components/FileConverter';
-import { ConversionOption } from './types/converter';
+import type { ConversionOption } from './types/converter';
 import './App.css';
 
 function App() {
@@ -12,16 +12,6 @@ function App() {
     setConvertedFile(null); // reset converted file przy nowym uploadzie
   };
 
-  const handleDownload = () => {
-    if (!convertedFile) return;
-
-    const a = document.createElement('a');
-    a.href = convertedFile;
-    a.download = file?.name || 'converted-file';
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-  };
 
   const conversionOptions: ConversionOption[] = [
     { id: 'pdf-to-jpg', label: 'PDF to JPG', from: 'PDF', to: 'JPG' },
@@ -39,7 +29,6 @@ function App() {
       <FileConverter
         file={file}
         onFileUpload={handleFileUpload}
-        onDownload={handleDownload}
         conversionOptions={conversionOptions}
         convertedFile={convertedFile}
         setConvertedFile={setConvertedFile} // nowy props

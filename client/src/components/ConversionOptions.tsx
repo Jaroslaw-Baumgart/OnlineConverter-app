@@ -1,4 +1,4 @@
-import { ConversionOption } from "../types/converter";
+import type { ConversionOption } from "../types/converter";
 
 interface ConversionOptionsProps {
   options: ConversionOption[];

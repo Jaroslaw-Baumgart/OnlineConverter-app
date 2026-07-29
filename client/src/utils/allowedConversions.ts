@@ -1,4 +1,4 @@
-import { ConversionType } from "../types/converter";
+import type { ConversionType } from "../types/converter";
 
 export const allowedConversions: Record<string, ConversionType[]> = {
   pdf: ["pdf-to-jpg", "pdf-to-txt"],

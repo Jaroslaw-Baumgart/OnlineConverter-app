@@ -1,7 +1,11 @@
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect, useCallback } from "react";
 import "../styles/FileConverter.css";
-import { ConversionOption, FileConverterProps } from "../types/converter";
-import { readFileAsText, extractFileInfo, toAbsoluteUrl } from "../utils/fileUtils";
+import type { ConversionOption, FileConverterProps } from "../types/converter";
+import {
+  readFileAsText,
+  extractFileInfo,
+  toAbsoluteUrl,
+} from "../utils/fileUtils";
 import { allowedConversions } from "../utils/allowedConversions";
 
 import FileUpload from "./FileUpload";
@@ -14,19 +18,41 @@ import ImagePreview from "./previews/ImagePreview";
 import PDFPreview from "./previews/PDFPreview";
 import UnsupportedPreview from "./previews/UnsupportedPreview";
 
+function getAvailableOptions(
+  file: File | null,
+  conversionOptions: ConversionOption[],
+): ConversionOption[] {
+  if (!file) {
+    return conversionOptions.map((option) => ({
+      ...option,
+      disabled: true,
+    }));
+  }
+
+  const extension = file.name.split(".").pop()?.toLowerCase() ?? "";
+  const allowed = allowedConversions[extension] ?? [];
+
+  return conversionOptions.map((option) => ({
+    ...option,
+    disabled: !allowed.includes(option.id),
+  }));
+}
+
 export default function FileConverter({
   file,
   convertedFile,
   setConvertedFile,
   onFileUpload,
-  onDownload,
   conversionOptions,
 }: FileConverterProps) {
   const [isLoadingText, setIsLoadingText] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [convertedPreviewFile, setConvertedPreviewFile] = useState<File | null>(null);
-  const [optionsState, setOptionsState] = useState<ConversionOption[]>(conversionOptions);
+  const [convertedPreviewFile, setConvertedPreviewFile] = useState<File | null>(
+    null,
+  );
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+
+  const availableOptions = getAvailableOptions(file, conversionOptions);
 
   useEffect(() => {
     if (file) {
@@ -55,23 +81,6 @@ export default function FileConverter({
     loadTextContent();
   }, [file]);
 
-  useEffect(() => {
-    if (!file) {
-      setOptionsState(conversionOptions.map((opt) => ({ ...opt, disabled: true })));
-      return;
-    }
-
-    const ext = file.name.split(".").pop()?.toLowerCase();
-    const allowed = ext ? allowedConversions[ext] || [] : [];
-
-    setOptionsState(
-      conversionOptions.map((opt) => ({
-        ...opt,
-        disabled: !allowed.includes(opt.id),
-      }))
-    );
-  }, [file, conversionOptions]);
-
   const renderFilePreview = useCallback(
     (f: File | null, url: string | null) => {
       if (!f || !url) return null;
@@ -81,7 +90,9 @@ export default function FileConverter({
       const isImage = fileType.startsWith("image/");
       const isPDF = fileType === "application/pdf" || fileName.endsWith(".pdf");
       const isText = fileType === "text/plain" || fileName.endsWith(".txt");
-      const isWord = fileName.endsWith(".docx") || fileType.includes("wordprocessingml.document");
+      const isWord =
+        fileName.endsWith(".docx") ||
+        fileType.includes("wordprocessingml.document");
 
       return (
         <div className="file-preview">
@@ -99,7 +110,7 @@ export default function FileConverter({
         </div>
       );
     },
-    [isLoadingText]
+    [isLoadingText],
   );
 
   const handleFileChange = useCallback(
@@ -112,7 +123,7 @@ export default function FileConverter({
         setError(null);
       }
     },
-    [onFileUpload, setConvertedFile]
+    [onFileUpload, setConvertedFile],
   );
 
   const handleFileDrop = useCallback(
@@ -122,7 +133,7 @@ export default function FileConverter({
       setConvertedPreviewFile(null);
       setError(null);
     },
-    [onFileUpload, setConvertedFile]
+    [onFileUpload, setConvertedFile],
   );
 
   const handleConvert = async (option: ConversionOption) => {
@@ -180,11 +191,15 @@ export default function FileConverter({
     <div className="converter-container">
       {error && <div className="error-message">{error}</div>}
 
-      <FileUpload file={file} onFileChange={handleFileChange} onFileDrop={handleFileDrop} />
+      <FileUpload
+        file={file}
+        onFileChange={handleFileChange}
+        onFileDrop={handleFileDrop}
+      />
 
       {file && renderFilePreview(file, previewUrl)}
 
-      <ConversionOptions options={optionsState} onConvert={handleConvert} />
+      <ConversionOptions options={availableOptions} onConvert={handleConvert} />
 
       {convertedPreviewFile && convertedFile && (
         <DownloadSection

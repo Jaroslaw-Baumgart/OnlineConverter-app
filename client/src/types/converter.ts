@@ -20,6 +20,5 @@ export interface FileConverterProps {
   convertedFile: string | null;
   setConvertedFile: (url: string | null) => void;
   onFileUpload: (file: File) => void;
-  onDownload: () => void;
   conversionOptions: ConversionOption[];
 }
