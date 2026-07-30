@@ -6,21 +6,19 @@ import {
   extractFileInfo,
   toAbsoluteUrl,
 } from "../utils/fileUtils";
-import { allowedConversions } from "../utils/allowedConversions";
-
 import FileUpload from "./FileUpload";
 import ConversionOptions from "./ConversionOptions";
 import DownloadSection from "./DownloadSection";
-
 import TextPreview from "./previews/TextPreview";
 import WordPreview from "./previews/WordPreview";
 import ImagePreview from "./previews/ImagePreview";
 import PDFPreview from "./previews/PDFPreview";
 import UnsupportedPreview from "./previews/UnsupportedPreview";
+import type { ConversionDefinition } from "../config/conversions";
 
 function getAvailableOptions(
   file: File | null,
-  conversionOptions: ConversionOption[],
+  conversionOptions: readonly ConversionDefinition[],
 ): ConversionOption[] {
   if (!file) {
     return conversionOptions.map((option) => ({
@@ -30,11 +28,10 @@ function getAvailableOptions(
   }
 
   const extension = file.name.split(".").pop()?.toLowerCase() ?? "";
-  const allowed = allowedConversions[extension] ?? [];
 
   return conversionOptions.map((option) => ({
     ...option,
-    disabled: !allowed.includes(option.id),
+    disabled: option.sourceFormat !== extension,
   }));
 }
 
@@ -144,8 +141,8 @@ export default function FileConverter({
 
     const formData = new FormData();
     formData.append("file", file);
-    formData.append("conversionType", option.id);
-    formData.append("target", option.to.toLowerCase());
+    formData.append("conversionType", option.conversionType);
+    formData.append("target", option.targetFormat);
 
     try {
       const res = await fetch("http://localhost:5000/convert", {

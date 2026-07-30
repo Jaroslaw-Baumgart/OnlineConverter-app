@@ -1,35 +1,8 @@
 import { render, screen, within } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
-
 import FileConverter from "./FileConverter";
-import type { ConversionOption } from "../types/converter";
+import { conversions as conversionOptions } from "../config/conversions";
 
-const conversionOptions: ConversionOption[] = [
-  {
-    id: "pdf-to-jpg",
-    label: "PDF to JPG",
-    from: "PDF",
-    to: "JPG",
-  },
-  {
-    id: "jpg-to-png",
-    label: "JPG to PNG",
-    from: "JPG",
-    to: "PNG",
-  },
-  {
-    id: "pdf-to-txt",
-    label: "PDF to TXT",
-    from: "PDF",
-    to: "TXT",
-  },
-  {
-    id: "png-to-jpg",
-    label: "PNG to JPG",
-    from: "PNG",
-    to: "JPG",
-  },
-];
 
 const getOptionCard = (text: string): HTMLElement => {
   const optionText = screen.getByText((_, element) => {

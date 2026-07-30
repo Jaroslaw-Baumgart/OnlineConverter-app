@@ -11,12 +11,12 @@ export default function ConversionOptions({ options, onConvert }: ConversionOpti
       <h2>Conversion Options</h2>
       <div className="options-grid">
         {options.map((option) => (
-          <div key={option.id} className="option-card">
+          <div key={option.conversionType} className="option-card">
             <div className="option-content">
               <div className="option-text">
-                <span className="format">{option.from}</span>
+                <span className="format">{option.sourceFormat.toUpperCase()}</span>
                 <span className="arrow">→</span>
-                <span className="format">{option.to}</span>
+                <span className="format">{option.targetFormat.toUpperCase()}</span>
               </div>
               <button
                 className="convert-btn"

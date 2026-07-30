@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import FileConverter from './components/FileConverter';
-import type { ConversionOption } from './types/converter';
+import { conversions } from './config/conversions';
 import './App.css';
 
 function App() {
@@ -12,24 +12,13 @@ function App() {
     setConvertedFile(null); // reset converted file przy nowym uploadzie
   };
 
-
-  const conversionOptions: ConversionOption[] = [
-    { id: 'pdf-to-jpg', label: 'PDF to JPG', from: 'PDF', to: 'JPG' },
-    { id: 'pdf-to-txt', label: 'PDF to TXT', from: 'PDF', to: 'TXT' },
-    { id: 'jpg-to-png', label: 'JPG to PNG', from: 'JPG', to: 'PNG' },
-    { id: 'png-to-jpg', label: 'PNG to JPG', from: 'PNG', to: 'JPG' },
-    { id: 'jpg-to-pdf', label: 'JPG to PDF', from: 'JPG', to: 'PDF' },
-    { id: 'txt-to-pdf', label: 'TXT to PDF', from: 'TXT', to: 'PDF' },
-    { id: 'docx-to-pdf', label: 'DOCX to PDF', from: 'DOCX', to: 'PDF' },
-  ];
-
   return (
     <div className="app-container">
       <h1 className="app-title">Online File Converter</h1>
       <FileConverter
         file={file}
         onFileUpload={handleFileUpload}
-        conversionOptions={conversionOptions}
+        conversionOptions={conversions}
         convertedFile={convertedFile}
         setConvertedFile={setConvertedFile} // nowy props
       />
