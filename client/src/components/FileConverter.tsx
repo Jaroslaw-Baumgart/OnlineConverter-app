@@ -110,22 +110,9 @@ export default function FileConverter({
     [isLoadingText],
   );
 
-  const handleFileChange = useCallback(
-    (e: React.ChangeEvent<HTMLInputElement>) => {
-      const newFile = e.target.files?.[0];
-      if (newFile) {
-        onFileUpload(newFile);
-        setConvertedFile(null);
-        setConvertedPreviewFile(null);
-        setError(null);
-      }
-    },
-    [onFileUpload, setConvertedFile],
-  );
-
-  const handleFileDrop = useCallback(
-    (newFile: File) => {
-      onFileUpload(newFile);
+  const handleFileSelect = useCallback(
+    (selectedFile: File) => {
+      onFileUpload(selectedFile);
       setConvertedFile(null);
       setConvertedPreviewFile(null);
       setError(null);
@@ -188,11 +175,7 @@ export default function FileConverter({
     <div className="converter-container">
       {error && <div className="error-message">{error}</div>}
 
-      <FileUpload
-        file={file}
-        onFileChange={handleFileChange}
-        onFileDrop={handleFileDrop}
-      />
+      <FileUpload file={file} onFileSelect={handleFileSelect} />
 
       {file && renderFilePreview(file, previewUrl)}
 

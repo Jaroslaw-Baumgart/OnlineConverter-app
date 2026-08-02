@@ -45,3 +45,13 @@ export const conversions = [
 export type ConversionDefinition = (typeof conversions)[number];
 
 export type ConversionType = ConversionDefinition["conversionType"];
+
+export type SourceFormat = ConversionDefinition["sourceFormat"];
+
+export const supportedSourceFormats: readonly SourceFormat[] = [
+  ...new Set(conversions.map((conversion) => conversion.sourceFormat)),
+];
+
+export function isSupportedSourceFormat(value: string): value is SourceFormat {
+  return supportedSourceFormats.some((format) => format === value);
+}

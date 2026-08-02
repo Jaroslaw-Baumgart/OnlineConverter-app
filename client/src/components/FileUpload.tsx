@@ -1,14 +1,52 @@
 import { useState } from "react";
-import type { DragEvent } from "react";
+import type { ChangeEvent, DragEvent } from "react";
+import {
+  supportedSourceFormats,
+  isSupportedSourceFormat,
+} from "../config/conversions";
 
 interface FileUploadProps {
   file: File | null;
-  onFileChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
-  onFileDrop?: (file: File) => void; // opcjonalny callback dla drag & drop
+  onFileSelect: (file: File) => void;
 }
 
-export default function FileUpload({ file, onFileChange, onFileDrop }: FileUploadProps) {
+const SUPPORTED_FORMATS_LABEL = supportedSourceFormats
+  .map((format) => format.toUpperCase())
+  .join(", ");
+
+function validateFile(file: File): string | null {
+  const lastDotIndex = file.name.lastIndexOf(".");
+
+  const extension =
+    lastDotIndex === -1 ? "" : file.name.slice(lastDotIndex + 1).toLowerCase();
+
+  return isSupportedSourceFormat(extension)
+    ? null
+    : `Unsupported file format. Supported formats: ${SUPPORTED_FORMATS_LABEL}.`;
+}
+
+export default function FileUpload({ file, onFileSelect }: FileUploadProps) {
   const [isDragging, setIsDragging] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const handleSelectedFile = (selectedFile: File) => {
+    const validationError = validateFile(selectedFile);
+
+    if (validationError) {
+      setError(validationError);
+      return;
+    }
+
+    setError(null);
+    onFileSelect(selectedFile);
+  };
+
+  const handleFileChange = (event: ChangeEvent<HTMLInputElement>) => {
+    const selectedFile = event.target.files?.[0];
+    if (selectedFile) {
+      handleSelectedFile(selectedFile);
+    }
+  };
 
   const handleDragOver = (e: DragEvent<HTMLDivElement>) => {
     e.preventDefault();
@@ -22,11 +60,9 @@ export default function FileUpload({ file, onFileChange, onFileDrop }: FileUploa
   const handleDrop = (e: DragEvent<HTMLDivElement>) => {
     e.preventDefault();
     setIsDragging(false);
-    if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+    if (e.dataTransfer.files.length > 0) {
       const droppedFile = e.dataTransfer.files[0];
-      if (onFileDrop) {
-        onFileDrop(droppedFile);
-      }
+      handleSelectedFile(droppedFile);
     }
   };
 
@@ -40,9 +76,14 @@ export default function FileUpload({ file, onFileChange, onFileDrop }: FileUploa
       <h2>Upload File</h2>
       <label className="file-input-label">
         Choose File
-        <input type="file" className="file-input" onChange={onFileChange} />
+        <input type="file" className="file-input" onChange={handleFileChange} />
       </label>
       <p className="drag-drop-hint">or drag & drop your file here</p>
+      {error && (
+        <p className="error-message" role="alert">
+          {error}
+        </p>
+      )}
       <span className="file-name">{file?.name || "No file chosen"}</span>
     </div>
   );
