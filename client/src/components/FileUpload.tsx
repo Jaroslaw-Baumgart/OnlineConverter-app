@@ -14,15 +14,23 @@ const SUPPORTED_FORMATS_LABEL = supportedSourceFormats
   .map((format) => format.toUpperCase())
   .join(", ");
 
+const MAX_FILE_SIZE_BYTES = 10 * 1024 * 1024; // 10 MB in bytes
+
 function validateFile(file: File): string | null {
   const lastDotIndex = file.name.lastIndexOf(".");
 
   const extension =
     lastDotIndex === -1 ? "" : file.name.slice(lastDotIndex + 1).toLowerCase();
 
-  return isSupportedSourceFormat(extension)
-    ? null
-    : `Unsupported file format. Supported formats: ${SUPPORTED_FORMATS_LABEL}.`;
+  if (!isSupportedSourceFormat(extension)) {
+    return `Unsupported file format. Supported formats: ${SUPPORTED_FORMATS_LABEL}.`;
+  }
+
+  if (file.size > MAX_FILE_SIZE_BYTES) {
+    return "File is too large. Maximum size is 10 MB.";
+  }
+
+  return null;
 }
 
 export default function FileUpload({ file, onFileSelect }: FileUploadProps) {
