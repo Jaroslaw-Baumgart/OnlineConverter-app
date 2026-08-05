@@ -80,12 +80,9 @@ describe("FileUpload", () => {
       type: "application/octet-stream",
     });
 
-    const dropHint = screen.getByText("or drag & drop your file here");
-    const uploadArea = dropHint.parentElement;
-
-    if (!(uploadArea instanceof HTMLElement)) {
-      throw new Error("Expected upload hint to have an HTML parent element.");
-    }
+    const uploadArea = screen.getByRole("region", {
+      name: "Upload File",
+    });
 
     fireEvent.drop(uploadArea, {
       dataTransfer: {
@@ -108,12 +105,9 @@ describe("FileUpload", () => {
       type: "application/pdf",
     });
 
-    const dropHint = screen.getByText("or drag & drop your file here");
-    const uploadArea = dropHint.parentElement;
-
-    if (!(uploadArea instanceof HTMLElement)) {
-      throw new Error("Expected upload hint to have an HTML parent element.");
-    }
+    const uploadArea = screen.getByRole("region", {
+      name: "Upload File",
+    });
 
     fireEvent.drop(uploadArea, {
       dataTransfer: {
@@ -122,6 +116,57 @@ describe("FileUpload", () => {
     });
 
     expect(screen.queryByRole("alert")).not.toBeInTheDocument();
+    expect(onFileSelect).toHaveBeenCalledWith(supportedFile);
+  });
+
+  it("shows supported formats and the maximum file size", () => {
+    const onFileSelect = vi.fn();
+
+    render(<FileUpload file={null} onFileSelect={onFileSelect} />);
+
+    expect(
+      screen.getByText(
+        "Supported formats: PDF, JPG, PNG, TXT, DOCX. Maximum size: 10 MB.",
+      ),
+    ).toBeInTheDocument();
+  });
+
+  it("hints supported file extensions to the file picker", () => {
+    const onFileSelect = vi.fn();
+
+    render(<FileUpload file={null} onFileSelect={onFileSelect} />);
+
+    expect(screen.getByLabelText("Choose File")).toHaveAttribute(
+      "accept",
+      ".pdf,.jpg,.png,.txt,.docx",
+    );
+  });
+
+  it("clears a previous error after selecting a valid file", async () => {
+    const user = userEvent.setup({
+      applyAccept: false,
+    });
+    const onFileSelect = vi.fn();
+
+    render(<FileUpload file={null} onFileSelect={onFileSelect} />);
+
+    const input = screen.getByLabelText("Choose File");
+    const unsupportedFile = new File(["content"], "photo.exe", {
+      type: "application/octet-stream",
+    });
+    const supportedFile = new File(["content"], "document.pdf", {
+      type: "application/pdf",
+    });
+
+    await user.upload(input, unsupportedFile);
+
+    expect(screen.getByRole("alert")).toBeInTheDocument();
+    expect(onFileSelect).not.toHaveBeenCalled();
+
+    await user.upload(input, supportedFile);
+
+    expect(screen.queryByRole("alert")).not.toBeInTheDocument();
+    expect(onFileSelect).toHaveBeenCalledTimes(1);
     expect(onFileSelect).toHaveBeenCalledWith(supportedFile);
   });
 });

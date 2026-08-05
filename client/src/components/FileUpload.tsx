@@ -14,7 +14,11 @@ const SUPPORTED_FORMATS_LABEL = supportedSourceFormats
   .map((format) => format.toUpperCase())
   .join(", ");
 
-const MAX_FILE_SIZE_BYTES = 10 * 1024 * 1024; // 10 MB in bytes
+const MAX_FILE_SIZE_MB = 10;
+const MAX_FILE_SIZE_BYTES = MAX_FILE_SIZE_MB * 1024 * 1024;
+const ACCEPTED_FILE_EXTENSIONS = supportedSourceFormats
+  .map((format) => `.${format}`)
+  .join(",");
 
 function validateFile(file: File): string | null {
   const lastDotIndex = file.name.lastIndexOf(".");
@@ -27,7 +31,7 @@ function validateFile(file: File): string | null {
   }
 
   if (file.size > MAX_FILE_SIZE_BYTES) {
-    return "File is too large. Maximum size is 10 MB.";
+    return `File is too large. Maximum size is ${MAX_FILE_SIZE_MB} MB.`;
   }
 
   return null;
@@ -75,24 +79,35 @@ export default function FileUpload({ file, onFileSelect }: FileUploadProps) {
   };
 
   return (
-    <div
+    <section
+      aria-labelledby="file-upload-heading"
       className={`upload-section ${isDragging ? "dragging" : ""}`}
       onDragOver={handleDragOver}
       onDragLeave={handleDragLeave}
       onDrop={handleDrop}
     >
-      <h2>Upload File</h2>
+      <h2 id="file-upload-heading">Upload File</h2>
       <label className="file-input-label">
         Choose File
-        <input type="file" className="file-input" onChange={handleFileChange} />
+        <input
+          type="file"
+          className="file-input"
+          onChange={handleFileChange}
+          accept={ACCEPTED_FILE_EXTENSIONS}
+        />
       </label>
       <p className="drag-drop-hint">or drag & drop your file here</p>
+      <p className="upload-requirements">
+        Supported formats: {SUPPORTED_FORMATS_LABEL}. Maximum size:{" "}
+        {MAX_FILE_SIZE_MB} MB.
+      </p>
+
       {error && (
         <p className="error-message" role="alert">
           {error}
         </p>
       )}
       <span className="file-name">{file?.name || "No file chosen"}</span>
-    </div>
+    </section>
   );
 }
