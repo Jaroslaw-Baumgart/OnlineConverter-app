@@ -6,8 +6,6 @@ export type ConversionOption = ConversionDefinition & {
 
 export interface FileConverterProps {
   file: File | null;
-  convertedFile: string | null;
-  setConvertedFile: (url: string | null) => void;
   onFileUpload: (file: File) => void;
   conversionOptions: readonly ConversionDefinition[];
 }

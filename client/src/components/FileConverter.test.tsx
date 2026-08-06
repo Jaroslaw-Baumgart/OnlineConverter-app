@@ -1,8 +1,9 @@
 import { render, screen, within } from "@testing-library/react";
-import { describe, expect, it, vi } from "vitest";
-import FileConverter from "./FileConverter";
-import { conversions as conversionOptions } from "../config/conversions";
+import userEvent from "@testing-library/user-event";
+import { afterEach, describe, expect, it, vi } from "vitest";
 
+import { conversions as conversionOptions } from "../config/conversions";
+import FileConverter from "./FileConverter";
 
 const getOptionCard = (text: string): HTMLElement => {
   const optionText = screen.getByText((_, element) => {
@@ -26,13 +27,15 @@ const getConvertButton = (optionText: string) =>
     name: "Convert",
   });
 
+afterEach(() => {
+  vi.unstubAllGlobals();
+});
+
 describe("FileConverter", () => {
   it("disables all conversion buttons when no file is selected", () => {
     render(
       <FileConverter
         file={null}
-        convertedFile={null}
-        setConvertedFile={vi.fn()}
         onFileUpload={vi.fn()}
         conversionOptions={conversionOptions}
       />,
@@ -59,8 +62,6 @@ describe("FileConverter", () => {
       render(
         <FileConverter
           file={file}
-          convertedFile={null}
-          setConvertedFile={vi.fn()}
           onFileUpload={vi.fn()}
           conversionOptions={conversionOptions}
         />,
@@ -92,8 +93,6 @@ describe("FileConverter", () => {
     render(
       <FileConverter
         file={file}
-        convertedFile={null}
-        setConvertedFile={vi.fn()}
         onFileUpload={vi.fn()}
         conversionOptions={conversionOptions}
       />,
@@ -129,8 +128,6 @@ describe("FileConverter", () => {
     render(
       <FileConverter
         file={file}
-        convertedFile={null}
-        setConvertedFile={vi.fn()}
         onFileUpload={vi.fn()}
         conversionOptions={conversionOptions}
       />,
@@ -157,8 +154,6 @@ describe("FileConverter", () => {
     });
 
     const commonProps = {
-      convertedFile: null,
-      setConvertedFile: vi.fn(),
       onFileUpload: vi.fn(),
       conversionOptions,
     };
@@ -174,5 +169,63 @@ describe("FileConverter", () => {
 
     expect(getConvertButton("PDF→JPG")).toBeDisabled();
     expect(getConvertButton("PNG→JPG")).toBeEnabled();
+  });
+
+  it("clears the previous conversion result when a new file is selected", async () => {
+    const user = userEvent.setup();
+
+    const initialFile = new File(["jpg content"], "image.jpg", {
+      type: "image/jpeg",
+    });
+
+    const newFile = new File(["pdf content"], "document.pdf", {
+      type: "application/pdf",
+    });
+
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({ filename: "converted.png" }),
+      })
+      .mockResolvedValueOnce({
+        ok: true,
+        blob: async () =>
+          new Blob(["converted content"], {
+            type: "image/png",
+          }),
+      });
+
+    vi.stubGlobal("fetch", fetchMock);
+
+    const onFileUpload = vi.fn();
+
+    render(
+      <FileConverter
+        file={initialFile}
+        onFileUpload={onFileUpload}
+        conversionOptions={conversionOptions}
+      />,
+    );
+
+    await user.click(getConvertButton("JPG→PNG"));
+
+    expect(
+      await screen.findByRole("heading", {
+        name: "Download Converted File",
+      }),
+    ).toBeInTheDocument();
+
+    const input = screen.getByLabelText("Choose File");
+
+    await user.upload(input, newFile);
+
+    expect(
+      screen.queryByRole("heading", {
+        name: "Download Converted File",
+      }),
+    ).not.toBeInTheDocument();
+
+    expect(onFileUpload).toHaveBeenCalledWith(newFile);
   });
 });

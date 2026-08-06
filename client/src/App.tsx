@@ -5,11 +5,9 @@ import './App.css';
 
 function App() {
   const [file, setFile] = useState<File | null>(null);
-  const [convertedFile, setConvertedFile] = useState<string | null>(null);
 
   const handleFileUpload = (file: File) => {
     setFile(file);
-    setConvertedFile(null); // reset converted file przy nowym uploadzie
   };
 
   return (
@@ -19,8 +17,6 @@ function App() {
         file={file}
         onFileUpload={handleFileUpload}
         conversionOptions={conversions}
-        convertedFile={convertedFile}
-        setConvertedFile={setConvertedFile} // nowy props
       />
     </div>
   );

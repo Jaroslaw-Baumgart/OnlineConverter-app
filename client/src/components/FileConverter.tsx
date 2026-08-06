@@ -37,8 +37,6 @@ function getAvailableOptions(
 
 export default function FileConverter({
   file,
-  convertedFile,
-  setConvertedFile,
   onFileUpload,
   conversionOptions,
 }: FileConverterProps) {
@@ -48,6 +46,7 @@ export default function FileConverter({
     null,
   );
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const [convertedFile, setConvertedFile] = useState<string | null>(null);
 
   const availableOptions = getAvailableOptions(file, conversionOptions);
 
@@ -117,7 +116,7 @@ export default function FileConverter({
       setConvertedPreviewFile(null);
       setError(null);
     },
-    [onFileUpload, setConvertedFile],
+    [onFileUpload],
   );
 
   const handleConvert = async (option: ConversionOption) => {
