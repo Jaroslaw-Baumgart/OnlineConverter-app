@@ -124,7 +124,11 @@ export default function FileUpload({
       )}
       <span className="file-name">{file?.name || "No file chosen"}</span>
       {file && (
-        <button type="button" onClick={handleFileRemove}>
+        <button
+          type="button"
+          className="remove-file-btn"
+          onClick={handleFileRemove}
+        >
           Remove file
         </button>
       )}
