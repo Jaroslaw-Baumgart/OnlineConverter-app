@@ -31,15 +31,37 @@ afterEach(() => {
   vi.unstubAllGlobals();
 });
 
+const createTestFile = {
+  pdf: (name = "document.pdf") =>
+    new File(["pdf content"], name, {
+      type: "application/pdf",
+    }),
+
+  png: (name = "image.png") =>
+    new File(["png content"], name, {
+      type: "image/png",
+    }),
+
+  jpg: (name = "image.jpg") =>
+    new File(["jpg content"], name, {
+      type: "image/jpeg",
+    }),
+};
+
+const setupFileConverter = () => {
+  const user = userEvent.setup();
+
+  render(<FileConverter conversionOptions={conversionOptions} />);
+
+  return {
+    user,
+    input: screen.getByLabelText("Choose File"),
+  };
+};
+
 describe("FileConverter", () => {
   it("disables all conversion buttons when no file is selected", () => {
-    render(
-      <FileConverter
-        file={null}
-        onFileUpload={vi.fn()}
-        conversionOptions={conversionOptions}
-      />,
-    );
+    setupFileConverter();
 
     const convertButtons = screen.getAllByRole("button", {
       name: "Convert",
@@ -54,18 +76,12 @@ describe("FileConverter", () => {
 
   it.each(["document.pdf", "document.PDF"])(
     "enables only conversions allowed for PDF file %s",
-    (fileName) => {
-      const file = new File(["content"], fileName, {
-        type: "application/pdf",
-      });
+    async (fileName) => {
+      const file = createTestFile.pdf(fileName);
 
-      render(
-        <FileConverter
-          file={file}
-          onFileUpload={vi.fn()}
-          conversionOptions={conversionOptions}
-        />,
-      );
+      const { user, input } = setupFileConverter();
+
+      await user.upload(input, file);
 
       const pdfToJpgCard = getOptionCard("PDF→JPG");
       const pdfToTxtCard = getOptionCard("PDF→TXT");
@@ -85,18 +101,11 @@ describe("FileConverter", () => {
     },
   );
 
-  it("enables only conversions allowed for a PNG file", () => {
-    const file = new File(["content"], "image.png", {
-      type: "image/png",
-    });
+  it("enables only conversions allowed for a PNG file", async () => {
+    const file = createTestFile.png();
+    const { user, input } = setupFileConverter();
 
-    render(
-      <FileConverter
-        file={file}
-        onFileUpload={vi.fn()}
-        conversionOptions={conversionOptions}
-      />,
-    );
+    await user.upload(input, file);
 
     const pdfToJpgCard = getOptionCard("PDF→JPG");
     const jpgToPngCard = getOptionCard("JPG→PNG");
@@ -120,67 +129,26 @@ describe("FileConverter", () => {
     ).toBeEnabled();
   });
 
-  it("disables all conversions for an unsupported file", () => {
-    const file = new File(["content"], "archive.xyz", {
-      type: "application/octet-stream",
-    });
+  it("updates available conversions when the selected file changes", async () => {
+    const pdfFile = createTestFile.pdf();
+    const pngFile = createTestFile.png();
 
-    render(
-      <FileConverter
-        file={file}
-        onFileUpload={vi.fn()}
-        conversionOptions={conversionOptions}
-      />,
-    );
+    const { user, input } = setupFileConverter();
 
-    const convertButtons = screen.getAllByRole("button", {
-      name: "Convert",
-    });
-
-    expect(convertButtons).toHaveLength(conversionOptions.length);
-
-    for (const button of convertButtons) {
-      expect(button).toBeDisabled();
-    }
-  });
-
-  it("updates available conversions when the selected file changes", () => {
-    const pdfFile = new File(["pdf content"], "document.pdf", {
-      type: "application/pdf",
-    });
-
-    const pngFile = new File(["png content"], "image.png", {
-      type: "image/png",
-    });
-
-    const commonProps = {
-      onFileUpload: vi.fn(),
-      conversionOptions,
-    };
-
-    const { rerender } = render(
-      <FileConverter file={pdfFile} {...commonProps} />,
-    );
+    await user.upload(input, pdfFile);
 
     expect(getConvertButton("PDF→JPG")).toBeEnabled();
     expect(getConvertButton("PNG→JPG")).toBeDisabled();
 
-    rerender(<FileConverter file={pngFile} {...commonProps} />);
+    await user.upload(input, pngFile);
 
     expect(getConvertButton("PDF→JPG")).toBeDisabled();
     expect(getConvertButton("PNG→JPG")).toBeEnabled();
   });
 
   it("clears the previous conversion result when a new file is selected", async () => {
-    const user = userEvent.setup();
-
-    const initialFile = new File(["jpg content"], "image.jpg", {
-      type: "image/jpeg",
-    });
-
-    const newFile = new File(["pdf content"], "document.pdf", {
-      type: "application/pdf",
-    });
+    const initialFile = createTestFile.jpg();
+    const newFile = createTestFile.pdf();
 
     const fetchMock = vi
       .fn()
@@ -198,15 +166,9 @@ describe("FileConverter", () => {
 
     vi.stubGlobal("fetch", fetchMock);
 
-    const onFileUpload = vi.fn();
+    const { user, input } = setupFileConverter();
 
-    render(
-      <FileConverter
-        file={initialFile}
-        onFileUpload={onFileUpload}
-        conversionOptions={conversionOptions}
-      />,
-    );
+    await user.upload(input, initialFile);
 
     await user.click(getConvertButton("JPG→PNG"));
 
@@ -216,8 +178,6 @@ describe("FileConverter", () => {
       }),
     ).toBeInTheDocument();
 
-    const input = screen.getByLabelText("Choose File");
-
     await user.upload(input, newFile);
 
     expect(
@@ -226,6 +186,6 @@ describe("FileConverter", () => {
       }),
     ).not.toBeInTheDocument();
 
-    expect(onFileUpload).toHaveBeenCalledWith(newFile);
+    expect(screen.getByText("document.pdf")).toBeInTheDocument();
   });
 });

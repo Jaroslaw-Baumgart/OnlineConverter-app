@@ -4,6 +4,16 @@ import { describe, expect, it, vi } from "vitest";
 
 import FileUpload from "./FileUpload";
 
+const renderFileUpload = (onFileSelect: (file: File) => void) => {
+  render(
+    <FileUpload
+      file={null}
+      onFileSelect={onFileSelect}
+      onFileRemove={vi.fn()}
+    />,
+  );
+};
+
 describe("FileUpload", () => {
   it("rejects a file with an unsupported extension", async () => {
     const user = userEvent.setup({
@@ -12,7 +22,7 @@ describe("FileUpload", () => {
 
     const onFileSelect = vi.fn();
 
-    render(<FileUpload file={null} onFileSelect={onFileSelect} />);
+    renderFileUpload(onFileSelect);
 
     const input = screen.getByLabelText("Choose File");
 
@@ -33,7 +43,7 @@ describe("FileUpload", () => {
     const user = userEvent.setup();
     const onFileSelect = vi.fn();
 
-    render(<FileUpload file={null} onFileSelect={onFileSelect} />);
+    renderFileUpload(onFileSelect);
 
     const input = screen.getByLabelText("Choose File");
 
@@ -55,7 +65,7 @@ describe("FileUpload", () => {
     const user = userEvent.setup();
     const onFileSelect = vi.fn();
 
-    render(<FileUpload file={null} onFileSelect={onFileSelect} />);
+    renderFileUpload(onFileSelect);
 
     const input = screen.getByLabelText("Choose File");
 
@@ -74,7 +84,7 @@ describe("FileUpload", () => {
   it("rejects an unsupported file dropped onto the upload area", () => {
     const onFileSelect = vi.fn();
 
-    render(<FileUpload file={null} onFileSelect={onFileSelect} />);
+    renderFileUpload(onFileSelect);
 
     const unsupportedFile = new File(["content"], "photo.exe", {
       type: "application/octet-stream",
@@ -99,7 +109,7 @@ describe("FileUpload", () => {
   it("accepts a supported file dropped onto the upload area", () => {
     const onFileSelect = vi.fn();
 
-    render(<FileUpload file={null} onFileSelect={onFileSelect} />);
+    renderFileUpload(onFileSelect);
 
     const supportedFile = new File(["content"], "document.pdf", {
       type: "application/pdf",
@@ -122,7 +132,7 @@ describe("FileUpload", () => {
   it("shows supported formats and the maximum file size", () => {
     const onFileSelect = vi.fn();
 
-    render(<FileUpload file={null} onFileSelect={onFileSelect} />);
+    renderFileUpload(onFileSelect);
 
     expect(
       screen.getByText(
@@ -134,7 +144,7 @@ describe("FileUpload", () => {
   it("hints supported file extensions to the file picker", () => {
     const onFileSelect = vi.fn();
 
-    render(<FileUpload file={null} onFileSelect={onFileSelect} />);
+    renderFileUpload(onFileSelect);
 
     expect(screen.getByLabelText("Choose File")).toHaveAttribute(
       "accept",
@@ -148,7 +158,7 @@ describe("FileUpload", () => {
     });
     const onFileSelect = vi.fn();
 
-    render(<FileUpload file={null} onFileSelect={onFileSelect} />);
+    renderFileUpload(onFileSelect);
 
     const input = screen.getByLabelText("Choose File");
     const unsupportedFile = new File(["content"], "photo.exe", {

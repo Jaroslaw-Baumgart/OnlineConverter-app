@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
 import type { ChangeEvent, DragEvent } from "react";
 import {
   supportedSourceFormats,
@@ -8,6 +8,7 @@ import {
 interface FileUploadProps {
   file: File | null;
   onFileSelect: (file: File) => void;
+  onFileRemove: () => void;
 }
 
 const SUPPORTED_FORMATS_LABEL = supportedSourceFormats
@@ -37,9 +38,14 @@ function validateFile(file: File): string | null {
   return null;
 }
 
-export default function FileUpload({ file, onFileSelect }: FileUploadProps) {
+export default function FileUpload({
+  file,
+  onFileSelect,
+  onFileRemove,
+}: FileUploadProps) {
   const [isDragging, setIsDragging] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleSelectedFile = (selectedFile: File) => {
     const validationError = validateFile(selectedFile);
@@ -69,6 +75,14 @@ export default function FileUpload({ file, onFileSelect }: FileUploadProps) {
     setIsDragging(false);
   };
 
+  const handleFileRemove = () => {
+    if (fileInputRef.current) {
+      fileInputRef.current.value = "";
+    }
+
+    onFileRemove();
+  };
+
   const handleDrop = (e: DragEvent<HTMLDivElement>) => {
     e.preventDefault();
     setIsDragging(false);
@@ -90,6 +104,7 @@ export default function FileUpload({ file, onFileSelect }: FileUploadProps) {
       <label className="file-input-label">
         Choose File
         <input
+          ref={fileInputRef}
           type="file"
           className="file-input"
           onChange={handleFileChange}
@@ -108,6 +123,11 @@ export default function FileUpload({ file, onFileSelect }: FileUploadProps) {
         </p>
       )}
       <span className="file-name">{file?.name || "No file chosen"}</span>
+      {file && (
+        <button type="button" onClick={handleFileRemove}>
+          Remove file
+        </button>
+      )}
     </section>
   );
 }

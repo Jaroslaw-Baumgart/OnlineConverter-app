@@ -36,8 +36,6 @@ function getAvailableOptions(
 }
 
 export default function FileConverter({
-  file,
-  onFileUpload,
   conversionOptions,
 }: FileConverterProps) {
   const [isLoadingText, setIsLoadingText] = useState(false);
@@ -47,6 +45,7 @@ export default function FileConverter({
   );
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [convertedFile, setConvertedFile] = useState<string | null>(null);
+  const [file, setFile] = useState<File | null>(null);
 
   const availableOptions = getAvailableOptions(file, conversionOptions);
 
@@ -109,16 +108,21 @@ export default function FileConverter({
     [isLoadingText],
   );
 
-  const handleFileSelect = useCallback(
-    (selectedFile: File) => {
-      onFileUpload(selectedFile);
-      setConvertedFile(null);
-      setConvertedPreviewFile(null);
-      setError(null);
-    },
-    [onFileUpload],
-  );
+  const resetConversionState = () => {
+    setConvertedFile(null);
+    setConvertedPreviewFile(null);
+    setError(null);
+  };
 
+  const handleFileSelect = (selectedFile: File) => {
+    setFile(selectedFile);
+    resetConversionState();
+  };
+
+  const handleFileRemove = () => {
+    setFile(null);
+    resetConversionState();
+  };
   const handleConvert = async (option: ConversionOption) => {
     if (!file) {
       setError("Please upload a file first.");
@@ -174,7 +178,11 @@ export default function FileConverter({
     <div className="converter-container">
       {error && <div className="error-message">{error}</div>}
 
-      <FileUpload file={file} onFileSelect={handleFileSelect} />
+      <FileUpload
+        file={file}
+        onFileSelect={handleFileSelect}
+        onFileRemove={handleFileRemove}
+      />
 
       {file && renderFilePreview(file, previewUrl)}
 
