@@ -12,6 +12,8 @@ import DownloadSection from "./DownloadSection";
 import type { ConversionDefinition } from "../config/conversions";
 import FilePreview from "./FilePreview";
 import { createPreviewData } from "../utils/previewMapper";
+import { useObjectUrl } from "../hooks/useObjectUrl";
+import { downloadFile } from "../utils/downloadFile";
 
 function getAvailableOptions(
   file: File | null,
@@ -40,25 +42,15 @@ export default function FileConverter({
   const [convertedPreviewFile, setConvertedPreviewFile] = useState<File | null>(
     null,
   );
-  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [convertedFile, setConvertedFile] = useState<string | null>(null);
   const [file, setFile] = useState<File | null>(null);
 
+  const previewUrl = useObjectUrl(file);
   const availableOptions = getAvailableOptions(file, conversionOptions);
   const previewData =
     file && previewUrl
       ? createPreviewData(file, previewUrl, isLoadingText)
       : null;
-
-  useEffect(() => {
-    if (file) {
-      const url = URL.createObjectURL(file);
-      setPreviewUrl(url);
-      return () => URL.revokeObjectURL(url);
-    } else {
-      setPreviewUrl(null);
-    }
-  }, [file]);
 
   useEffect(() => {
     const loadTextContent = async () => {
@@ -133,14 +125,8 @@ export default function FileConverter({
 
   const handleDownloadBlob = () => {
     if (!convertedPreviewFile) return;
-    const blobUrl = URL.createObjectURL(convertedPreviewFile);
-    const a = document.createElement("a");
-    a.href = blobUrl;
-    a.download = convertedPreviewFile.name || "converted-file";
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(blobUrl);
+
+    downloadFile(convertedPreviewFile);
   };
 
   return (
