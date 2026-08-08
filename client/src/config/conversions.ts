@@ -48,6 +48,8 @@ export type ConversionType = ConversionDefinition["conversionType"];
 
 export type SourceFormat = ConversionDefinition["sourceFormat"];
 
+export type SupportedFormat = ConversionDefinition["sourceFormat" | "targetFormat"];
+
 export const supportedSourceFormats: readonly SourceFormat[] = [
   ...new Set(conversions.map((conversion) => conversion.sourceFormat)),
 ];

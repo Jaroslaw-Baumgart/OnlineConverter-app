@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect } from "react";
 import "../styles/FileConverter.css";
 import type { ConversionOption, FileConverterProps } from "../types/converter";
 import {
@@ -9,12 +9,9 @@ import {
 import FileUpload from "./FileUpload";
 import ConversionOptions from "./ConversionOptions";
 import DownloadSection from "./DownloadSection";
-import TextPreview from "./previews/TextPreview";
-import WordPreview from "./previews/WordPreview";
-import ImagePreview from "./previews/ImagePreview";
-import PDFPreview from "./previews/PDFPreview";
-import UnsupportedPreview from "./previews/UnsupportedPreview";
 import type { ConversionDefinition } from "../config/conversions";
+import FilePreview from "./FilePreview";
+import { createPreviewData } from "../utils/previewMapper";
 
 function getAvailableOptions(
   file: File | null,
@@ -48,6 +45,10 @@ export default function FileConverter({
   const [file, setFile] = useState<File | null>(null);
 
   const availableOptions = getAvailableOptions(file, conversionOptions);
+  const previewData =
+    file && previewUrl
+      ? createPreviewData(file, previewUrl, isLoadingText)
+      : null;
 
   useEffect(() => {
     if (file) {
@@ -75,38 +76,6 @@ export default function FileConverter({
     };
     loadTextContent();
   }, [file]);
-
-  const renderFilePreview = useCallback(
-    (f: File | null, url: string | null) => {
-      if (!f || !url) return null;
-
-      const fileType = f.type;
-      const fileName = f.name.toLowerCase();
-      const isImage = fileType.startsWith("image/");
-      const isPDF = fileType === "application/pdf" || fileName.endsWith(".pdf");
-      const isText = fileType === "text/plain" || fileName.endsWith(".txt");
-      const isWord =
-        fileName.endsWith(".docx") ||
-        fileType.includes("wordprocessingml.document");
-
-      return (
-        <div className="file-preview">
-          {isImage ? (
-            <ImagePreview url={url} />
-          ) : isPDF ? (
-            <PDFPreview url={url} />
-          ) : isText ? (
-            <TextPreview file={f} isLoading={isLoadingText} />
-          ) : isWord ? (
-            <WordPreview />
-          ) : (
-            <UnsupportedPreview fileType={fileType} />
-          )}
-        </div>
-      );
-    },
-    [isLoadingText],
-  );
 
   const resetConversionState = () => {
     setConvertedFile(null);
@@ -184,7 +153,11 @@ export default function FileConverter({
         onFileRemove={handleFileRemove}
       />
 
-      {file && renderFilePreview(file, previewUrl)}
+      {previewData && (
+        <div className="file-preview">
+          <FilePreview preview={previewData} />
+        </div>
+      )}
 
       <ConversionOptions options={availableOptions} onConvert={handleConvert} />
 

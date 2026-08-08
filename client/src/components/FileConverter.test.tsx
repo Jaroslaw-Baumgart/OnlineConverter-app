@@ -46,6 +46,16 @@ const createTestFile = {
     new File(["jpg content"], name, {
       type: "image/jpeg",
     }),
+
+  txt: (name = "document.txt") =>
+    new File(["text content"], name, {
+      type: "text/plain",
+    }),
+
+  docx: (name = "document.docx") =>
+    new File(["docx content"], name, {
+      type: "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+    }),
 };
 
 const setupFileConverter = () => {
@@ -83,6 +93,8 @@ describe("FileConverter", () => {
 
       await user.upload(input, file);
 
+      expect(screen.getByTitle("PDF Preview")).toBeInTheDocument();
+
       const pdfToJpgCard = getOptionCard("PDF→JPG");
       const pdfToTxtCard = getOptionCard("PDF→TXT");
       const jpgToPngCard = getOptionCard("JPG→PNG");
@@ -106,6 +118,8 @@ describe("FileConverter", () => {
     const { user, input } = setupFileConverter();
 
     await user.upload(input, file);
+
+    expect(screen.getByRole("img", { name: "Preview" })).toBeInTheDocument();
 
     const pdfToJpgCard = getOptionCard("PDF→JPG");
     const jpgToPngCard = getOptionCard("JPG→PNG");
@@ -187,5 +201,27 @@ describe("FileConverter", () => {
     ).not.toBeInTheDocument();
 
     expect(screen.getByText("document.pdf")).toBeInTheDocument();
+  });
+
+  it("renders a text preview for a TXT file", async () => {
+    const file = createTestFile.txt();
+    const { user, input } = setupFileConverter();
+
+    await user.upload(input, file);
+
+    expect(await screen.findByDisplayValue("text content")).toBeInTheDocument();
+  });
+
+  it("renders guidance for a DOCX file", async () => {
+    const file = createTestFile.docx();
+    const { user, input } = setupFileConverter();
+
+    await user.upload(input, file);
+
+    expect(
+      screen.getByText(
+        "To preview Word documents, please convert them to PDF first",
+      ),
+    ).toBeInTheDocument();
   });
 });
