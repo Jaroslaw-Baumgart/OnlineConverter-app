@@ -6,21 +6,6 @@ export const readFileAsText = (file: File): Promise<string> =>
     reader.readAsText(file);
   });
 
-export const extractFileInfo = (data: any): { path: string; name: string } | null => {
-  if (data?.files?.length) {
-    const { url, name } = data.files[0];
-    if (url) return { path: url, name: name || url.split("/").pop() || "converted-file" };
-  }
-  if (data?.outputFile) {
-    const name = data.outputFile.split("/").pop() || "converted-file";
-    return { path: data.outputFile, name };
-  }
-  if (data?.filename) {
-    return { path: `/output/${data.filename}`, name: data.filename };
-  }
-  return null;
-};
-
 export const toAbsoluteUrl = (maybeRelative: string) =>
   /^https?:\/\//i.test(maybeRelative)
     ? maybeRelative

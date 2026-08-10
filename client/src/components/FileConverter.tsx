@@ -1,11 +1,7 @@
 import { useState, useEffect } from "react";
 import "../styles/FileConverter.css";
 import type { ConversionOption, FileConverterProps } from "../types/converter";
-import {
-  readFileAsText,
-  extractFileInfo,
-  toAbsoluteUrl,
-} from "../utils/fileUtils";
+import { readFileAsText, toAbsoluteUrl } from "../utils/fileUtils";
 import FileUpload from "./FileUpload";
 import ConversionOptions from "./ConversionOptions";
 import DownloadSection from "./DownloadSection";
@@ -14,6 +10,7 @@ import FilePreview from "./FilePreview";
 import { createPreviewData } from "../utils/previewMapper";
 import { useObjectUrl } from "../hooks/useObjectUrl";
 import { downloadFile } from "../utils/downloadFile";
+import { parseConversionResponse } from "../api/conversionResponse";
 
 function getAvailableOptions(
   file: File | null,
@@ -100,20 +97,35 @@ export default function FileConverter({
         method: "POST",
         body: formData,
       });
-      if (!res.ok) throw new Error("Conversion failed");
 
-      const data = await res.json();
-      const info = extractFileInfo(data);
-      if (!info) throw new Error("Backend did not return output path");
+      const data: unknown = await res.json();
+      const conversionResponse = parseConversionResponse(data);
 
-      const absoluteUrl = toAbsoluteUrl(info.path);
-      setConvertedFile(absoluteUrl);
+      if (!conversionResponse) {
+        throw new Error("Backend returned an invalid response");
+      }
 
-      const fileRes = await fetch(absoluteUrl);
+      if (conversionResponse.success === false) {
+        setError(conversionResponse.error);
+        return;
+      }
+
+      if (!res.ok) {
+        throw new Error("Conversion failed");
+      }
+
+      const [convertedFileInfo] = conversionResponse.files;
+      const convertedFileUrl = toAbsoluteUrl(convertedFileInfo.url);
+
+      setConvertedFile(convertedFileUrl);
+
+      const fileRes = await fetch(convertedFileUrl);
       if (!fileRes.ok) throw new Error("Failed to fetch converted file");
 
       const blob = await fileRes.blob();
-      const downloadedFile = new File([blob], info.name, { type: blob.type });
+      const downloadedFile = new File([blob], convertedFileInfo.name, {
+        type: blob.type,
+      });
       setConvertedPreviewFile(downloadedFile);
 
       setError(null);

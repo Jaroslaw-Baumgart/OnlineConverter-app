@@ -168,7 +168,15 @@ describe("FileConverter", () => {
       .fn()
       .mockResolvedValueOnce({
         ok: true,
-        json: async () => ({ filename: "converted.png" }),
+        json: async () => ({
+          success: true,
+          files: [
+            {
+              url: "/output/converted.png",
+              name: "converted.png",
+            },
+          ],
+        }),
       })
       .mockResolvedValueOnce({
         ok: true,
@@ -222,6 +230,28 @@ describe("FileConverter", () => {
       screen.getByText(
         "To preview Word documents, please convert them to PDF first",
       ),
+    ).toBeInTheDocument();
+  });
+
+  it("shows the conversion error returned by the backend", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue({
+        ok: false,
+        json: async () => ({
+          success: false,
+          error: "Unsupported conversion",
+        }),
+      }),
+    );
+
+    const { user, input } = setupFileConverter();
+
+    await user.upload(input, createTestFile.jpg());
+    await user.click(getConvertButton("JPG→PNG"));
+
+    expect(
+      await screen.findByText("Unsupported conversion"),
     ).toBeInTheDocument();
   });
 });

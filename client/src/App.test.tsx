@@ -98,7 +98,15 @@ describe("App", () => {
       .fn()
       .mockResolvedValueOnce({
         ok: true,
-        json: async () => ({ filename: "Converted.png" }),
+        json: async () => ({
+          success: true,
+          files: [
+            {
+              url: "/output/Converted.png",
+              name: "Converted.png",
+            },
+          ],
+        }),
       })
       .mockResolvedValueOnce({
         ok: true,
