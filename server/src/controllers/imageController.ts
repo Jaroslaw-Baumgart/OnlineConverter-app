@@ -5,7 +5,11 @@ import PDFDocument from "pdfkit";
 import { OUTPUT_DIR } from "../utils/constants";
 import { safeUnlink } from "../utils/file";
 import fs from "fs";
-import { sendResponse } from "../utils/response";
+import {
+  createOutputFileItem,
+  sendErrorResponse,
+  sendSuccessResponse,
+} from "../utils/response";
 
 const getBaseFileName = (file: Express.Multer.File) => {
   return path.parse(file.filename).name;
@@ -13,19 +17,22 @@ const getBaseFileName = (file: Express.Multer.File) => {
 
 // JPG --> PNG
 export const jpgToPng = async (req: Request, res: Response) => {
-  if (!req.file)
-    return res
-      .status(400)
-      .json({ success: false, error: "No JPG file uploaded." });
+  if (!req.file) {
+    return sendErrorResponse(res, 400, "No JPG file uploaded.");
+  }
 
   const outputName = `${getBaseFileName(req.file)}.png`;
   const outputPath = path.join(OUTPUT_DIR, outputName);
 
   try {
     await sharp(req.file.path).png().toFile(outputPath);
-    sendResponse(res, true, "Conversion: JPG → PNG", "png", outputName);
-  } catch (err: any) {
-    sendResponse(res, false, "", "", undefined, err.message);
+
+    sendSuccessResponse(res, [createOutputFileItem(outputName)]);
+  } catch (err: unknown) {
+    const errorMessage =
+      err instanceof Error ? err.message : "Failed to convert JPG to PNG.";
+
+    sendErrorResponse(res, 500, errorMessage);
   } finally {
     safeUnlink(req.file.path);
   }
@@ -33,19 +40,22 @@ export const jpgToPng = async (req: Request, res: Response) => {
 
 // PNG --> JPG
 export const pngToJpg = async (req: Request, res: Response) => {
-  if (!req.file)
-    return res
-      .status(400)
-      .json({ success: false, error: "No PNG file uploaded." });
+  if (!req.file) {
+    return sendErrorResponse(res, 400, "No PNG file uploaded.");
+  }
 
   const outputName = `${getBaseFileName(req.file)}.jpg`;
   const outputPath = path.join(OUTPUT_DIR, outputName);
 
   try {
     await sharp(req.file.path).jpeg().toFile(outputPath);
-    sendResponse(res, true, "Conversion: PNG → JPG", "jpg", outputName);
-  } catch (err: any) {
-    sendResponse(res, false, "", "", undefined, err.message);
+
+    sendSuccessResponse(res, [createOutputFileItem(outputName)]);
+  } catch (err: unknown) {
+    const errorMessage =
+      err instanceof Error ? err.message : "Failed to convert PNG to JPG.";
+
+    sendErrorResponse(res, 500, errorMessage);
   } finally {
     safeUnlink(req.file.path);
   }
@@ -53,10 +63,9 @@ export const pngToJpg = async (req: Request, res: Response) => {
 
 // JPG --> PDF
 export const jpgToPdf = async (req: Request, res: Response) => {
-  if (!req.file)
-    return res
-      .status(400)
-      .json({ success: false, error: "No JPG file uploaded." });
+  if (!req.file) {
+    return sendErrorResponse(res, 400, "No JPG file uploaded.");
+  }
 
   const outputName = `${getBaseFileName(req.file)}.pdf`;
   const outputPath = path.join(OUTPUT_DIR, outputName);
@@ -67,7 +76,7 @@ export const jpgToPdf = async (req: Request, res: Response) => {
     doc.image(req.file.path, {
       fit: [500, 700],
       align: "center",
-      valign: "center"
+      valign: "center",
     });
 
     await new Promise<void>((resolve, reject) => {
@@ -77,9 +86,12 @@ export const jpgToPdf = async (req: Request, res: Response) => {
       doc.end();
     });
 
-    sendResponse(res, true, "Conversion: JPG → PDF", "pdf", outputName);
-  } catch (err: any) {
-    sendResponse(res, false, "", "", undefined, err.message);
+    sendSuccessResponse(res, [createOutputFileItem(outputName)]);
+  } catch (err: unknown) {
+    const errorMessage =
+      err instanceof Error ? err.message : "Failed to convert JPG to PDF.";
+
+    sendErrorResponse(res, 500, errorMessage);
   } finally {
     safeUnlink(req.file.path);
   }

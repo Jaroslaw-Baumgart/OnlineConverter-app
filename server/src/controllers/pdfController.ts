@@ -6,8 +6,11 @@ import pdfParse from "pdf-parse";
 import { exec } from "child_process";
 import { OUTPUT_DIR } from "../utils/constants";
 import { safeUnlink } from "../utils/file";
-import { sendResponse } from "../utils/response";
-
+import {
+  createOutputFileItem,
+  sendErrorResponse,
+  sendSuccessResponse,
+} from "../utils/response";
 
 const getBaseFileName = (file: Express.Multer.File) => {
   return path.parse(file.filename).name;
@@ -16,11 +19,12 @@ const getBaseFileName = (file: Express.Multer.File) => {
 // PDF --> JPG
 export const pdfToJpg = async (req: Request, res: Response) => {
   if (!req.file) {
-    return sendResponse(res, false, "", "", undefined, undefined, "No PDF file uploaded.");
+    return sendErrorResponse(res, 400, "No PDF file uploaded.");
   }
 
-  const baseName = getBaseFileName(req.file);
-  const pdfPath = req.file.path;
+  const file = req.file;
+  const baseName = getBaseFileName(file);
+  const pdfPath = file.path;
   const outputSubdir = path.join(OUTPUT_DIR, baseName);
 
   try {
@@ -30,97 +34,111 @@ export const pdfToJpg = async (req: Request, res: Response) => {
       format: "jpeg",
       out_dir: outputSubdir,
       out_prefix: "page",
-      page: null
+      page: null,
     });
 
-    const jpgFiles = (await fs.readdir(outputSubdir)).filter(f => f.endsWith(".jpg"));
-
-    sendResponse(
-      res,
-      true,
-      "Conversion: PDF → JPG",
-      "jpg",
-      undefined,
-      jpgFiles.map(name => ({
-        url: `/output/${baseName}/${name}`,
-        name
-      }))
+    const jpgFiles = (await fs.readdir(outputSubdir)).filter((f) =>
+      f.endsWith(".jpg"),
     );
-  } catch (err: any) {
-    sendResponse(res, false, "", "", undefined, undefined, err.message);
+
+    const files = jpgFiles.map((name) => ({
+      url: `/output/${baseName}/${name}`,
+      name,
+    }));
+
+    const [firstFile, ...remainingFiles] = files;
+
+    if (!firstFile) {
+      return sendErrorResponse(
+        res,
+        500,
+        "PDF conversion produced no JPG files.",
+      );
+    }
+
+    return sendSuccessResponse(res, [firstFile, ...remainingFiles]);
+  } catch (err: unknown) {
+    const errorMessage =
+      err instanceof Error ? err.message : "Failed to convert PDF to JPG.";
+
+    sendErrorResponse(res, 500, errorMessage);
   } finally {
-    safeUnlink(pdfPath);
+    safeUnlink(file.path);
   }
 };
 
 // PDF --> TXT
 export const pdfToTxt = async (req: Request, res: Response) => {
   if (!req.file) {
-    return sendResponse(res, false, "", "", undefined, undefined, "No PDF file uploaded.");
+    return sendErrorResponse(res, 400, "No PDF file uploaded.");
   }
 
-  const outputName = `${getBaseFileName(req.file)}.txt`;
+  const file = req.file;
+  const outputName = `${getBaseFileName(file)}.txt`;
   const outputPath = path.join(OUTPUT_DIR, outputName);
 
   try {
     try {
-      const data = await pdfParse(await fs.readFile(req.file.path));
+      const data = await pdfParse(await fs.readFile(file.path));
       await fs.writeFile(outputPath, data.text);
     } catch {
       await new Promise((resolve, reject) => {
-        exec(`pdftotext "${req.file.path}" "${outputPath}"`, err =>
-          err ? reject(err) : resolve(null)
+        exec(`pdftotext "${file.path}" "${outputPath}"`, (err) =>
+          err ? reject(err) : resolve(null),
         );
       });
     }
 
-    sendResponse(res, true, "Conversion: PDF → TXT", "txt", outputName);
-  } catch (err: any) {
-    sendResponse(res, false, "", "", undefined, undefined, err.message);
+    return sendSuccessResponse(res, [createOutputFileItem(outputName)]);
+  } catch (err: unknown) {
+    const errorMessage =
+      err instanceof Error ? err.message : "Failed to convert PDF to TXT.";
+
+    sendErrorResponse(res, 500, errorMessage);
   } finally {
-    safeUnlink(req.file.path);
+    safeUnlink(file.path);
   }
 };
 
 // TXT --> PDF
 export const txtToPdf = async (req: Request, res: Response) => {
-  if (!req.file || path.extname(req.file.originalname).toLowerCase() !== ".txt") {
-    return sendResponse(res, false, "", "", undefined, undefined, "No TXT file uploaded.");
+  if (
+    !req.file ||
+    path.extname(req.file.originalname).toLowerCase() !== ".txt"
+  ) {
+    return sendErrorResponse(res, 400, "No TXT file uploaded.");
   }
 
-  const baseName = getBaseFileName(req.file);
+  const file = req.file;
+  const baseName = getBaseFileName(file);
   const outputName = `${baseName}.pdf`;
   const outputPath = path.join(OUTPUT_DIR, outputName);
 
   try {
-    const text = await fs.readFile(req.file.path, "utf8");
+    const text = await fs.readFile(file.path, "utf8");
 
     const PDFDocument = require("pdfkit");
     const doc = new PDFDocument();
     const stream = doc.pipe(require("fs").createWriteStream(outputPath));
 
+    const streamFinished = new Promise<void>((resolve, reject) => {
+      stream.on("finish", resolve);
+      stream.on("error", reject);
+    });
+
     doc.fontSize(12).text(text, { align: "left" });
     doc.end();
 
-    stream.on("finish", () => {
-      safeUnlink(req.file.path);
-      sendResponse(
-        res,
-        true,
-        "Conversion: TXT → PDF",
-        "pdf",
-        undefined,
-        [{ url: `/output/${outputName}`, name: outputName }]
-      );
-    });
+    await streamFinished;
 
-    stream.on("error", (err: any) => {
-      safeUnlink(req.file.path);
-      sendResponse(res, false, "", "", undefined, undefined, err.message);
-    });
-  } catch (err: any) {
-    safeUnlink(req.file.path);
-    sendResponse(res, false, "", "", undefined, undefined, err.message || "Failed to convert TXT to PDF.");
+    return sendSuccessResponse(res, [createOutputFileItem(outputName)]);
+  } catch (err: unknown) {
+    const errorMessage =
+      err instanceof Error ? err.message : "Failed to convert TXT to PDF.";
+
+    sendErrorResponse(res, 500, errorMessage);
+  } finally {
+    safeUnlink(file.path);
   }
 };
 
@@ -130,10 +148,11 @@ export const jpgToPdf = async (req: Request, res: Response) => {
     !req.file ||
     path.extname(req.file.originalname).toLowerCase() !== ".jpg"
   ) {
-    return sendResponse(res, false, "", "", undefined, undefined, "No JPG file uploaded.");
+    return sendErrorResponse(res, 400, "No JPG file uploaded.");
   }
 
-  const baseName = getBaseFileName(req.file);
+  const file = req.file;
+  const baseName = getBaseFileName(file);
   const outputName = `${baseName}.pdf`;
   const outputPath = path.join(OUTPUT_DIR, outputName);
 
@@ -143,30 +162,26 @@ export const jpgToPdf = async (req: Request, res: Response) => {
     const stream = doc.pipe(require("fs").createWriteStream(outputPath));
 
     // Wymiary obrazu
-    const image = doc.openImage(req.file.path);
+    const image = doc.openImage(file.path);
     doc.addPage({ size: [image.width, image.height] });
     doc.image(image, 0, 0);
 
+    const streamFinished = new Promise<void>((resolve, reject) => {
+      stream.on("finish", resolve);
+      stream.on("error", reject);
+    });
+
     doc.end();
 
-    stream.on("finish", () => {
-      safeUnlink(req.file.path);
-      sendResponse(
-        res,
-        true,
-        "Conversion: JPG → PDF",
-        "pdf",
-        undefined,
-        [{ url: `/output/${outputName}`, name: outputName }]
-      );
-    });
+    await streamFinished;
 
-    stream.on("error", (err: any) => {
-      safeUnlink(req.file.path);
-      sendResponse(res, false, "", "", undefined, undefined, err.message);
-    });
-  } catch (err: any) {
-    safeUnlink(req.file.path);
-    sendResponse(res, false, "", "", undefined, undefined, err.message || "Failed to convert JPG to PDF.");
+    return sendSuccessResponse(res, [createOutputFileItem(outputName)]);
+  } catch (err: unknown) {
+    const errorMessage =
+      err instanceof Error ? err.message : "Failed to convert JPG to PDF.";
+
+    sendErrorResponse(res, 500, errorMessage);
+  } finally {
+    safeUnlink(file.path);
   }
 };

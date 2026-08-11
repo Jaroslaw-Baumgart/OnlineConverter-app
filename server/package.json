@@ -2,7 +2,10 @@
   "name": "server",
   "version": "1.0.0",
   "scripts": {
-    "dev": "ts-node-dev --respawn --transpile-only src/server.ts"
+  "dev": "ts-node-dev --respawn --transpile-only src/server.ts",
+  "typecheck": "tsc --noEmit",
+  "test": "vitest",
+  "test:run": "vitest run"
   },
   "dependencies": {
     "cors": "^2.8.5",
@@ -22,6 +25,7 @@
     "@types/pdf-parse": "^1.1.5",
     "@types/pdfkit": "^0.17.2",
     "ts-node-dev": "^2.0.0",
-    "typescript": "^5.2.2"
+    "typescript": "^5.2.2",
+    "vitest": "^4.1.10"
   }
 }

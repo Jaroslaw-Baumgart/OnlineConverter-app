@@ -1,6 +1,7 @@
 import { Request, Response, NextFunction } from "express";
 import fs from "fs/promises";
 import { validateFileSecure } from "../utils/sourceValidation";
+import { sendErrorResponse } from "../utils/response";
 
 const ALLOWED_EXT = [".pdf", ".txt", ".jpg", ".png", ".docx"];
 const ALLOWED_MIME = [
@@ -11,22 +12,32 @@ const ALLOWED_MIME = [
   "application/vnd.openxmlformats-officedocument.wordprocessingml.document", // DOCX
 ];
 
-export async function fileValidation(req: Request, res: Response, next: NextFunction) {
+export async function fileValidation(
+  req: Request,
+  res: Response,
+  next: NextFunction,
+) {
   if (!req.file) {
-    return res.status(400).json({ error: "No file uploaded." });
+    return sendErrorResponse(res, 400, "No file uploaded.");
   }
+
+  const file = req.file;
 
   try {
     await validateFileSecure(
-      req.file.path,
-      req.file.originalname,
+      file.path,
+      file.originalname,
       ALLOWED_EXT,
       ALLOWED_MIME,
-      10
+      10,
     );
     next();
-  } catch (err: any) {
-    await fs.unlink(req.file.path).catch(() => {});
-    return res.status(400).json({ error: err.message });
+  } catch (err: unknown) {
+    await fs.unlink(file.path).catch(() => {});
+
+    const errorMessage =
+      err instanceof Error ? err.message : "File validation failed.";
+
+    return sendErrorResponse(res, 400, errorMessage);
   }
 }

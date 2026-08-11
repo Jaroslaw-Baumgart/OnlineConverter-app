@@ -1,37 +1,65 @@
-import { Response } from "express";
-
 interface FileItem {
   url: string;
   name: string;
 }
 
-export const sendResponse = (
-  res: Response,
-  success: boolean,
-  title: string,
-  fileType: string,
-  fileName?: string,
-  files?: FileItem[],
-  error?: string
+type ConversionSuccessResponse = {
+  success: true;
+  files: [FileItem, ...FileItem[]];
+};
+
+type ConversionErrorResponse = {
+  success: false;
+  error: string;
+};
+
+type SendResponseOptions =
+  | {
+      status: 200;
+      body: ConversionSuccessResponse;
+    }
+  | {
+      status: 400 | 500;
+      body: ConversionErrorResponse;
+    };
+
+interface ResponseWriter {
+  status(statusCode: number): ResponseWriter;
+  json(body: ConversionSuccessResponse | ConversionErrorResponse): unknown;
+}
+
+const sendResponse = (res: ResponseWriter, options: SendResponseOptions) => {
+  return res.status(options.status).json(options.body);
+};
+
+export const sendSuccessResponse = (
+  res: ResponseWriter,
+  files: [FileItem, ...FileItem[]],
 ) => {
-  if (!success) {
-    return res.status(500).json({
-      success,
-      error: error || "Conversion failed."
-    });
-  }
-
-
-  const fileArray: FileItem[] = files
-    ? files
-    : fileName
-    ? [{ url: `/output/${fileName}`, name: fileName }]
-    : [];
-
-  return res.json({
-    success,
-    title,
-    fileType,
-    files: fileArray
+  return sendResponse(res, {
+    status: 200,
+    body: {
+      success: true,
+      files,
+    },
   });
 };
+
+export const sendErrorResponse = (
+  res: ResponseWriter,
+  status: 400 | 500,
+  error: string,
+) => {
+  return sendResponse(res, {
+    status,
+    body: {
+      success: false,
+      error,
+    },
+  });
+};
+
+export const createOutputFileItem = (name: string): FileItem => ({
+  url: `/output/${name}`,
+  name,
+});

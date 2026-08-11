@@ -3,13 +3,15 @@ import { jpgToPng, pngToJpg, jpgToPdf } from "../controllers/imageController";
 import { docxToPdf } from "../controllers/docController";
 import { pdfToTxt, pdfToJpg, txtToPdf } from "../controllers/pdfController";
 import path from "path";
+import { sendErrorResponse } from "../utils/response";
 
 export async function routeDispatcher(req: Request, res: Response) {
   if (!req.file) {
-    return res.status(400).json({ error: "No file uploaded." });
+    return sendErrorResponse(res, 400, "No file uploaded.");
   }
 
-  const ext = path.extname(req.file.originalname).toLowerCase();
+  const file = req.file;
+  const ext = path.extname(file.originalname).toLowerCase();
   const target = (req.body.target || "").toLowerCase();
 
   switch (ext) {
@@ -29,7 +31,7 @@ export async function routeDispatcher(req: Request, res: Response) {
       } else if (target === "txt") {
         return pdfToTxt(req, res);
       } else {
-        return res.status(400).json({ error: "Please specify target: jpg or txt" });
+        return sendErrorResponse(res, 400, "Please specify target: jpg or txt");
       }
 
     case ".docx":
@@ -39,6 +41,6 @@ export async function routeDispatcher(req: Request, res: Response) {
       return txtToPdf(req, res);
 
     default:
-      return res.status(400).json({ error: "Unsupported file type." });
+      return sendErrorResponse(res, 400, "Unsupported file type.");
   }
 }

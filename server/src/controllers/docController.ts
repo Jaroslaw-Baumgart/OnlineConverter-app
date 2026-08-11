@@ -5,47 +5,58 @@ import { exec } from "child_process";
 import { OUTPUT_DIR } from "../utils/constants";
 import { safeUnlink } from "../utils/file";
 import fsSync from "fs";
-import { sendResponse } from "../utils/response";
-
-
+import {
+  createOutputFileItem,
+  sendErrorResponse,
+  sendSuccessResponse,
+} from "../utils/response";
 
 const getBaseFileName = (file: Express.Multer.File) => {
   return path.parse(file.filename).name;
 };
 
-
-// DOCX --> PDF
 export const docxToPdf = async (req: Request, res: Response) => {
-  if (!req.file || path.extname(req.file.originalname).toLowerCase() !== ".docx") {
-    return sendResponse(res, false, "", "", undefined, "No DOCX file uploaded.");
+  if (
+    !req.file ||
+    path.extname(req.file.originalname).toLowerCase() !== ".docx"
+  ) {
+    return sendErrorResponse(res, 400, "No DOCX file uploaded.");
   }
 
   const outputName = `${getBaseFileName(req.file)}.pdf`;
   const outputPath = path.join(OUTPUT_DIR, outputName);
+  const file = req.file;
 
+  // DOCX --> PDF
   try {
     await new Promise((resolve, reject) => {
       exec(
-        `soffice --headless --convert-to pdf --outdir "${OUTPUT_DIR}" "${req.file.path}"`,
+        `soffice --headless --convert-to pdf --outdir "${OUTPUT_DIR}" "${file.path}"`,
         (err) => {
           if (err) reject(err);
           else resolve(null);
-        }
+        },
       );
     });
 
-    safeUnlink(req.file.path);
-
     const originalOutputPath = path.join(
       OUTPUT_DIR,
-      `${path.parse(req.file.originalname).name}.pdf`
+      `${path.parse(file.originalname).name}.pdf`,
     );
-    if (originalOutputPath !== outputPath && fsSync.existsSync(originalOutputPath)) {
+    if (
+      originalOutputPath !== outputPath &&
+      fsSync.existsSync(originalOutputPath)
+    ) {
       await fs.rename(originalOutputPath, outputPath);
     }
 
-    sendResponse(res, true, "Conversion: DOCX → PDF", "pdf", outputName);
-  } catch (err: any) {
-    sendResponse(res, false, "", "", undefined, err.message);
+    sendSuccessResponse(res, [createOutputFileItem(outputName)]);
+  } catch (err: unknown) {
+    const errorMessage =
+      err instanceof Error ? err.message : "Failed to convert DOCX to PDF.";
+
+    sendErrorResponse(res, 500, errorMessage);
+  } finally {
+    safeUnlink(file.path);
   }
 };
