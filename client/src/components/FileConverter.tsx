@@ -12,6 +12,8 @@ import { useObjectUrl } from "../hooks/useObjectUrl";
 import { downloadFile } from "../utils/downloadFile";
 import { parseConversionResponse } from "../api/conversionResponse";
 
+type ConversionStatus = "idle" | "loading" | "success" | "error";
+
 function getAvailableOptions(
   file: File | null,
   conversionOptions: readonly ConversionDefinition[],
@@ -41,6 +43,7 @@ export default function FileConverter({
   );
   const [convertedFile, setConvertedFile] = useState<string | null>(null);
   const [file, setFile] = useState<File | null>(null);
+  const [status, setStatus] = useState<ConversionStatus>("idle");
 
   const previewUrl = useObjectUrl(file);
   const availableOptions = getAvailableOptions(file, conversionOptions);
@@ -70,6 +73,7 @@ export default function FileConverter({
     setConvertedFile(null);
     setConvertedPreviewFile(null);
     setError(null);
+    setStatus("idle");
   };
 
   const handleFileSelect = (selectedFile: File) => {
@@ -86,6 +90,12 @@ export default function FileConverter({
       setError("Please upload a file first.");
       return;
     }
+
+    if (status === "loading") {
+      return;
+    }
+
+    setStatus("loading");
 
     const formData = new FormData();
     formData.append("file", file);
@@ -107,6 +117,7 @@ export default function FileConverter({
 
       if (conversionResponse.success === false) {
         setError(conversionResponse.error);
+        setStatus("error");
         return;
       }
 
@@ -129,9 +140,11 @@ export default function FileConverter({
       setConvertedPreviewFile(downloadedFile);
 
       setError(null);
+      setStatus("success");
     } catch (err) {
       console.error(err);
       setError("Error converting file");
+      setStatus("error");
     }
   };
 
@@ -157,7 +170,11 @@ export default function FileConverter({
         </div>
       )}
 
-      <ConversionOptions options={availableOptions} onConvert={handleConvert} />
+      <ConversionOptions
+        options={availableOptions}
+        onConvert={handleConvert}
+        isConverting={status === "loading"}
+      />
 
       {convertedPreviewFile && convertedFile && (
         <DownloadSection

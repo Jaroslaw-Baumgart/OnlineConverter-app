@@ -1,7 +1,9 @@
 import { render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, describe, expect, it, vi } from "vitest";
+import { http, HttpResponse } from "msw";
 
+import { server } from "../test/server";
 import { conversions as conversionOptions } from "../config/conversions";
 import FileConverter from "./FileConverter";
 
@@ -234,14 +236,15 @@ describe("FileConverter", () => {
   });
 
   it("shows the conversion error returned by the backend", async () => {
-    vi.stubGlobal(
-      "fetch",
-      vi.fn().mockResolvedValue({
-        ok: false,
-        json: async () => ({
-          success: false,
-          error: "Unsupported conversion",
-        }),
+    server.use(
+      http.post("http://localhost:5000/convert", () => {
+        return HttpResponse.json(
+          {
+            success: false,
+            error: "Unsupported conversion",
+          },
+          { status: 400 },
+        );
       }),
     );
 
@@ -252,6 +255,41 @@ describe("FileConverter", () => {
 
     expect(
       await screen.findByText("Unsupported conversion"),
+    ).toBeInTheDocument();
+  });
+
+  it("show a loading state while conversion is in progress", async () => {
+    let finishRequest: (() => void) | undefined;
+
+    const requestGate = new Promise<void>((resolve) => {
+      finishRequest = resolve;
+    });
+
+    server.use(
+      http.post("http://localhost:5000/convert", async () => {
+        await requestGate;
+
+        return HttpResponse.json(
+          {
+            success: false,
+            error: "Test conversion stopped",
+          },
+          { status: 500 },
+        );
+      }),
+    );
+
+    const { user, input } = setupFileConverter();
+
+    await user.upload(input, createTestFile.jpg());
+    await user.click(getConvertButton("JPG→PNG"));
+
+    expect(screen.getByRole("status")).toHaveTextContent("Converting");
+
+    finishRequest?.();
+
+    expect(
+      await screen.findByText("Test conversion stopped"),
     ).toBeInTheDocument();
   });
 });
