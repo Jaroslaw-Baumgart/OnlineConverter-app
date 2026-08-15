@@ -166,11 +166,9 @@ describe("FileConverter", () => {
     const initialFile = createTestFile.jpg();
     const newFile = createTestFile.pdf();
 
-    const fetchMock = vi
-      .fn()
-      .mockResolvedValueOnce({
-        ok: true,
-        json: async () => ({
+    server.use(
+      http.post("http://localhost:5000/convert", () => {
+        return HttpResponse.json({
           success: true,
           files: [
             {
@@ -178,17 +176,17 @@ describe("FileConverter", () => {
               name: "converted.png",
             },
           ],
-        }),
-      })
-      .mockResolvedValueOnce({
-        ok: true,
-        blob: async () =>
-          new Blob(["converted content"], {
-            type: "image/png",
-          }),
-      });
+        });
+      }),
 
-    vi.stubGlobal("fetch", fetchMock);
+      http.get("http://localhost:5000/output/converted.png", () => {
+        return new HttpResponse("converted content", {
+          headers: {
+            "Content-Type": "image/png",
+          },
+        });
+      }),
+    );
 
     const { user, input } = setupFileConverter();
 
@@ -201,6 +199,13 @@ describe("FileConverter", () => {
         name: "Download Converted File",
       }),
     ).toBeInTheDocument();
+
+    expect(
+      screen.getByRole("button", { name: "Download File" }),
+    ).toBeInTheDocument();
+
+    expect(screen.queryByRole("status")).not.toBeInTheDocument();
+    expect(getConvertButton("JPG→PNG")).toBeEnabled();
 
     await user.upload(input, newFile);
 
@@ -291,5 +296,79 @@ describe("FileConverter", () => {
     expect(
       await screen.findByText("Test conversion stopped"),
     ).toBeInTheDocument();
+  });
+
+  it("sends only one request when Convert is clicked repeatedly", async () => {
+    let requestCount = 0;
+    let finishRequest: (() => void) | undefined;
+
+    const requestGate = new Promise<void>((resolve) => {
+      finishRequest = resolve;
+    });
+
+    server.use(
+      http.post("http://localhost:5000/convert", async () => {
+        requestCount += 1;
+        await requestGate;
+
+        return HttpResponse.json(
+          {
+            success: false,
+            error: "Test conversion stopped",
+          },
+          { status: 500 },
+        );
+      }),
+    );
+
+    const { user, input } = setupFileConverter();
+
+    await user.upload(input, createTestFile.jpg());
+
+    const convertButton = getConvertButton("JPG→PNG");
+
+    await user.dblClick(convertButton);
+
+    expect(convertButton).toBeDisabled();
+    expect(screen.getByRole("status")).toHaveTextContent("Converting");
+    expect(requestCount).toBe(1);
+
+    finishRequest?.();
+
+    expect(
+      await screen.findByText("Test conversion stopped"),
+    ).toBeInTheDocument();
+  });
+
+  it("shows an error when the backend returns an invalid response", async () => {
+    server.use(
+      http.post("http://localhost:5000/convert", async () => {
+        return HttpResponse.json({
+          success: true,
+          files: [],
+        });
+      }),
+    );
+
+    vi.spyOn(console, "error").mockImplementation(() => {});
+
+    const { user, input } = setupFileConverter();
+
+    await user.upload(input, createTestFile.jpg());
+    await user.click(getConvertButton("JPG→PNG"));
+
+    expect(
+      await screen.findByText("Error converting file"),
+    ).toBeInTheDocument();
+
+    expect(screen.queryByRole("status")).not.toBeInTheDocument();
+
+    expect(getConvertButton("JPG→PNG")).toBeEnabled();
+
+    expect(
+      screen.queryByRole("heading", {
+        name: "Download Converted File",
+      }),
+    ).not.toBeInTheDocument();
   });
 });

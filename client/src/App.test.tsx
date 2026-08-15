@@ -1,7 +1,9 @@
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, describe, expect, it, vi } from "vitest";
+import { http, HttpResponse } from "msw";
 
+import { server } from "./test/server";
 import App from "./App";
 
 const getEnabledConvertButton = (): HTMLElement => {
@@ -62,9 +64,10 @@ describe("App", () => {
   it("clears a conversion error after removing the selected file", async () => {
     const user = userEvent.setup();
 
-    vi.stubGlobal(
-      "fetch",
-      vi.fn().mockRejectedValue(new Error("Network error")),
+    server.use(
+      http.post("http://localhost:5000/convert", () => {
+        return HttpResponse.error();
+      }),
     );
 
     vi.spyOn(console, "error").mockImplementation(() => {});
@@ -94,11 +97,9 @@ describe("App", () => {
   it("clears the conversion result after removing the selected file", async () => {
     const user = userEvent.setup();
 
-    const fetchMock = vi
-      .fn()
-      .mockResolvedValueOnce({
-        ok: true,
-        json: async () => ({
+    server.use(
+      http.post("http://localhost:5000/convert", () => {
+        return HttpResponse.json({
           success: true,
           files: [
             {
@@ -106,17 +107,17 @@ describe("App", () => {
               name: "Converted.png",
             },
           ],
-        }),
-      })
-      .mockResolvedValueOnce({
-        ok: true,
-        blob: async () =>
-          new Blob(["converted content"], {
-            type: "image/png",
-          }),
-      });
+        });
+      }),
 
-    vi.stubGlobal("fetch", fetchMock);
+      http.get("http://localhost:5000/output/Converted.png", () => {
+        return new HttpResponse("converted content", {
+          headers: {
+            "Content-Type": "image/png",
+          },
+        });
+      }),
+    );
 
     render(<App />);
 
