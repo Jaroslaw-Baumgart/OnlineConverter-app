@@ -29,6 +29,7 @@ describe("parseConversionResponse", () => {
     const response = {
       success: false,
       error: "Conversion failed",
+      code: "conversion-failed",
     };
 
     const result = parseConversionResponse(response);
@@ -81,5 +82,17 @@ describe("parseConversionResponse", () => {
     const result = parseConversionResponse(response);
 
     expect(result).toBeNull();
+  });
+
+  it("accepts a tool-unavailable error response", () => {
+    const response = {
+      success: false,
+      error: "soffice is unavailable",
+      code: "tool-unavailable",
+    };
+
+    const result = parseConversionResponse(response);
+
+    expect(result).toEqual(response);
   });
 });

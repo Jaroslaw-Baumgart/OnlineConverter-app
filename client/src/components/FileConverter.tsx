@@ -11,6 +11,7 @@ import { createPreviewData } from "../utils/previewMapper";
 import { useObjectUrl } from "../hooks/useObjectUrl";
 import { downloadFile } from "../utils/downloadFile";
 import { parseConversionResponse } from "../api/conversionResponse";
+import { ConversionError } from "../api/conversionError";
 
 type ConversionStatus = "idle" | "loading" | "success" | "error";
 
@@ -103,47 +104,77 @@ export default function FileConverter({
     formData.append("target", option.targetFormat);
 
     try {
-      const res = await fetch("http://localhost:5000/convert", {
-        method: "POST",
-        body: formData,
-      });
+      let res: Response;
 
-      const data: unknown = await res.json();
+      try {
+        res = await fetch("http://localhost:5000/convert", {
+          method: "POST",
+          body: formData,
+        });
+      } catch (cause: unknown) {
+        throw new ConversionError("network", cause);
+      }
+
+      let data: unknown;
+
+      try {
+        data = await res.json();
+      } catch (cause: unknown) {
+        throw new ConversionError("invalid-response", cause);
+      }
+
       const conversionResponse = parseConversionResponse(data);
 
       if (!conversionResponse) {
-        throw new Error("Backend returned an invalid response");
+        throw new ConversionError("invalid-response", data);
       }
 
       if (conversionResponse.success === false) {
-        setError(conversionResponse.error);
-        setStatus("error");
-        return;
+        throw new ConversionError(
+          conversionResponse.code,
+          conversionResponse.error,
+        );
       }
 
       if (!res.ok) {
-        throw new Error("Conversion failed");
+        throw new ConversionError("conversion-failed", {
+          status: res.status,
+          response: conversionResponse,
+        });
       }
 
       const [convertedFileInfo] = conversionResponse.files;
       const convertedFileUrl = toAbsoluteUrl(convertedFileInfo.url);
 
-      setConvertedFile(convertedFileUrl);
+      try {
+        const fileRes = await fetch(convertedFileUrl);
 
-      const fileRes = await fetch(convertedFileUrl);
-      if (!fileRes.ok) throw new Error("Failed to fetch converted file");
+        if (!fileRes.ok) {
+          throw new Error(`Download failed with status ${fileRes.status}`);
+        }
 
-      const blob = await fileRes.blob();
-      const downloadedFile = new File([blob], convertedFileInfo.name, {
-        type: blob.type,
-      });
-      setConvertedPreviewFile(downloadedFile);
+        const blob = await fileRes.blob();
+        const downloadedFile = new File([blob], convertedFileInfo.name, {
+          type: blob.type,
+        });
+
+        setConvertedFile(convertedFileUrl);
+        setConvertedPreviewFile(downloadedFile);
+      } catch (cause: unknown) {
+        throw new ConversionError("download-failed", cause);
+      }
 
       setError(null);
       setStatus("success");
-    } catch (err) {
+    } catch (err: unknown) {
       console.error(err);
-      setError("Error converting file");
+
+      if (err instanceof ConversionError) {
+        setError(err.message);
+      } else {
+        setError("The file could not be converted. Please try again.");
+      }
+
       setStatus("error");
     }
   };

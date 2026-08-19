@@ -8,9 +8,14 @@ type ConversionSuccessResponse = {
   files: [FileItem, ...FileItem[]];
 };
 
+export type BackendConversionErrorCode =
+  | "conversion-failed"
+  | "tool-unavailable";
+
 type ConversionErrorResponse = {
   success: false;
   error: string;
+  code: BackendConversionErrorCode;
 };
 
 type SendResponseOptions =
@@ -49,12 +54,14 @@ export const sendErrorResponse = (
   res: ResponseWriter,
   status: 400 | 500,
   error: string,
+  code: BackendConversionErrorCode = "conversion-failed",
 ) => {
   return sendResponse(res, {
     status,
     body: {
       success: false,
       error,
+      code,
     },
   });
 };

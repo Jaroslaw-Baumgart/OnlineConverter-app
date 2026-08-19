@@ -240,13 +240,14 @@ describe("FileConverter", () => {
     ).toBeInTheDocument();
   });
 
-  it("shows the conversion error returned by the backend", async () => {
+  it("shows a safe conversion error when the backend rejects the conversion", async () => {
     server.use(
       http.post("http://localhost:5000/convert", () => {
         return HttpResponse.json(
           {
             success: false,
             error: "Unsupported conversion",
+            code: "conversion-failed",
           },
           { status: 400 },
         );
@@ -259,7 +260,9 @@ describe("FileConverter", () => {
     await user.click(getConvertButton("JPG→PNG"));
 
     expect(
-      await screen.findByText("Unsupported conversion"),
+      await screen.findByText(
+        "The file could not be converted. Please try again.",
+      ),
     ).toBeInTheDocument();
   });
 
@@ -278,6 +281,7 @@ describe("FileConverter", () => {
           {
             success: false,
             error: "Test conversion stopped",
+            code: "conversion-failed",
           },
           { status: 500 },
         );
@@ -294,7 +298,9 @@ describe("FileConverter", () => {
     finishRequest?.();
 
     expect(
-      await screen.findByText("Test conversion stopped"),
+      await screen.findByText(
+        "The file could not be converted. Please try again.",
+      ),
     ).toBeInTheDocument();
   });
 
@@ -315,6 +321,7 @@ describe("FileConverter", () => {
           {
             success: false,
             error: "Test conversion stopped",
+            code: "conversion-failed",
           },
           { status: 500 },
         );
@@ -336,7 +343,9 @@ describe("FileConverter", () => {
     finishRequest?.();
 
     expect(
-      await screen.findByText("Test conversion stopped"),
+      await screen.findByText(
+        "The file could not be converted. Please try again.",
+      ),
     ).toBeInTheDocument();
   });
 
@@ -358,7 +367,9 @@ describe("FileConverter", () => {
     await user.click(getConvertButton("JPG→PNG"));
 
     expect(
-      await screen.findByText("Error converting file"),
+      await screen.findByText(
+        "The server returned an unexpected response. Please try again.",
+      ),
     ).toBeInTheDocument();
 
     expect(screen.queryByRole("status")).not.toBeInTheDocument();
@@ -369,6 +380,171 @@ describe("FileConverter", () => {
       screen.queryByRole("heading", {
         name: "Download Converted File",
       }),
+    ).not.toBeInTheDocument();
+  });
+
+  it("shows a download error when the converted file cannot be fetched", async () => {
+    server.use(
+      http.post("http://localhost:5000/convert", () => {
+        return HttpResponse.json({
+          success: true,
+          files: [
+            {
+              url: "/output/converted.png",
+              name: "converted.png",
+            },
+          ],
+        });
+      }),
+
+      http.get("http://localhost:5000/output/converted.png", () => {
+        return new HttpResponse(null, { status: 500 });
+      }),
+    );
+
+    vi.spyOn(console, "error").mockImplementation(() => {});
+
+    const { user, input } = setupFileConverter();
+
+    await user.upload(input, createTestFile.jpg());
+    await user.click(getConvertButton("JPG→PNG"));
+
+    expect(
+      await screen.findByText(
+        "The converted file could not be downloaded. Please try again.",
+      ),
+    ).toBeInTheDocument();
+
+    expect(
+      screen.queryByRole("heading", {
+        name: "Download Converted File",
+      }),
+    ).not.toBeInTheDocument();
+  });
+
+  it("shows an invalid response error when the backend returns malformed JSON", async () => {
+    server.use(
+      http.post("http://localhost:5000/convert", () => {
+        return new HttpResponse("not valid JSON", {
+          status: 200,
+          headers: {
+            "Content-Type": "application/json",
+          },
+        });
+      }),
+    );
+
+    vi.spyOn(console, "error").mockImplementation(() => {});
+
+    const { user, input } = setupFileConverter();
+
+    await user.upload(input, createTestFile.jpg());
+    await user.click(getConvertButton("JPG→PNG"));
+
+    expect(
+      await screen.findByText(
+        "The server returned an unexpected response. Please try again.",
+      ),
+    ).toBeInTheDocument();
+  });
+
+  it("successfully retries a conversion without selecting the file again", async () => {
+    let requestCount = 0;
+
+    server.use(
+      http.post("http://localhost:5000/convert", () => {
+        requestCount += 1;
+
+        if (requestCount === 1) {
+          return HttpResponse.json(
+            {
+              success: false,
+              error: "Temporary backend failure",
+              code: "conversion-failed",
+            },
+            { status: 500 },
+          );
+        }
+
+        return HttpResponse.json({
+          success: true,
+          files: [
+            {
+              url: "/output/converted.png",
+              name: "converted.png",
+            },
+          ],
+        });
+      }),
+
+      http.get("http://localhost:5000/output/converted.png", () => {
+        return new HttpResponse("converted content", {
+          headers: {
+            "Content-Type": "image/png",
+          },
+        });
+      }),
+    );
+
+    vi.spyOn(console, "error").mockImplementation(() => {});
+
+    const { user, input } = setupFileConverter();
+
+    await user.upload(input, createTestFile.jpg());
+    await user.click(getConvertButton("JPG→PNG"));
+
+    expect(
+      await screen.findByText(
+        "The file could not be converted. Please try again.",
+      ),
+    ).toBeInTheDocument();
+
+    expect(screen.getByText("image.jpg")).toBeInTheDocument();
+
+    await user.click(getConvertButton("JPG→PNG"));
+
+    expect(
+      await screen.findByRole("heading", {
+        name: "Download Converted File",
+      }),
+    ).toBeInTheDocument();
+
+    expect(
+      screen.queryByText("The file could not be converted. Please try again."),
+    ).not.toBeInTheDocument();
+
+    expect(requestCount).toBe(2);
+  });
+
+  it("shows a tool unavailable message when required software is missing", async () => {
+    server.use(
+      http.post("http://localhost:5000/convert", () => {
+        return HttpResponse.json(
+          {
+            success: false,
+            error: "soffice is not recognized as a command",
+            code: "tool-unavailable",
+          },
+          { status: 500 },
+        );
+      }),
+    );
+
+    vi.spyOn(console, "error").mockImplementation(() => {});
+
+    const { user, input } = setupFileConverter();
+
+    await user.upload(input, createTestFile.docx());
+    await user.click(getConvertButton("DOCX→PDF"));
+
+    expect(
+      await screen.findByText(
+        "This conversion is currently unavailable. Please try again later.",
+      ),
+    ).toBeInTheDocument();
+
+    expect(
+      screen.queryByText("soffice is not recognized as a command"),
     ).not.toBeInTheDocument();
   });
 });

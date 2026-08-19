@@ -61,7 +61,7 @@ describe("App", () => {
     ).toBeInTheDocument();
   });
 
-  it("clears a conversion error after removing the selected file", async () => {
+  it("shows and clears a network error", async () => {
     const user = userEvent.setup();
 
     server.use(
@@ -86,12 +86,18 @@ describe("App", () => {
     await user.click(enabledConvertButton);
 
     expect(
-      await screen.findByText("Error converting file"),
+      await screen.findByText(
+        "Could not connect to the conversion service. Check your connection and try again.",
+      ),
     ).toBeInTheDocument();
 
     await user.click(screen.getByRole("button", { name: "Remove file" }));
 
-    expect(screen.queryByText("Error converting file")).not.toBeInTheDocument();
+    expect(
+      screen.queryByText(
+        "Could not connect to the conversion service. Check your connection and try again.",
+      ),
+    ).not.toBeInTheDocument();
   });
 
   it("clears the conversion result after removing the selected file", async () => {

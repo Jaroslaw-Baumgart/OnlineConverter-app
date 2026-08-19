@@ -10,6 +10,7 @@ import {
   sendErrorResponse,
   sendSuccessResponse,
 } from "../utils/response";
+import { getConversionFailureCode } from "../utils/conversionError";
 
 const getBaseFileName = (file: Express.Multer.File) => {
   return path.parse(file.filename).name;
@@ -55,7 +56,9 @@ export const docxToPdf = async (req: Request, res: Response) => {
     const errorMessage =
       err instanceof Error ? err.message : "Failed to convert DOCX to PDF.";
 
-    sendErrorResponse(res, 500, errorMessage);
+    const errorCode = getConversionFailureCode(err);
+
+    sendErrorResponse(res, 500, errorMessage, errorCode);
   } finally {
     safeUnlink(file.path);
   }

@@ -37,17 +37,22 @@ describe("sendResponse", () => {
   });
 
   it.each([
-    [400, "No file uploaded"],
-    [500, "Conversion failed"],
-  ] as const)("sends status %i with error: %s", (status, error) => {
-    const response = createResponseMock();
+    [400, "No file uploaded", "conversion-failed"],
+    [500, "Conversion failed", "conversion-failed"],
+    [500, "Required tool is unavailable", "tool-unavailable"],
+  ] as const)(
+    "sends status %i with error: %s and code: %s",
+    (status, error, code) => {
+      const response = createResponseMock();
 
-    sendErrorResponse(response, status, error);
+      sendErrorResponse(response, status, error, code);
 
-    expect(response.status).toHaveBeenCalledWith(status);
-    expect(response.json).toHaveBeenCalledWith({
-      success: false,
-      error,
-    });
-  });
+      expect(response.status).toHaveBeenCalledWith(status);
+      expect(response.json).toHaveBeenCalledWith({
+        success: false,
+        error,
+        code,
+      });
+    },
+  );
 });

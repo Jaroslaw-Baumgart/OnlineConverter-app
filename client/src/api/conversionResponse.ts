@@ -8,9 +8,14 @@ export type ConversionSuccessResponse = {
   files: [FileItem, ...FileItem[]];
 };
 
+export type BackendConversionErrorCode =
+  | "conversion-failed"
+  | "tool-unavailable";
+
 export type ConversionErrorResponse = {
   success: false;
   error: string;
+  code: BackendConversionErrorCode;
 };
 
 export type ConversionResponse =
@@ -28,6 +33,12 @@ function isFileItem(value: unknown): value is FileItem {
   );
 }
 
+function isBackendConversionErrorCode(
+  value: unknown,
+): value is BackendConversionErrorCode {
+  return value === "conversion-failed" || value === "tool-unavailable";
+}
+
 export function parseConversionResponse(
   data: unknown,
 ): ConversionResponse | null {
@@ -40,12 +51,18 @@ export function parseConversionResponse(
   }
 
   if (data.success === false) {
-    if (!("error" in data) || typeof data.error !== "string") {
+    if (
+      !("error" in data) ||
+      typeof data.error !== "string" ||
+      !("code" in data) ||
+      !isBackendConversionErrorCode(data.code)
+    ) {
       return null;
     }
     return {
       success: false,
       error: data.error,
+      code: data.code,
     };
   }
 
