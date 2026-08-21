@@ -3,6 +3,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { downloadFile } from "./downloadFile";
 
 afterEach(() => {
+  vi.useRealTimers();
   vi.restoreAllMocks();
   vi.unstubAllGlobals();
   document.body.innerHTML = "";
@@ -10,6 +11,8 @@ afterEach(() => {
 
 describe("downloadFile", () => {
   it("downloads a file and revokes its object URL", () => {
+    vi.useFakeTimers();
+
     const createObjectURL = vi.fn().mockReturnValue("blob:download-url");
     const revokeObjectURL = vi.fn();
 
@@ -30,8 +33,12 @@ describe("downloadFile", () => {
 
     expect(createObjectURL).toHaveBeenCalledWith(file);
     expect(click).toHaveBeenCalledOnce();
-    expect(revokeObjectURL).toHaveBeenCalledWith("blob:download-url");
+    expect(revokeObjectURL).not.toHaveBeenCalled();
     expect(document.querySelector("a")).not.toBeInTheDocument();
+
+    vi.runAllTimers();
+
+    expect(revokeObjectURL).toHaveBeenCalledWith("blob:download-url");
   });
 
   it("revokes the object URL when starting the download throws", () => {

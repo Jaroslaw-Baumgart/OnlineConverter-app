@@ -85,19 +85,15 @@ describe("App", () => {
 
     await user.click(enabledConvertButton);
 
-    expect(
-      await screen.findByText(
-        "Could not connect to the conversion service. Check your connection and try again.",
-      ),
-    ).toBeInTheDocument();
+    const errorAlert = await screen.findByRole("alert");
+
+    expect(errorAlert).toHaveTextContent(
+      "Could not connect to the conversion service. Check your connection and try again.",
+    );
 
     await user.click(screen.getByRole("button", { name: "Remove file" }));
 
-    expect(
-      screen.queryByText(
-        "Could not connect to the conversion service. Check your connection and try again.",
-      ),
-    ).not.toBeInTheDocument();
+    expect(screen.queryByRole("alert")).not.toBeInTheDocument();
   });
 
   it("clears the conversion result after removing the selected file", async () => {

@@ -182,13 +182,21 @@ export default function FileConverter({
   const handleDownloadBlob = () => {
     if (!convertedPreviewFile) return;
 
-    downloadFile(convertedPreviewFile);
+    try {
+      downloadFile(convertedPreviewFile);
+      setError(null);
+      setStatus("success");
+    } catch (cause: unknown) {
+      const downloadError = new ConversionError("download-failed", cause);
+
+      console.error(downloadError);
+      setError(downloadError.message);
+      setStatus("error");
+    }
   };
 
   return (
     <div className="converter-container">
-      {error && <div className="error-message">{error}</div>}
-
       <FileUpload
         file={file}
         onFileSelect={handleFileSelect}
@@ -206,6 +214,12 @@ export default function FileConverter({
         onConvert={handleConvert}
         isConverting={status === "loading"}
       />
+
+      {error && (
+        <div className="error-message" role="alert">
+          {error}
+        </div>
+      )}
 
       {convertedPreviewFile && convertedFile && (
         <DownloadSection

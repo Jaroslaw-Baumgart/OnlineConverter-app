@@ -547,4 +547,61 @@ describe("FileConverter", () => {
       screen.queryByText("soffice is not recognized as a command"),
     ).not.toBeInTheDocument();
   });
+
+  it("shows an error when downloading the converted file fails", async () => {
+    server.use(
+      http.post("http://localhost:5000/convert", () => {
+        return HttpResponse.json({
+          success: true,
+          files: [
+            {
+              url: "/output/converted.png",
+              name: "converted.png",
+            },
+          ],
+        });
+      }),
+
+      http.get("http://localhost:5000/output/converted.png", () => {
+        return new HttpResponse("converted content", {
+          headers: {
+            "Content-Type": "image/png",
+          },
+        });
+      }),
+    );
+
+    vi.spyOn(console, "error").mockImplementation(() => {});
+
+    const { user, input } = setupFileConverter();
+
+    await user.upload(input, createTestFile.jpg());
+    await user.click(getConvertButton("JPG→PNG"));
+
+    const downloadButton = await screen.findByRole("button", {
+      name: "Download File",
+    });
+
+    vi.spyOn(URL, "createObjectURL").mockImplementationOnce(() => {
+      throw new Error("Browser download failed");
+    });
+
+    await user.click(downloadButton);
+
+    expect(
+      await screen.findByText(
+        "The converted file could not be downloaded. Please try again.",
+      ),
+    ).toBeInTheDocument();
+
+    expect(downloadButton).toBeInTheDocument();
+
+    await user.click(downloadButton);
+
+    expect(
+      screen.queryByText(
+        "The converted file could not be downloaded. Please try again.",
+      ),
+    ).not.toBeInTheDocument();
+  });
 });
