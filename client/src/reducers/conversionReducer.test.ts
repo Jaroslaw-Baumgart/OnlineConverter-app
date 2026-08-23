@@ -1,0 +1,223 @@
+import { describe, expect, it } from "vitest";
+
+import {
+  conversionReducer,
+  initialConversionState,
+  type ConversionAction,
+  type ConversionState,
+} from "./conversionReducer";
+
+const createTestFile = {
+  pdf: (name = "document.pdf") =>
+    new File(["source"], name, {
+      type: "application/pdf",
+    }),
+
+  jpg: (name = "converted.jpg") =>
+    new File(["result"], name, {
+      type: "image/jpeg",
+    }),
+};
+
+const sourceFile = createTestFile.pdf();
+const convertedFile = createTestFile.jpg();
+
+const convertedFileUrl = "http://localhost:5000/output/converted.jpg";
+const conversionErrorMessage = "The file could not be converted.";
+const downloadErrorMessage = "The converted file could not be downloaded.";
+
+const createTestState = {
+  ready: () => ({
+    kind: "ready" as const,
+    file: sourceFile,
+  }),
+  loading: () => ({
+    kind: "loading" as const,
+    file: sourceFile,
+  }),
+  success: () => ({
+    kind: "success" as const,
+    file: sourceFile,
+    convertedFileUrl,
+    convertedFile,
+  }),
+  conversionError: () => ({
+    kind: "conversionError" as const,
+    file: sourceFile,
+    error: conversionErrorMessage,
+  }),
+  downloadError: () => ({
+    kind: "downloadError" as const,
+    file: sourceFile,
+    convertedFileUrl,
+    convertedFile,
+    error: downloadErrorMessage,
+  }),
+};
+
+const invalidTransitions = [
+  {
+    name: "conversion success from ready",
+    state: createTestState.ready(),
+    action: {
+      type: "conversionSucceeded",
+      convertedFileUrl,
+      convertedFile,
+    },
+  },
+  {
+    name: "conversion failure from ready",
+    state: createTestState.ready(),
+    action: {
+      type: "conversionFailed",
+      error: conversionErrorMessage,
+    },
+  },
+  {
+    name: "download failure from ready",
+    state: createTestState.ready(),
+    action: {
+      type: "downloadFailed",
+      error: downloadErrorMessage,
+    },
+  },
+  {
+    name: "download success from ready",
+    state: createTestState.success(),
+    action: {
+      type: "downloadSucceeded",
+    },
+  },
+] satisfies readonly {
+  name: string;
+  state: ConversionState;
+  action: ConversionAction;
+}[];
+
+describe("conversionReducer", () => {
+  it("moves from empty to ready after selecting a file", () => {
+    const nextState = conversionReducer(initialConversionState, {
+      type: "fileSelected",
+      file: sourceFile,
+    });
+
+    expect(nextState).toEqual(createTestState.ready());
+  });
+
+  it("moves from ready to empty after removing the file", () => {
+    const nextState = conversionReducer(createTestState.ready(), {
+      type: "fileRemoved",
+    });
+
+    expect(nextState).toEqual(initialConversionState);
+  });
+
+  it("moves from ready to loading after starting conversion", () => {
+    const nextState = conversionReducer(createTestState.ready(), {
+      type: "conversionStarted",
+    });
+
+    expect(nextState).toEqual(createTestState.loading());
+  });
+
+  it("ignores conversion start when no file is selected", () => {
+    const nextState = conversionReducer(initialConversionState, {
+      type: "conversionStarted",
+    });
+
+    expect(nextState).toBe(initialConversionState);
+  });
+
+  it("moves from loading to success with the converted file", () => {
+    const nextState = conversionReducer(createTestState.loading(), {
+      type: "conversionSucceeded",
+      convertedFileUrl,
+      convertedFile,
+    });
+
+    expect(nextState).toEqual(createTestState.success());
+  });
+
+  it("moves from loading to conversion error when conversion fails", () => {
+    const nextState = conversionReducer(createTestState.loading(), {
+      type: "conversionFailed",
+      error: conversionErrorMessage,
+    });
+
+    expect(nextState).toEqual(createTestState.conversionError());
+  });
+
+  it("retries conversion from the conversion error state", () => {
+    const nextState = conversionReducer(createTestState.conversionError(), {
+      type: "conversionStarted",
+    });
+
+    expect(nextState).toEqual(createTestState.loading());
+  });
+
+  it("starts another conversion from the success state", () => {
+    const nextState = conversionReducer(createTestState.success(), {
+      type: "conversionStarted",
+    });
+
+    expect(nextState).toEqual(createTestState.loading());
+  });
+
+  it("keeps the converted result when downloading it fails", () => {
+    const nextState = conversionReducer(createTestState.success(), {
+      type: "downloadFailed",
+      error: downloadErrorMessage,
+    });
+
+    expect(nextState).toEqual(createTestState.downloadError());
+  });
+
+  it("clears the download error after a successful retry", () => {
+    const nextState = conversionReducer(createTestState.downloadError(), {
+      type: "downloadSucceeded",
+    });
+
+    expect(nextState).toEqual(createTestState.success());
+  });
+
+  it("starts another conversion from the download error state", () => {
+    const nextState = conversionReducer(createTestState.downloadError(), {
+      type: "conversionStarted",
+    });
+
+    expect(nextState).toEqual(createTestState.loading());
+  });
+
+  it("clears the previous result after selecting a new file", () => {
+    const newFile = createTestFile.pdf("new-document.pdf");
+
+    const nextState = conversionReducer(createTestState.success(), {
+      type: "fileSelected",
+      file: newFile,
+    });
+
+    expect(nextState).toEqual({
+      kind: "ready",
+      file: newFile,
+    });
+  });
+
+  it.each(["success", "conversionError", "downloadError"] as const)(
+    "moves from %s to empty after removing the file",
+    (kind) => {
+      const currentState = createTestState[kind]();
+
+      const nextState = conversionReducer(currentState, {
+        type: "fileRemoved",
+      });
+
+      expect(nextState).toEqual(initialConversionState);
+    },
+  );
+
+  it.each(invalidTransitions)("ignores $name", ({ state, action }) => {
+    const nextState = conversionReducer(state, action);
+
+    expect(nextState).toBe(state);
+  });
+});
