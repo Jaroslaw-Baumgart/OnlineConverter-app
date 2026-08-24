@@ -1,4 +1,4 @@
-import { useState, useEffect, useReducer } from "react";
+import { useState, useEffect, useReducer, useRef } from "react";
 import "../styles/FileConverter.css";
 import type { ConversionOption, FileConverterProps } from "../types/converter";
 import { readFileAsText, toAbsoluteUrl } from "../utils/fileUtils";
@@ -44,6 +44,7 @@ export default function FileConverter({
     initialConversionState,
   );
 
+  const requestIdRef = useRef(0);
   const file = conversionState.kind === "empty" ? null : conversionState.file;
 
   const [isLoadingText, setIsLoadingText] = useState(false);
@@ -114,7 +115,9 @@ export default function FileConverter({
     }
 
     setPreviewError(null);
-    dispatch({ type: "conversionStarted" });
+    requestIdRef.current += 1;
+    const requestId = requestIdRef.current;
+    dispatch({ type: "conversionStarted", requestId });
 
     const formData = new FormData();
     formData.append("file", file);
@@ -183,6 +186,7 @@ export default function FileConverter({
         type: "conversionSucceeded",
         convertedFileUrl,
         convertedFile: downloadedFile,
+        requestId,
       });
     } catch (err: unknown) {
       console.error(err);
@@ -195,6 +199,7 @@ export default function FileConverter({
       dispatch({
         type: "conversionFailed",
         error: errorMessage,
+        requestId,
       });
     }
   };

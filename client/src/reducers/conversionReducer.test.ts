@@ -26,14 +26,18 @@ const convertedFileUrl = "http://localhost:5000/output/converted.jpg";
 const conversionErrorMessage = "The file could not be converted.";
 const downloadErrorMessage = "The converted file could not be downloaded.";
 
+const activeRequestId = 2;
+const staleRequestId = 1;
+
 const createTestState = {
   ready: () => ({
     kind: "ready" as const,
     file: sourceFile,
   }),
-  loading: () => ({
+  loading: (requestId = activeRequestId) => ({
     kind: "loading" as const,
     file: sourceFile,
+    requestId,
   }),
   success: () => ({
     kind: "success" as const,
@@ -63,6 +67,7 @@ const invalidTransitions = [
       type: "conversionSucceeded",
       convertedFileUrl,
       convertedFile,
+      requestId: activeRequestId,
     },
   },
   {
@@ -71,6 +76,7 @@ const invalidTransitions = [
     action: {
       type: "conversionFailed",
       error: conversionErrorMessage,
+      requestId: activeRequestId,
     },
   },
   {
@@ -115,6 +121,7 @@ describe("conversionReducer", () => {
   it("moves from ready to loading after starting conversion", () => {
     const nextState = conversionReducer(createTestState.ready(), {
       type: "conversionStarted",
+      requestId: activeRequestId,
     });
 
     expect(nextState).toEqual(createTestState.loading());
@@ -123,6 +130,7 @@ describe("conversionReducer", () => {
   it("ignores conversion start when no file is selected", () => {
     const nextState = conversionReducer(initialConversionState, {
       type: "conversionStarted",
+      requestId: activeRequestId,
     });
 
     expect(nextState).toBe(initialConversionState);
@@ -133,6 +141,7 @@ describe("conversionReducer", () => {
       type: "conversionSucceeded",
       convertedFileUrl,
       convertedFile,
+      requestId: activeRequestId,
     });
 
     expect(nextState).toEqual(createTestState.success());
@@ -142,6 +151,7 @@ describe("conversionReducer", () => {
     const nextState = conversionReducer(createTestState.loading(), {
       type: "conversionFailed",
       error: conversionErrorMessage,
+      requestId: activeRequestId,
     });
 
     expect(nextState).toEqual(createTestState.conversionError());
@@ -150,6 +160,7 @@ describe("conversionReducer", () => {
   it("retries conversion from the conversion error state", () => {
     const nextState = conversionReducer(createTestState.conversionError(), {
       type: "conversionStarted",
+      requestId: activeRequestId,
     });
 
     expect(nextState).toEqual(createTestState.loading());
@@ -158,6 +169,7 @@ describe("conversionReducer", () => {
   it("starts another conversion from the success state", () => {
     const nextState = conversionReducer(createTestState.success(), {
       type: "conversionStarted",
+      requestId: activeRequestId,
     });
 
     expect(nextState).toEqual(createTestState.loading());
@@ -183,6 +195,7 @@ describe("conversionReducer", () => {
   it("starts another conversion from the download error state", () => {
     const nextState = conversionReducer(createTestState.downloadError(), {
       type: "conversionStarted",
+      requestId: activeRequestId,
     });
 
     expect(nextState).toEqual(createTestState.loading());
@@ -219,5 +232,34 @@ describe("conversionReducer", () => {
     const nextState = conversionReducer(state, action);
 
     expect(nextState).toBe(state);
+  });
+
+  it("ignores a stale success from an older conversion request", () => {
+    const activeState = createTestState.loading(activeRequestId);
+
+    const staleAction = {
+      type: "conversionSucceeded" as const,
+      requestId: staleRequestId,
+      convertedFileUrl,
+      convertedFile,
+    };
+
+    const nextState = conversionReducer(activeState, staleAction);
+
+    expect(nextState).toBe(activeState);
+  });
+
+  it("ignores a stale failure from an older conversion request", () => {
+    const activeState = createTestState.loading(activeRequestId);
+
+    const staleAction = {
+      type: "conversionFailed" as const,
+      requestId: staleRequestId,
+      error: conversionErrorMessage,
+    };
+
+    const nextState = conversionReducer(activeState, staleAction);
+
+    expect(nextState).toBe(activeState);
   });
 });

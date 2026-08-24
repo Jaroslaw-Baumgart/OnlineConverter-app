@@ -9,6 +9,7 @@ export type ConversionState =
   | {
       kind: "loading";
       file: File;
+      requestId: number;
     }
   | {
       kind: "success";
@@ -39,14 +40,17 @@ export type ConversionAction =
     }
   | {
       type: "conversionStarted";
+      requestId: number;
     }
   | {
       type: "conversionSucceeded";
+      requestId: number;
       convertedFileUrl: string;
       convertedFile: File;
     }
   | {
       type: "conversionFailed";
+      requestId: number;
       error: string;
     }
   | {
@@ -94,10 +98,11 @@ export function conversionReducer(
       return {
         kind: "loading",
         file: state.file,
+        requestId: action.requestId,
       };
 
     case "conversionSucceeded":
-      if (state.kind !== "loading") {
+      if (state.kind !== "loading" || state.requestId !== action.requestId) {
         return state;
       }
 
@@ -109,7 +114,7 @@ export function conversionReducer(
       };
 
     case "conversionFailed":
-      if (state.kind !== "loading") {
+      if (state.kind !== "loading" || state.requestId !== action.requestId) {
         return state;
       }
 
