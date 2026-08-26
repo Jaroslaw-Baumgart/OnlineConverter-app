@@ -98,4 +98,55 @@ describe("useObjectUrl", () => {
     expect(revokeObjectURL).toHaveBeenCalledWith("blob:strict-b");
     expect(revokeObjectURL).toHaveBeenCalledTimes(2);
   });
+
+  it("never pairs a new file with the previous file object URL", () => {
+    const createObjectURL = vi
+      .fn()
+      .mockReturnValueOnce("blob:url-a")
+      .mockReturnValueOnce("blob:url-b");
+
+    vi.stubGlobal("URL", {
+      createObjectURL,
+      revokeObjectURL: vi.fn(),
+    });
+
+    const fileA = new File(["a"], "document.docx", {
+      type: "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+    });
+
+    const fileB = new File(["b"], "document.pdf", {
+      type: "application/pdf",
+    });
+
+    const observedValues: Array<{
+      file: File | null;
+      objectUrl: string | null;
+    }> = [];
+
+    const { rerender } = renderHook(
+      ({ file }) => {
+        const objectUrl = useObjectUrl(file);
+
+        observedValues.push({
+          file,
+          objectUrl,
+        });
+
+        return objectUrl;
+      },
+      {
+        initialProps: {
+          file: fileA,
+        },
+      },
+    );
+
+    rerender({ file: fileB });
+
+    const pairedNewFileWithPreviousUrl = observedValues.some(
+      ({ file, objectUrl }) => file === fileB && objectUrl === "blob:url-a",
+    );
+
+    expect(pairedNewFileWithPreviousUrl).toBe(false);
+  });
 });

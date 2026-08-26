@@ -1,21 +1,27 @@
 import { useEffect, useState } from "react";
 
 export function useObjectUrl(file: File | null): string | null {
-  const [objectUrl, setObjectUrl] = useState<string | null>(null);
+  const [objectUrlState, setObjectUrlState] = useState<{
+    file: File;
+    url: string;
+  } | null>(null);
 
   useEffect(() => {
     if (!file) {
-      setObjectUrl(null);
+      setObjectUrlState(null);
       return;
     }
 
     const url = URL.createObjectURL(file);
-    setObjectUrl(url);
+    setObjectUrlState({
+      file,
+      url,
+    });
 
     return () => {
       URL.revokeObjectURL(url);
     };
   }, [file]);
 
-  return objectUrl;
+  return objectUrlState?.file === file ? objectUrlState.url : null;
 }
