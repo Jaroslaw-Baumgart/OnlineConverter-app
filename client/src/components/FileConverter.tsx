@@ -1,7 +1,7 @@
-import { useState, useEffect, useReducer, useRef } from "react";
+import { useState, useEffect } from "react";
 import "../styles/FileConverter.css";
 import type { ConversionOption, FileConverterProps } from "../types/converter";
-import { readFileAsText, toAbsoluteUrl } from "../utils/fileUtils";
+import { readFileAsText } from "../utils/fileUtils";
 import FileUpload from "./FileUpload";
 import ConversionOptions from "./ConversionOptions";
 import DownloadSection from "./DownloadSection";
@@ -9,13 +9,7 @@ import type { ConversionDefinition } from "../config/conversions";
 import FilePreview from "./FilePreview";
 import { createPreviewData } from "../utils/previewMapper";
 import { useObjectUrl } from "../hooks/useObjectUrl";
-import { downloadFile } from "../utils/downloadFile";
-import { parseConversionResponse } from "../api/conversionResponse";
-import { ConversionError } from "../api/conversionError";
-import {
-  conversionReducer,
-  initialConversionState,
-} from "../reducers/conversionReducer";
+import { useConversion } from "../hooks/useConversion";
 
 function getAvailableOptions(
   file: File | null,
@@ -39,32 +33,21 @@ function getAvailableOptions(
 export default function FileConverter({
   conversionOptions,
 }: FileConverterProps) {
-  const [conversionState, dispatch] = useReducer(
-    conversionReducer,
-    initialConversionState,
-  );
-
-  const requestIdRef = useRef(0);
-  const file = conversionState.kind === "empty" ? null : conversionState.file;
+  const {
+    file,
+    convertedResult,
+    conversionError,
+    isConverting,
+    selectFile,
+    removeFile,
+    convert,
+    downloadConvertedFile,
+  } = useConversion();
 
   const [isLoadingText, setIsLoadingText] = useState(false);
   const [previewError, setPreviewError] = useState<string | null>(null);
-  const convertedResult =
-    conversionState.kind === "success" ||
-    conversionState.kind === "downloadError"
-      ? {
-          url: conversionState.convertedFileUrl,
-          file: conversionState.convertedFile,
-        }
-      : null;
 
-  const workflowError =
-    conversionState.kind === "conversionError" ||
-    conversionState.kind === "downloadError"
-      ? conversionState.error
-      : null;
-
-  const error = workflowError ?? previewError;
+  const error = conversionError ?? previewError;
 
   const previewUrl = useObjectUrl(file);
   const availableOptions = getAvailableOptions(file, conversionOptions);
@@ -92,16 +75,12 @@ export default function FileConverter({
 
   const handleFileSelect = (selectedFile: File) => {
     setPreviewError(null);
-
-    dispatch({
-      type: "fileSelected",
-      file: selectedFile,
-    });
+    selectFile(selectedFile);
   };
 
   const handleFileRemove = () => {
     setPreviewError(null);
-    dispatch({ type: "fileRemoved" });
+    removeFile();
   };
 
   const handleConvert = async (option: ConversionOption) => {
@@ -110,116 +89,15 @@ export default function FileConverter({
       return;
     }
 
-    if (conversionState.kind === "loading") {
-      return;
-    }
-
     setPreviewError(null);
-    requestIdRef.current += 1;
-    const requestId = requestIdRef.current;
-    dispatch({ type: "conversionStarted", requestId });
-
-    const formData = new FormData();
-    formData.append("file", file);
-    formData.append("conversionType", option.conversionType);
-    formData.append("target", option.targetFormat);
-
-    try {
-      let res: Response;
-
-      try {
-        res = await fetch("http://localhost:5000/convert", {
-          method: "POST",
-          body: formData,
-        });
-      } catch (cause: unknown) {
-        throw new ConversionError("network", cause);
-      }
-
-      let data: unknown;
-
-      try {
-        data = await res.json();
-      } catch (cause: unknown) {
-        throw new ConversionError("invalid-response", cause);
-      }
-
-      const conversionResponse = parseConversionResponse(data);
-
-      if (!conversionResponse) {
-        throw new ConversionError("invalid-response", data);
-      }
-
-      if (conversionResponse.success === false) {
-        throw new ConversionError(
-          conversionResponse.code,
-          conversionResponse.error,
-        );
-      }
-
-      if (!res.ok) {
-        throw new ConversionError("conversion-failed", {
-          status: res.status,
-          response: conversionResponse,
-        });
-      }
-
-      const [convertedFileInfo] = conversionResponse.files;
-      const convertedFileUrl = toAbsoluteUrl(convertedFileInfo.url);
-      let downloadedFile: File;
-
-      try {
-        const fileRes = await fetch(convertedFileUrl);
-
-        if (!fileRes.ok) {
-          throw new Error(`Download failed with status ${fileRes.status}`);
-        }
-
-        const blob = await fileRes.blob();
-        downloadedFile = new File([blob], convertedFileInfo.name, {
-          type: blob.type,
-        });
-      } catch (cause: unknown) {
-        throw new ConversionError("download-failed", cause);
-      }
-      dispatch({
-        type: "conversionSucceeded",
-        convertedFileUrl,
-        convertedFile: downloadedFile,
-        requestId,
-      });
-    } catch (err: unknown) {
-      console.error(err);
-
-      const errorMessage =
-        err instanceof ConversionError
-          ? err.message
-          : "The file could not be converted. Please try again.";
-
-      dispatch({
-        type: "conversionFailed",
-        error: errorMessage,
-        requestId,
-      });
-    }
+    await convert(option);
   };
 
   const handleDownloadBlob = () => {
     if (!convertedResult) return;
 
-    try {
-      downloadFile(convertedResult.file);
-      setPreviewError(null);
-      dispatch({ type: "downloadSucceeded" });
-    } catch (cause: unknown) {
-      const downloadError = new ConversionError("download-failed", cause);
-
-      console.error(downloadError);
-      dispatch({
-        type: "downloadFailed",
-        error: downloadError.message,
-      });
-    }
+    setPreviewError(null);
+    downloadConvertedFile();
   };
 
   return (
@@ -239,7 +117,7 @@ export default function FileConverter({
       <ConversionOptions
         options={availableOptions}
         onConvert={handleConvert}
-        isConverting={conversionState.kind === "loading"}
+        isConverting={isConverting}
       />
 
       {error && (

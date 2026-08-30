@@ -1,23 +1,43 @@
-import { useReducer } from "react";
+import { useReducer, useRef } from "react";
 import {
   conversionReducer,
   initialConversionState,
 } from "../reducers/conversionReducer";
+import type { ConversionOption } from "../types/converter";
+import { parseConversionResponse } from "../api/conversionResponse";
+import { ConversionError } from "../api/conversionError";
+import { toAbsoluteUrl } from "../utils/fileUtils";
+import { downloadFile } from "../utils/downloadFile";
 
-export function useConversion() {
+type UseConversionResult = {
+  file: File | null;
+  convertedResult: {
+    url: string;
+    file: File;
+  } | null;
+  conversionError: string | null;
+  isConverting: boolean;
+  selectFile: (selectedFile: File) => void;
+  removeFile: () => void;
+  convert: (option: ConversionOption) => Promise<void>;
+  downloadConvertedFile: () => void;
+};
+
+export function useConversion(): UseConversionResult {
   const [conversionState, dispatch] = useReducer(
     conversionReducer,
     initialConversionState,
   );
 
-  const file =
-    conversionState.kind === "empty"
-      ? null
-      : conversionState.file;
+  const requestIdRef = useRef(0);
+
+  const file = conversionState.kind === "empty" ? null : conversionState.file;
+
+  const isConverting = conversionState.kind === "loading";
 
   const convertedResult =
-    conversionState.kind === "success" ||
-    conversionState.kind === "downloadError"
+    conversionState.kind === "downloadError" ||
+    conversionState.kind === "success"
       ? {
           url: conversionState.convertedFileUrl,
           file: conversionState.convertedFile,
@@ -25,13 +45,10 @@ export function useConversion() {
       : null;
 
   const conversionError =
-    conversionState.kind === "conversionError" ||
-    conversionState.kind === "downloadError"
+    conversionState.kind === "downloadError" ||
+    conversionState.kind === "conversionError"
       ? conversionState.error
       : null;
-
-  const isConverting =
-    conversionState.kind === "loading";
 
   const selectFile = (selectedFile: File) => {
     dispatch({
@@ -46,6 +63,122 @@ export function useConversion() {
     });
   };
 
+  const convert = async (option: ConversionOption) => {
+    if (!file) {
+      return;
+    }
+
+    if (conversionState.kind === "loading") {
+      return;
+    }
+
+    requestIdRef.current += 1;
+    const requestId = requestIdRef.current;
+
+    dispatch({ type: "conversionStarted", requestId });
+
+    const formData = new FormData();
+    formData.append("file", file);
+    formData.append("conversionType", option.conversionType);
+    formData.append("target", option.targetFormat);
+
+    try {
+      let res: Response;
+
+      try {
+        res = await fetch("http://localhost:5000/convert", {
+          method: "POST",
+          body: formData,
+        });
+      } catch (cause: unknown) {
+        throw new ConversionError("network", cause);
+      }
+
+      let data: unknown;
+
+      try {
+        data = await res.json();
+      } catch (cause: unknown) {
+        throw new ConversionError("invalid-response", cause);
+      }
+
+      const conversionResponse = parseConversionResponse(data);
+
+      if (!conversionResponse) {
+        throw new ConversionError("invalid-response", data);
+      }
+
+      if (conversionResponse.success === false) {
+        throw new ConversionError(
+          conversionResponse.code,
+          conversionResponse.error,
+        );
+      }
+
+      if (!res.ok) {
+        throw new ConversionError("conversion-failed", {
+          status: res.status,
+          response: conversionResponse,
+        });
+      }
+
+      const [convertedFileInfo] = conversionResponse.files;
+      const convertedFileUrl = toAbsoluteUrl(convertedFileInfo.url);
+      let downloadedFile: File;
+
+      try {
+        const fileRes = await fetch(convertedFileUrl);
+
+        if (!fileRes.ok) {
+          throw new Error(`Download failed with status ${fileRes.status}`);
+        }
+
+        const blob = await fileRes.blob();
+        downloadedFile = new File([blob], convertedFileInfo.name, {
+          type: blob.type,
+        });
+      } catch (cause: unknown) {
+        throw new ConversionError("download-failed", cause);
+      }
+      dispatch({
+        type: "conversionSucceeded",
+        convertedFileUrl,
+        convertedFile: downloadedFile,
+        requestId,
+      });
+    } catch (err: unknown) {
+      console.error(err);
+
+      const errorMessage =
+        err instanceof ConversionError
+          ? err.message
+          : "The file could not be converted. Please try again.";
+
+      dispatch({
+        type: "conversionFailed",
+        error: errorMessage,
+        requestId,
+      });
+    }
+  };
+
+  const downloadConvertedFile = () => {
+    if (!convertedResult) return;
+
+    try {
+      downloadFile(convertedResult.file);
+      dispatch({ type: "downloadSucceeded" });
+    } catch (cause: unknown) {
+      const downloadError = new ConversionError("download-failed", cause);
+
+      console.error(downloadError);
+      dispatch({
+        type: "downloadFailed",
+        error: downloadError.message,
+      });
+    }
+  };
+
   return {
     file,
     convertedResult,
@@ -53,5 +186,7 @@ export function useConversion() {
     isConverting,
     selectFile,
     removeFile,
+    convert,
+    downloadConvertedFile,
   };
 }
