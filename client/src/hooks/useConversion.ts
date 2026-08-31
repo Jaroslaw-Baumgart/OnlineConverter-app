@@ -6,8 +6,9 @@ import {
 import type { ConversionOption } from "../types/converter";
 import { parseConversionResponse } from "../api/conversionResponse";
 import { ConversionError } from "../api/conversionError";
-import { toAbsoluteUrl } from "../utils/fileUtils";
 import { downloadFile } from "../utils/downloadFile";
+import { buildApiUrl } from "../api/apiUrl";
+import { fetchConvertedFile, requestConversion } from "../api/conversionClient";
 
 type UseConversionResult = {
   file: File | null;
@@ -86,10 +87,7 @@ export function useConversion(): UseConversionResult {
       let res: Response;
 
       try {
-        res = await fetch("http://localhost:5000/convert", {
-          method: "POST",
-          body: formData,
-        });
+        res = await requestConversion(formData);
       } catch (cause: unknown) {
         throw new ConversionError("network", cause);
       }
@@ -123,11 +121,11 @@ export function useConversion(): UseConversionResult {
       }
 
       const [convertedFileInfo] = conversionResponse.files;
-      const convertedFileUrl = toAbsoluteUrl(convertedFileInfo.url);
+      const convertedFileUrl = buildApiUrl(convertedFileInfo.url);
       let downloadedFile: File;
 
       try {
-        const fileRes = await fetch(convertedFileUrl);
+        const fileRes = await fetchConvertedFile(convertedFileUrl);
 
         if (!fileRes.ok) {
           throw new Error(`Download failed with status ${fileRes.status}`);
