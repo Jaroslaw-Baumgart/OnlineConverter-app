@@ -2,7 +2,12 @@ import { z } from "zod";
 import type { ConversionType } from "../config/conversions";
 
 export const pngToJpgSettingsSchema = z.object({
-  quality: z.coerce.number().int().min(1).max(100).default(85),
+  quality: z.coerce
+    .number()
+    .int()
+    .min(1, "Quality must be between 1 and 100.")
+    .max(100, "Quality must be between 1 and 100.")
+    .default(85),
 
   backgroundColor: z
     .string()
