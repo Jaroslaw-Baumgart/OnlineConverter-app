@@ -1,0 +1,19 @@
+import { z } from "zod";
+
+export const pngToJpgSettingsSchema = z.object({
+  quality: z.coerce
+    .number()
+    .int()
+    .min(1)
+    .max(100)
+    .default(85),
+
+  backgroundColor: z
+    .string()
+    .regex(/^#[0-9a-f]{6}$/i)
+    .default("#ffffff"),
+});
+
+export type PngToJpgSettings = z.infer<
+  typeof pngToJpgSettingsSchema
+>;

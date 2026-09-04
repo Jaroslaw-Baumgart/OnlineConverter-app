@@ -9,6 +9,8 @@ import { ConversionError } from "../api/conversionError";
 import { downloadFile } from "../utils/downloadFile";
 import { buildApiUrl } from "../api/apiUrl";
 import { fetchConvertedFile, requestConversion } from "../api/conversionClient";
+import type { PngToJpgSettings } from "../schemas/conversionSettings";
+import { createConversionFormData } from "../api/conversionFormData";
 
 type UseConversionResult = {
   file: File | null;
@@ -20,7 +22,10 @@ type UseConversionResult = {
   isConverting: boolean;
   selectFile: (selectedFile: File) => void;
   removeFile: () => void;
-  convert: (option: ConversionOption) => Promise<void>;
+  convert: (
+    option: ConversionOption,
+    settings?: PngToJpgSettings,
+  ) => Promise<void>;
   downloadConvertedFile: () => void;
 };
 
@@ -64,7 +69,10 @@ export function useConversion(): UseConversionResult {
     });
   };
 
-  const convert = async (option: ConversionOption) => {
+  const convert = async (
+    option: ConversionOption,
+    settings?: PngToJpgSettings,
+  ) => {
     if (!file) {
       return;
     }
@@ -78,10 +86,7 @@ export function useConversion(): UseConversionResult {
 
     dispatch({ type: "conversionStarted", requestId });
 
-    const formData = new FormData();
-    formData.append("file", file);
-    formData.append("conversionType", option.conversionType);
-    formData.append("target", option.targetFormat);
+    const formData = createConversionFormData(file, option, settings);
 
     try {
       let res: Response;

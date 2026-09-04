@@ -1,8 +1,10 @@
 import type { ConversionOption } from "../types/converter";
+import PngToJpgControls from "./conversion-settings/PngToJpgControls";
+import type { PngToJpgSettings } from "../schemas/conversionSettings";
 
 interface ConversionOptionsProps {
   options: ConversionOption[];
-  onConvert: (option: ConversionOption) => void;
+  onConvert: (option: ConversionOption, settings?: PngToJpgSettings) => void;
   isConverting: boolean;
 }
 
@@ -33,13 +35,21 @@ export default function ConversionOptions({
                   {option.targetFormat.toUpperCase()}
                 </span>
               </div>
-              <button
-                className="convert-btn"
-                onClick={() => onConvert(option)}
-                disabled={option.disabled || isConverting}
-              >
-                Convert
-              </button>
+              {option.conversionType === "png-to-jpg" &&
+              option.disabled === false ? (
+                <PngToJpgControls
+                  disabled={option.disabled || isConverting}
+                  onConvert={(settings) => onConvert(option, settings)}
+                />
+              ) : (
+                <button
+                  className="convert-btn"
+                  onClick={() => onConvert(option)}
+                  disabled={option.disabled || isConverting}
+                >
+                  Convert
+                </button>
+              )}
             </div>
           </div>
         ))}

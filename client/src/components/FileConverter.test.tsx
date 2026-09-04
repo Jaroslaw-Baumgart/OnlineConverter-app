@@ -1,4 +1,4 @@
-import { render, screen, within } from "@testing-library/react";
+import { render, screen, within, fireEvent } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { http, HttpResponse } from "msw";
@@ -603,5 +603,67 @@ describe("FileConverter", () => {
         "The converted file could not be downloaded. Please try again.",
       ),
     ).not.toBeInTheDocument();
+  });
+
+  it("sends customized PNG to JPG settings", async () => {
+    server.use(
+      http.post("http://localhost:5000/convert", async () => {
+        return HttpResponse.json({
+          success: true,
+          files: [
+            {
+              url: "/output/converted.jpg",
+              name: "converted.jpg",
+            },
+          ],
+        });
+      }),
+
+      http.get("http://localhost:5000/output/converted.jpg", () => {
+        return new HttpResponse("converted content", {
+          headers: {
+            "Content-Type": "image/jpeg",
+          },
+        });
+      }),
+    );
+
+    const { user, input } = setupFileConverter();
+
+    await user.upload(input, createTestFile.png());
+
+    const pngToJpgCard = getOptionCard("PNG→JPG");
+
+    await user.click(
+      within(pngToJpgCard).getByRole("button", {
+        name: "Customize output",
+      }),
+    );
+
+    const qualityInput = within(pngToJpgCard).getByLabelText("Quality");
+
+    await user.clear(qualityInput);
+    await user.type(qualityInput, "95");
+
+    fireEvent.change(
+      within(pngToJpgCard).getByLabelText("Replace transparent areas with"),
+      {
+        target: {
+          value: "#000000",
+        },
+      },
+    );
+
+    await user.click(
+      within(pngToJpgCard).getByRole("button", {
+        name: "Convert",
+      }),
+    );
+
+    expect(
+      await screen.findByRole("heading", {
+        name: "Download Converted File",
+      }),
+    ).toBeInTheDocument();
   });
 });

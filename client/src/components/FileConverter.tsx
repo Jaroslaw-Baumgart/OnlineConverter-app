@@ -10,6 +10,7 @@ import FilePreview from "./FilePreview";
 import { createPreviewData } from "../utils/previewMapper";
 import { useObjectUrl } from "../hooks/useObjectUrl";
 import { useConversion } from "../hooks/useConversion";
+import type { PngToJpgSettings } from "../schemas/conversionSettings";
 
 function getAvailableOptions(
   file: File | null,
@@ -83,14 +84,17 @@ export default function FileConverter({
     removeFile();
   };
 
-  const handleConvert = async (option: ConversionOption) => {
+  const handleConvert = async (
+    option: ConversionOption,
+    settings?: PngToJpgSettings,
+  ) => {
     if (!file) {
       setPreviewError("Please upload a file first.");
       return;
     }
 
     setPreviewError(null);
-    await convert(option);
+    await convert(option, settings);
   };
 
   const handleDownloadBlob = () => {

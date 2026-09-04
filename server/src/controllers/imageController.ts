@@ -10,6 +10,7 @@ import {
   sendErrorResponse,
   sendSuccessResponse,
 } from "../utils/response";
+import { pngToJpgSettingsSchema } from "../schemas/conversionSettings";
 
 const getBaseFileName = (file: Express.Multer.File) => {
   return path.parse(file.filename).name;
@@ -48,7 +49,17 @@ export const pngToJpg = async (req: Request, res: Response) => {
   const outputPath = path.join(OUTPUT_DIR, outputName);
 
   try {
-    await sharp(req.file.path).jpeg().toFile(outputPath);
+    const settingsResult = pngToJpgSettingsSchema.safeParse(req.body);
+
+    if (!settingsResult.success) {
+      return sendErrorResponse(res, 400, "Invalid conversion settings.");
+    }
+    const settings = settingsResult.data;
+
+    await sharp(req.file.path)
+      .flatten({ background: settings.backgroundColor })
+      .jpeg({ quality: settings.quality })
+      .toFile(outputPath);
 
     sendSuccessResponse(res, [createOutputFileItem(outputName)]);
   } catch (err: unknown) {

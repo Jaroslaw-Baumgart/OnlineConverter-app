@@ -2,10 +2,10 @@
   "name": "server",
   "version": "1.0.0",
   "scripts": {
-  "dev": "ts-node-dev --respawn --transpile-only src/server.ts",
-  "typecheck": "tsc --noEmit",
-  "test": "vitest",
-  "test:run": "vitest run"
+    "dev": "ts-node-dev --respawn --transpile-only src/server.ts",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest",
+    "test:run": "vitest run"
   },
   "dependencies": {
     "cors": "^2.8.5",
@@ -15,7 +15,8 @@
     "pdf-parse": "^1.1.1",
     "pdf-poppler": "^0.2.1",
     "pdfkit": "^0.13.0",
-    "sharp": "^0.33.3"
+    "sharp": "^0.33.3",
+    "zod": "^4.5.4"
   },
   "devDependencies": {
     "@types/cors": "^2.8.19",
