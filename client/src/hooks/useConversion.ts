@@ -9,7 +9,7 @@ import { ConversionError } from "../api/conversionError";
 import { downloadFile } from "../utils/downloadFile";
 import { buildApiUrl } from "../api/apiUrl";
 import { fetchConvertedFile, requestConversion } from "../api/conversionClient";
-import type { PngToJpgSettings } from "../schemas/conversionSettings";
+import type { ConversionSettings } from "../schemas/conversionSettings";
 import { createConversionFormData } from "../api/conversionFormData";
 
 type UseConversionResult = {
@@ -24,7 +24,7 @@ type UseConversionResult = {
   removeFile: () => void;
   convert: (
     option: ConversionOption,
-    settings?: PngToJpgSettings,
+    settings?: ConversionSettings,
   ) => Promise<void>;
   downloadConvertedFile: () => void;
 };
@@ -71,7 +71,7 @@ export function useConversion(): UseConversionResult {
 
   const convert = async (
     option: ConversionOption,
-    settings?: PngToJpgSettings,
+    settings?: ConversionSettings,
   ) => {
     if (!file) {
       return;

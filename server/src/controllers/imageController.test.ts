@@ -21,11 +21,58 @@ vi.mock("sharp", () => ({
   default: sharpMocks.sharp,
 }));
 
+const pdfMocks = vi.hoisted(() => {
+  const addPage = vi.fn();
+  const image = vi.fn();
+  const end = vi.fn();
+
+  const stream = {
+    on: vi.fn((event: string, callback: () => void) => {
+      if (event === "finish") {
+        callback();
+      }
+
+      return stream;
+    }),
+  };
+
+  const pipe = vi.fn(() => stream);
+  const PDFDocument = vi.fn(function PDFDocumentMock() {
+    return {
+      addPage,
+      image,
+      pipe,
+      end,
+    };
+  });
+
+  const createWriteStream = vi.fn(() => ({}));
+
+  return {
+    PDFDocument,
+    addPage,
+    image,
+    pipe,
+    end,
+    createWriteStream,
+  };
+});
+
 vi.mock("../utils/file", () => ({
   safeUnlink: sharpMocks.safeUnlink,
 }));
 
-import { pngToJpg } from "./imageController";
+vi.mock("pdfkit", () => ({
+  default: pdfMocks.PDFDocument,
+}));
+
+vi.mock("fs", () => ({
+  default: {
+    createWriteStream: pdfMocks.createWriteStream,
+  },
+}));
+
+import { jpgToPdf, pngToJpg } from "./imageController";
 
 const createRequest = (body: unknown): Request =>
   ({
@@ -88,6 +135,49 @@ describe("pngToJpg", () => {
     await pngToJpg(request, response);
 
     expect(sharpMocks.sharp).not.toHaveBeenCalled();
+    expect(status).toHaveBeenCalledWith(400);
+    expect(json).toHaveBeenCalledWith({
+      success: false,
+      error: "Invalid conversion settings.",
+      code: "conversion-failed",
+    });
+    expect(sharpMocks.safeUnlink).toHaveBeenCalledWith("uploads/image.png");
+  });
+});
+
+describe("jpgToPdf", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it("creates an A4 PDF with the validated landscape orientation", async () => {
+    const request = createRequest({
+      pageOrientation: "landscape",
+    });
+    const { response, status } = createResponse();
+
+    await jpgToPdf(request, response);
+
+    expect(pdfMocks.PDFDocument).toHaveBeenCalledWith({
+      autoFirstPage: false,
+    });
+    expect(pdfMocks.addPage).toHaveBeenCalledWith({
+      size: "A4",
+      layout: "landscape",
+    });
+    expect(status).toHaveBeenCalledWith(200);
+    expect(sharpMocks.safeUnlink).toHaveBeenCalledWith("uploads/image.png");
+  });
+
+  it("rejects invalid settings without creating a PDF document", async () => {
+    const request = createRequest({
+      pageOrientation: "sideways",
+    });
+    const { response, status, json } = createResponse();
+
+    await jpgToPdf(request, response);
+
+    expect(pdfMocks.PDFDocument).not.toHaveBeenCalled();
     expect(status).toHaveBeenCalledWith(400);
     expect(json).toHaveBeenCalledWith({
       success: false,

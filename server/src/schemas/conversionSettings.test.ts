@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { pngToJpgSettingsSchema } from "./conversionSettings";
+import { pngToJpgSettingsSchema, pdfPageSettingsSchema } from "./conversionSettings";
 
 describe("pngToJpgSettingsSchema", () => {
   it("provides safe defaults when settings are missing", () => {
@@ -24,7 +24,7 @@ describe("pngToJpgSettingsSchema", () => {
 
   it.each(["0", "101", "not-a-number"])(
     "rejects invalid quality: %s",
-    quality => {
+    (quality) => {
       expect(
         pngToJpgSettingsSchema.safeParse({
           quality,
@@ -39,6 +39,32 @@ describe("pngToJpgSettingsSchema", () => {
       pngToJpgSettingsSchema.safeParse({
         quality: "85",
         backgroundColor: "white",
+      }).success,
+    ).toBe(false);
+  });
+});
+
+describe("pdfPageSettingsSchema", () => {
+  it("provides portrait as the safe default", () => {
+    expect(pdfPageSettingsSchema.parse({})).toEqual({
+      pageOrientation: "portrait",
+    });
+  });
+
+  it("accepts landscape orientation from multipart form data", () => {
+    expect(
+      pdfPageSettingsSchema.parse({
+        pageOrientation: "landscape",
+      }),
+    ).toEqual({
+      pageOrientation: "landscape",
+    });
+  });
+
+  it("rejects an unsupported orientation", () => {
+    expect(
+      pdfPageSettingsSchema.safeParse({
+        pageOrientation: "sideways",
       }).success,
     ).toBe(false);
   });

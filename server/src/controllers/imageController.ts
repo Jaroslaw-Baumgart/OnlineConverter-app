@@ -10,7 +10,7 @@ import {
   sendErrorResponse,
   sendSuccessResponse,
 } from "../utils/response";
-import { pngToJpgSettingsSchema } from "../schemas/conversionSettings";
+import { pngToJpgSettingsSchema, pdfPageSettingsSchema } from "../schemas/conversionSettings";
 
 const getBaseFileName = (file: Express.Multer.File) => {
   return path.parse(file.filename).name;
@@ -82,8 +82,15 @@ export const jpgToPdf = async (req: Request, res: Response) => {
   const outputPath = path.join(OUTPUT_DIR, outputName);
 
   try {
+    const settingsResult = pdfPageSettingsSchema.safeParse(req.body);
+
+    if (!settingsResult.success) {
+      return sendErrorResponse(res, 400, "Invalid conversion settings.");
+    }
+    const settings = settingsResult.data;
+
     const doc = new PDFDocument({ autoFirstPage: false });
-    doc.addPage({ size: [595.28, 841.89] }); // A4
+    doc.addPage({ size: "A4", layout: settings.pageOrientation });
     doc.image(req.file.path, {
       fit: [500, 700],
       align: "center",

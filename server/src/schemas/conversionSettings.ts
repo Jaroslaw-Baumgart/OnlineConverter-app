@@ -17,3 +17,7 @@ export const pngToJpgSettingsSchema = z.object({
 export type PngToJpgSettings = z.infer<
   typeof pngToJpgSettingsSchema
 >;
+
+export const pdfPageSettingsSchema = z.object({
+  pageOrientation: z.enum(["portrait", "landscape"]).default("portrait"),
+});

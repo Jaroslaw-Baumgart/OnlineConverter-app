@@ -1,10 +1,11 @@
 import type { ConversionOption } from "../types/converter";
 import PngToJpgControls from "./conversion-settings/PngToJpgControls";
-import type { PngToJpgSettings } from "../schemas/conversionSettings";
+import type { ConversionSettings } from "../schemas/conversionSettings";
+import PdfPageControls from "./conversion-settings/PdfPageControls";
 
 interface ConversionOptionsProps {
   options: ConversionOption[];
-  onConvert: (option: ConversionOption, settings?: PngToJpgSettings) => void;
+  onConvert: (option: ConversionOption, settings?: ConversionSettings) => void;
   isConverting: boolean;
 }
 
@@ -38,6 +39,13 @@ export default function ConversionOptions({
               {option.conversionType === "png-to-jpg" &&
               option.disabled === false ? (
                 <PngToJpgControls
+                  disabled={option.disabled || isConverting}
+                  onConvert={(settings) => onConvert(option, settings)}
+                />
+              ) : (option.conversionType === "jpg-to-pdf" ||
+                  option.conversionType === "txt-to-pdf") &&
+                option.disabled === false ? (
+                <PdfPageControls
                   disabled={option.disabled || isConverting}
                   onConvert={(settings) => onConvert(option, settings)}
                 />

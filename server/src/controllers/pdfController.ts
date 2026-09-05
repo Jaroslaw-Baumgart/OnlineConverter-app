@@ -1,4 +1,6 @@
 import { Request, Response } from "express";
+import fsSync from "fs";
+import PDFDocument from "pdfkit";
 import fs from "fs/promises";
 import path from "path";
 import pdfPoppler from "pdf-poppler";
@@ -11,6 +13,7 @@ import {
   sendErrorResponse,
   sendSuccessResponse,
 } from "../utils/response";
+import { pdfPageSettingsSchema } from "../schemas/conversionSettings";
 
 const getBaseFileName = (file: Express.Multer.File) => {
   return path.parse(file.filename).name;
@@ -115,11 +118,20 @@ export const txtToPdf = async (req: Request, res: Response) => {
   const outputPath = path.join(OUTPUT_DIR, outputName);
 
   try {
+    const settingsResult = pdfPageSettingsSchema.safeParse(req.body);
+
+    if (!settingsResult.success) {
+      return sendErrorResponse(res, 400, "Invalid conversion settings.");
+    }
+    const settings = settingsResult.data;
+
     const text = await fs.readFile(file.path, "utf8");
 
-    const PDFDocument = require("pdfkit");
-    const doc = new PDFDocument();
-    const stream = doc.pipe(require("fs").createWriteStream(outputPath));
+    const doc = new PDFDocument({
+      size: "A4",
+      layout: settings.pageOrientation,
+    });
+    const stream = doc.pipe(fsSync.createWriteStream(outputPath));
 
     const streamFinished = new Promise<void>((resolve, reject) => {
       stream.on("finish", resolve);

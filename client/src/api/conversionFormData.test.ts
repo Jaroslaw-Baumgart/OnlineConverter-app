@@ -27,4 +27,29 @@ describe("createConversionFormData", () => {
     expect(formData.get("quality")).toBe("95");
     expect(formData.get("backgroundColor")).toBe("#000000");
   });
+
+  it("includes PDF page orientation in the conversion payload", () => {
+    const file = new File(["jpg content"], "image.jpg", {
+      type: "image/jpeg",
+    });
+
+    const option = {
+      conversionType: "jpg-to-pdf",
+      sourceFormat: "jpg",
+      targetFormat: "pdf",
+      disabled: false,
+    } satisfies ConversionOption;
+
+    const formData = createConversionFormData(file, option, {
+      pageOrientation: "landscape",
+    });
+
+    expect(formData.get("file")).toBe(file);
+    expect(formData.get("conversionType")).toBe("jpg-to-pdf");
+    expect(formData.get("target")).toBe("pdf");
+    expect(formData.get("pageOrientation")).toBe("landscape");
+
+    expect(formData.has("quality")).toBe(false);
+    expect(formData.has("backgroundColor")).toBe(false);
+  });
 });

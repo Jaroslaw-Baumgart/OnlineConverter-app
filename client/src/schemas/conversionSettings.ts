@@ -36,3 +36,5 @@ export const getConversionSettingsSchema = (conversionType: ConversionType) => {
       return null;
   }
 };
+
+export type ConversionSettings = PngToJpgSettings | PdfPageSettings;

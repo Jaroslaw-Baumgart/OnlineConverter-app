@@ -10,7 +10,7 @@ import FilePreview from "./FilePreview";
 import { createPreviewData } from "../utils/previewMapper";
 import { useObjectUrl } from "../hooks/useObjectUrl";
 import { useConversion } from "../hooks/useConversion";
-import type { PngToJpgSettings } from "../schemas/conversionSettings";
+import type { ConversionSettings } from "../schemas/conversionSettings";
 
 function getAvailableOptions(
   file: File | null,
@@ -86,7 +86,7 @@ export default function FileConverter({
 
   const handleConvert = async (
     option: ConversionOption,
-    settings?: PngToJpgSettings,
+    settings?: ConversionSettings,
   ) => {
     if (!file) {
       setPreviewError("Please upload a file first.");
