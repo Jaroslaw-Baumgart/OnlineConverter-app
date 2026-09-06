@@ -11,6 +11,7 @@ import { createPreviewData } from "../utils/previewMapper";
 import { useObjectUrl } from "../hooks/useObjectUrl";
 import { useConversion } from "../hooks/useConversion";
 import type { ConversionSettings } from "../schemas/conversionSettings";
+import type { ConvertedResult } from "../types/conversionResult";
 
 function getAvailableOptions(
   file: File | null,
@@ -36,7 +37,7 @@ export default function FileConverter({
 }: FileConverterProps) {
   const {
     file,
-    convertedResult,
+    convertedResults,
     conversionError,
     isConverting,
     selectFile,
@@ -97,11 +98,9 @@ export default function FileConverter({
     await convert(option, settings);
   };
 
-  const handleDownloadBlob = () => {
-    if (!convertedResult) return;
-
+  const handleDownloadBlob = (result: ConvertedResult) => {
     setPreviewError(null);
-    downloadConvertedFile();
+    downloadConvertedFile(result);
   };
 
   return (
@@ -130,10 +129,9 @@ export default function FileConverter({
         </div>
       )}
 
-      {convertedResult && (
+      {convertedResults && (
         <DownloadSection
-          convertedFile={convertedResult.url}
-          convertedPreviewFile={convertedResult.file}
+          convertedResults={convertedResults}
           onDownload={handleDownloadBlob}
         />
       )}

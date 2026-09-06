@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import type { ConvertedResults } from "../types/conversionResult";
 
 import {
   conversionReducer,
@@ -20,9 +21,17 @@ const createTestFile = {
 };
 
 const sourceFile = createTestFile.pdf();
-const convertedFile = createTestFile.jpg();
 
-const convertedFileUrl = "http://localhost:5000/output/converted.jpg";
+const createConvertedResult = (name: string) => ({
+  url: `http://localhost:5000/output/${name}`,
+  file: createTestFile.jpg(name),
+});
+
+const convertedResults = [
+  createConvertedResult("page-1.jpg"),
+  createConvertedResult("page-2.jpg"),
+] satisfies ConvertedResults;
+
 const conversionErrorMessage = "The file could not be converted.";
 const downloadErrorMessage = "The converted file could not be downloaded.";
 
@@ -42,8 +51,7 @@ const createTestState = {
   success: () => ({
     kind: "success" as const,
     file: sourceFile,
-    convertedFileUrl,
-    convertedFile,
+    convertedResults,
   }),
   conversionError: () => ({
     kind: "conversionError" as const,
@@ -53,8 +61,7 @@ const createTestState = {
   downloadError: () => ({
     kind: "downloadError" as const,
     file: sourceFile,
-    convertedFileUrl,
-    convertedFile,
+    convertedResults,
     error: downloadErrorMessage,
   }),
 };
@@ -65,8 +72,7 @@ const invalidTransitions = [
     state: createTestState.ready(),
     action: {
       type: "conversionSucceeded",
-      convertedFileUrl,
-      convertedFile,
+      convertedResults,
       requestId: activeRequestId,
     },
   },
@@ -136,11 +142,10 @@ describe("conversionReducer", () => {
     expect(nextState).toBe(initialConversionState);
   });
 
-  it("moves from loading to success with the converted file", () => {
+  it("moves from loading to success with the converted files", () => {
     const nextState = conversionReducer(createTestState.loading(), {
       type: "conversionSucceeded",
-      convertedFileUrl,
-      convertedFile,
+      convertedResults,
       requestId: activeRequestId,
     });
 
@@ -175,7 +180,7 @@ describe("conversionReducer", () => {
     expect(nextState).toEqual(createTestState.loading());
   });
 
-  it("keeps the converted result when downloading it fails", () => {
+  it("keeps the converted results when downloading it fails", () => {
     const nextState = conversionReducer(createTestState.success(), {
       type: "downloadFailed",
       error: downloadErrorMessage,
@@ -240,8 +245,7 @@ describe("conversionReducer", () => {
     const staleAction = {
       type: "conversionSucceeded" as const,
       requestId: staleRequestId,
-      convertedFileUrl,
-      convertedFile,
+      convertedResults,
     };
 
     const nextState = conversionReducer(activeState, staleAction);

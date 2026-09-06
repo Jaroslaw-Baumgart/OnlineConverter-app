@@ -6,8 +6,12 @@ import DownloadSection from "./DownloadSection";
 const renderDownloadSection = (file: File, url: string) => {
   render(
     <DownloadSection
-      convertedFile={url}
-      convertedPreviewFile={file}
+      convertedResults={[
+        {
+          url,
+          file,
+        },
+      ]}
       onDownload={vi.fn()}
     />,
   );
@@ -105,5 +109,63 @@ describe("DownloadSection", () => {
     expect(
       screen.queryByRole("img", { name: "Preview" }),
     ).not.toBeInTheDocument();
+  });
+
+  it("selects and downloads a specific converted result", () => {
+    const firstFile = new File(["page one"], "page-1.jpg", {
+      type: "image/jpeg",
+    });
+    const secondFile = new File(["page two"], "page-2.jpg", {
+      type: "image/jpeg",
+    });
+
+    const firstResult = {
+      url: "https://example.com/page-1.jpg",
+      file: firstFile,
+    };
+    const secondResult = {
+      url: "https://example.com/page-2.jpg",
+      file: secondFile,
+    };
+
+    const onDownload = vi.fn();
+
+    render(
+      <DownloadSection
+        convertedResults={[firstResult, secondResult]}
+        onDownload={onDownload}
+      />,
+    );
+
+    const firstPageButton = screen.getByRole("button", {
+      name: "Page 1",
+    });
+    const secondPageButton = screen.getByRole("button", {
+      name: "Page 2",
+    });
+
+    expect(firstPageButton).toHaveAttribute("aria-pressed", "true");
+    expect(secondPageButton).toHaveAttribute("aria-pressed", "false");
+    expect(screen.getByRole("img", { name: "Preview" })).toHaveAttribute(
+      "src",
+      firstResult.url,
+    );
+
+    fireEvent.click(secondPageButton);
+
+    expect(firstPageButton).toHaveAttribute("aria-pressed", "false");
+    expect(secondPageButton).toHaveAttribute("aria-pressed", "true");
+    expect(screen.getByRole("img", { name: "Preview" })).toHaveAttribute(
+      "src",
+      secondResult.url,
+    );
+
+    fireEvent.click(
+      screen.getByRole("button", {
+        name: "Download File",
+      }),
+    );
+
+    expect(onDownload).toHaveBeenCalledWith(secondResult);
   });
 });

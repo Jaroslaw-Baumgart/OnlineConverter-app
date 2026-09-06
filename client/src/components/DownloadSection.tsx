@@ -1,27 +1,51 @@
+import { useState } from "react";
+import type {
+  ConvertedResult,
+  ConvertedResults,
+} from "../types/conversionResult";
 import FilePreview from "./FilePreview";
 import { createPreviewData } from "../utils/previewMapper";
 
 interface DownloadSectionProps {
-  convertedFile: string | null;
-  convertedPreviewFile: File | null;
-  onDownload: () => void;
+  convertedResults: ConvertedResults;
+  onDownload: (result: ConvertedResult) => void;
 }
 
 export default function DownloadSection({
-  convertedFile,
-  convertedPreviewFile,
+  convertedResults,
   onDownload,
 }: DownloadSectionProps) {
-  const previewData =
-    convertedFile && convertedPreviewFile
-      ? createPreviewData(convertedPreviewFile, convertedFile, false)
-      : null;
+  const [activeResultUrl, setActiveResultUrl] = useState(
+    convertedResults[0].url,
+  );
+
+  const activeResult =
+    convertedResults.find((result) => result.url === activeResultUrl) ??
+    convertedResults[0];
+
+  const previewData = createPreviewData(
+    activeResult.file,
+    activeResult.url,
+    false,
+  );
 
   return (
     <div className="download-section">
       <h2>Download Converted File</h2>
+      <div aria-label="Converted files">
+        {convertedResults.map((result, index) => (
+          <button
+            key={result.url}
+            type="button"
+            aria-pressed={result.url === activeResult.url}
+            onClick={() => setActiveResultUrl(result.url)}
+            >
+              Page {index + 1}
+            </button>
+        ))}
+      </div>
       {previewData && <FilePreview preview={previewData} />}
-      <button onClick={onDownload} className="download-btn">
+      <button onClick={() => onDownload(activeResult)} className="download-btn">
         Download File
       </button>
     </div>

@@ -1,3 +1,5 @@
+import type { ConvertedResults } from "../types/conversionResult";
+
 export type ConversionState =
   | {
       kind: "empty";
@@ -14,8 +16,7 @@ export type ConversionState =
   | {
       kind: "success";
       file: File;
-      convertedFileUrl: string;
-      convertedFile: File;
+      convertedResults: ConvertedResults;
     }
   | {
       kind: "conversionError";
@@ -25,8 +26,7 @@ export type ConversionState =
   | {
       kind: "downloadError";
       file: File;
-      convertedFileUrl: string;
-      convertedFile: File;
+      convertedResults: ConvertedResults;
       error: string;
     };
 
@@ -45,8 +45,7 @@ export type ConversionAction =
   | {
       type: "conversionSucceeded";
       requestId: number;
-      convertedFileUrl: string;
-      convertedFile: File;
+      convertedResults: ConvertedResults;
     }
   | {
       type: "conversionFailed";
@@ -109,8 +108,7 @@ export function conversionReducer(
       return {
         kind: "success",
         file: state.file,
-        convertedFileUrl: action.convertedFileUrl,
-        convertedFile: action.convertedFile,
+        convertedResults: action.convertedResults,
       };
 
     case "conversionFailed":
@@ -132,8 +130,7 @@ export function conversionReducer(
       return {
         kind: "downloadError",
         file: state.file,
-        convertedFileUrl: state.convertedFileUrl,
-        convertedFile: state.convertedFile,
+        convertedResults: state.convertedResults,
         error: action.error,
       };
 
@@ -145,8 +142,7 @@ export function conversionReducer(
       return {
         kind: "success",
         file: state.file,
-        convertedFileUrl: state.convertedFileUrl,
-        convertedFile: state.convertedFile,
+        convertedResults: state.convertedResults,
       };
   }
 

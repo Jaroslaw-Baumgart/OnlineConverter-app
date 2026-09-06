@@ -666,4 +666,83 @@ describe("FileConverter", () => {
       }),
     ).toBeInTheDocument();
   });
+
+  it("downloads and displays every file returned by a conversion", async () => {
+    const firstFileRequest = vi.fn();
+    const secondFileRequest = vi.fn();
+
+    server.use(
+      http.post("http://localhost:5000/convert", () => {
+        return HttpResponse.json({
+          success: true,
+          files: [
+            {
+              url: "/output/page-1.jpg",
+              name: "page-1.jpg",
+            },
+            {
+              url: "/output/page-2.jpg",
+              name: "page-2.jpg",
+            },
+          ],
+        });
+      }),
+
+      http.get("http://localhost:5000/output/page-1.jpg", () => {
+        firstFileRequest();
+
+        return new HttpResponse("page one", {
+          headers: {
+            "Content-Type": "image/jpeg",
+          },
+        });
+      }),
+
+      http.get("http://localhost:5000/output/page-2.jpg", () => {
+        secondFileRequest();
+
+        return new HttpResponse("page two", {
+          headers: {
+            "Content-Type": "image/jpeg",
+          },
+        });
+      }),
+    );
+
+    const { user, input } = setupFileConverter();
+
+    await user.upload(input, createTestFile.pdf());
+    await user.click(getConvertButton("PDF→JPG"));
+
+    expect(
+      await screen.findByRole("heading", {
+        name: "Download Converted File",
+      }),
+    ).toBeInTheDocument();
+
+    expect(firstFileRequest).toHaveBeenCalledOnce();
+    expect(secondFileRequest).toHaveBeenCalledOnce();
+
+    const convertedFiles = screen.getByLabelText("Converted files");
+
+    expect(
+      within(convertedFiles).getByRole("button", {
+        name: "Page 1",
+      }),
+    ).toHaveAttribute("aria-pressed", "true");
+
+    const secondPageButton = within(convertedFiles).getByRole("button", {
+      name: "Page 2",
+    });
+
+    expect(secondPageButton).toHaveAttribute("aria-pressed", "false");
+
+    await user.click(secondPageButton);
+
+    expect(secondPageButton).toHaveAttribute("aria-pressed", "true");
+    expect(screen.getByRole("img", { name: "Preview" })).toHaveAttribute(
+      "src",
+      "http://localhost:5000/output/page-2.jpg",
+    );
+  });
 });

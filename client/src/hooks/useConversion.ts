@@ -11,13 +11,14 @@ import { buildApiUrl } from "../api/apiUrl";
 import { fetchConvertedFile, requestConversion } from "../api/conversionClient";
 import type { ConversionSettings } from "../schemas/conversionSettings";
 import { createConversionFormData } from "../api/conversionFormData";
+import type {
+  ConvertedResult,
+  ConvertedResults,
+} from "../types/conversionResult";
 
 type UseConversionResult = {
   file: File | null;
-  convertedResult: {
-    url: string;
-    file: File;
-  } | null;
+  convertedResults: ConvertedResults | null;
   conversionError: string | null;
   isConverting: boolean;
   selectFile: (selectedFile: File) => void;
@@ -26,7 +27,7 @@ type UseConversionResult = {
     option: ConversionOption,
     settings?: ConversionSettings,
   ) => Promise<void>;
-  downloadConvertedFile: () => void;
+  downloadConvertedFile: (result: ConvertedResult) => void;
 };
 
 export function useConversion(): UseConversionResult {
@@ -41,13 +42,10 @@ export function useConversion(): UseConversionResult {
 
   const isConverting = conversionState.kind === "loading";
 
-  const convertedResult =
+  const convertedResults =
     conversionState.kind === "downloadError" ||
     conversionState.kind === "success"
-      ? {
-          url: conversionState.convertedFileUrl,
-          file: conversionState.convertedFile,
-        }
+      ? conversionState.convertedResults
       : null;
 
   const conversionError =
@@ -125,28 +123,45 @@ export function useConversion(): UseConversionResult {
         });
       }
 
-      const [convertedFileInfo] = conversionResponse.files;
-      const convertedFileUrl = buildApiUrl(convertedFileInfo.url);
-      let downloadedFile: File;
+      let downloadedResults: ConvertedResult[];
 
       try {
-        const fileRes = await fetchConvertedFile(convertedFileUrl);
+        downloadedResults = await Promise.all(
+          conversionResponse.files.map(async (convertedFileInfo) => {
+            const convertedFileUrl = buildApiUrl(convertedFileInfo.url);
 
-        if (!fileRes.ok) {
-          throw new Error(`Download failed with status ${fileRes.status}`);
-        }
+            const fileRes = await fetchConvertedFile(convertedFileUrl);
+            if (!fileRes.ok) {
+              throw new Error(`Download failed with status ${fileRes.status}`);
+            }
+            const blob = await fileRes.blob();
 
-        const blob = await fileRes.blob();
-        downloadedFile = new File([blob], convertedFileInfo.name, {
-          type: blob.type,
-        });
+            const downloadedFile = new File([blob], convertedFileInfo.name, {
+              type: blob.type,
+            });
+            return {
+              url: convertedFileUrl,
+              file: downloadedFile,
+            };
+          }),
+        );
       } catch (cause: unknown) {
         throw new ConversionError("download-failed", cause);
       }
+      const [firstResult, ...remainingResults] = downloadedResults;
+
+      if (!firstResult) {
+        throw new ConversionError("invalid-response", conversionResponse);
+      }
+
+      const convertedResults: ConvertedResults = [
+        firstResult,
+        ...remainingResults,
+      ];
+
       dispatch({
         type: "conversionSucceeded",
-        convertedFileUrl,
-        convertedFile: downloadedFile,
+        convertedResults,
         requestId,
       });
     } catch (err: unknown) {
@@ -165,11 +180,9 @@ export function useConversion(): UseConversionResult {
     }
   };
 
-  const downloadConvertedFile = () => {
-    if (!convertedResult) return;
-
+  const downloadConvertedFile = (result: ConvertedResult) => {
     try {
-      downloadFile(convertedResult.file);
+      downloadFile(result.file);
       dispatch({ type: "downloadSucceeded" });
     } catch (cause: unknown) {
       const downloadError = new ConversionError("download-failed", cause);
@@ -184,7 +197,7 @@ export function useConversion(): UseConversionResult {
 
   return {
     file,
-    convertedResult,
+    convertedResults,
     conversionError,
     isConverting,
     selectFile,
