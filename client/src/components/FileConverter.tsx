@@ -44,6 +44,8 @@ export default function FileConverter({
     removeFile,
     convert,
     downloadConvertedFile,
+    isPreparingArchive,
+    downloadAllConvertedFiles,
   } = useConversion();
 
   const [isLoadingText, setIsLoadingText] = useState(false);
@@ -133,6 +135,8 @@ export default function FileConverter({
         <DownloadSection
           convertedResults={convertedResults}
           onDownload={handleDownloadBlob}
+          isPreparingArchive={isPreparingArchive}
+          onDownloadAll={downloadAllConvertedFiles}
         />
       )}
     </div>

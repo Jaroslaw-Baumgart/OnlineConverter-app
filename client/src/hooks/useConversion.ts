@@ -1,4 +1,4 @@
-import { useReducer, useRef } from "react";
+import { useReducer, useRef, useState } from "react";
 import {
   conversionReducer,
   initialConversionState,
@@ -15,12 +15,14 @@ import type {
   ConvertedResult,
   ConvertedResults,
 } from "../types/conversionResult";
+import { createZipFile } from "../utils/createZipFile";
 
 type UseConversionResult = {
   file: File | null;
   convertedResults: ConvertedResults | null;
   conversionError: string | null;
   isConverting: boolean;
+  isPreparingArchive: boolean;
   selectFile: (selectedFile: File) => void;
   removeFile: () => void;
   convert: (
@@ -28,6 +30,7 @@ type UseConversionResult = {
     settings?: ConversionSettings,
   ) => Promise<void>;
   downloadConvertedFile: (result: ConvertedResult) => void;
+  downloadAllConvertedFiles: () => Promise<void>;
 };
 
 export function useConversion(): UseConversionResult {
@@ -37,6 +40,8 @@ export function useConversion(): UseConversionResult {
   );
 
   const requestIdRef = useRef(0);
+
+  const [isPreparingArchive, setIsPreparingArchive] = useState(false);
 
   const file = conversionState.kind === "empty" ? null : conversionState.file;
 
@@ -195,6 +200,31 @@ export function useConversion(): UseConversionResult {
     }
   };
 
+  const downloadAllConvertedFiles = async () => {
+    if (!convertedResults || isPreparingArchive) {
+      return;
+    }
+
+    setIsPreparingArchive(true);
+
+    try {
+      const filesToZip = convertedResults.map((result) => result.file);
+      const zipFile = await createZipFile(filesToZip);
+      downloadFile(zipFile);
+      dispatch({ type: "downloadSucceeded" });
+    } catch (cause: unknown) {
+      const downloadError = new ConversionError("download-failed", cause);
+
+      console.error(downloadError);
+      dispatch({
+        type: "downloadFailed",
+        error: downloadError.message,
+      });
+    } finally {
+      setIsPreparingArchive(false);
+    }
+  };
+
   return {
     file,
     convertedResults,
@@ -204,5 +234,7 @@ export function useConversion(): UseConversionResult {
     removeFile,
     convert,
     downloadConvertedFile,
+    isPreparingArchive,
+    downloadAllConvertedFiles,
   };
 }

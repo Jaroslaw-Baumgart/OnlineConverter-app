@@ -2,6 +2,22 @@ import { fireEvent, render, screen } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 
 import DownloadSection from "./DownloadSection";
+import type { ConvertedResults } from "../types/conversionResult";
+
+const createMultipleResults = (): ConvertedResults => [
+  {
+    url: "https://example.com/page-1.jpg",
+    file: new File(["page one"], "page-1.jpg", {
+      type: "image/jpeg",
+    }),
+  },
+  {
+    url: "https://example.com/page-2.jpg",
+    file: new File(["page two"], "page-2.jpg", {
+      type: "image/jpeg",
+    }),
+  },
+];
 
 const renderDownloadSection = (file: File, url: string) => {
   render(
@@ -13,6 +29,8 @@ const renderDownloadSection = (file: File, url: string) => {
         },
       ]}
       onDownload={vi.fn()}
+      onDownloadAll={vi.fn()}
+      isPreparingArchive={false}
     />,
   );
 };
@@ -134,6 +152,8 @@ describe("DownloadSection", () => {
       <DownloadSection
         convertedResults={[firstResult, secondResult]}
         onDownload={onDownload}
+        onDownloadAll={vi.fn()}
+        isPreparingArchive={false}
       />,
     );
 
@@ -167,5 +187,63 @@ describe("DownloadSection", () => {
     );
 
     expect(onDownload).toHaveBeenCalledWith(secondResult);
+  });
+
+  it("does not show Download all for a single result", () => {
+    const file = new File(["image"], "converted.jpg", {
+      type: "image/jpeg",
+    });
+
+    renderDownloadSection(file, "https://example.com/converted.jpg");
+
+    expect(
+      screen.queryByRole("button", {
+        name: "Download all",
+      }),
+    ).not.toBeInTheDocument();
+  });
+
+  it("downloads all results when Download all is clicked", () => {
+    const onDownloadAll = vi.fn();
+
+    render(
+      <DownloadSection
+        convertedResults={createMultipleResults()}
+        onDownload={vi.fn()}
+        onDownloadAll={onDownloadAll}
+        isPreparingArchive={false}
+      />,
+    );
+
+    fireEvent.click(
+      screen.getByRole("button", {
+        name: "Download all",
+      }),
+    );
+
+    expect(onDownloadAll).toHaveBeenCalledOnce();
+  });
+
+  it("disables Download all while the archive is being prepared", () => {
+    render(
+      <DownloadSection
+        convertedResults={createMultipleResults()}
+        onDownload={vi.fn()}
+        onDownloadAll={vi.fn()}
+        isPreparingArchive
+      />,
+    );
+
+    expect(
+      screen.getByRole("button", {
+        name: "Preparing archive...",
+      }),
+    ).toBeDisabled();
+
+    expect(
+      screen.queryByRole("button", {
+        name: "Download all",
+      }),
+    ).not.toBeInTheDocument();
   });
 });
