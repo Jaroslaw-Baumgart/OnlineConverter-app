@@ -3,8 +3,8 @@ import userEvent from "@testing-library/user-event";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { http, HttpResponse } from "msw";
 
-import { server } from "./test/server";
-import App from "./App";
+import { server } from "../test/server";
+import ConverterPage from "./ConverterPage";
 
 const getEnabledConvertButton = (): HTMLElement => {
   const button = screen
@@ -23,11 +23,11 @@ afterEach(() => {
   vi.restoreAllMocks();
 });
 
-describe("App", () => {
+describe("ConverterPage", () => {
   it("returns to the initial state after removing the selected file", async () => {
     const user = userEvent.setup();
 
-    render(<App />);
+    render(<ConverterPage />);
 
     const input = screen.getByLabelText("Choose File");
     const file = new File(["content"], "image.png", {
@@ -72,7 +72,7 @@ describe("App", () => {
 
     vi.spyOn(console, "error").mockImplementation(() => {});
 
-    render(<App />);
+    render(<ConverterPage />);
 
     const input = screen.getByLabelText("Choose File");
     const file = new File(["content"], "image.jpg", {
@@ -121,7 +121,7 @@ describe("App", () => {
       }),
     );
 
-    render(<App />);
+    render(<ConverterPage />);
 
     const input = screen.getByLabelText("Choose File");
     const file = new File(["content"], "image.jpg", {
