@@ -36,20 +36,20 @@ describe("application routes", () => {
     ).toHaveAttribute("href", "/");
 
     expect(
-      within(navigation).getByRole("link", { name: "Formats" }),
-    ).toHaveAttribute("href", "/formats");
+      within(navigation).getByRole("link", { name: "About" }),
+    ).toHaveAttribute("href", "/about");
 
     expect(
       within(navigation).getByRole("link", { name: "Privacy" }),
     ).toHaveAttribute("href", "/privacy");
   });
 
-  it("renders the supported formats page", () => {
-    renderRoute("/formats");
+  it("renders the aboutpage", () => {
+    renderRoute("/about");
 
     expect(
       screen.getByRole("heading", {
-        name: "Supported Formats",
+        name: "About the application",
       }),
     ).toBeInTheDocument();
   });
@@ -71,19 +71,19 @@ describe("application routes", () => {
 
     await user.click(
       screen.getByRole("link", {
-        name: "Formats",
+        name: "About",
       }),
     );
 
     expect(
       screen.getByRole("heading", {
-        name: "Supported Formats",
+        name: "About the application",
       }),
     ).toBeInTheDocument();
 
     expect(
       screen.getByRole("link", {
-        name: "Formats",
+        name: "About",
       }),
     ).toHaveAttribute("aria-current", "page");
   });

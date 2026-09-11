@@ -2,7 +2,7 @@ import type { RouteObject } from "react-router";
 
 import ConverterPage from "../pages/ConverterPage";
 import AppLayout from "../layouts/AppLayout";
-import FormatsPage from "../pages/FormatsPage";
+import AboutPage from "../pages/AboutPage";
 import PrivacyPage from "../pages/PrivacyPage";
 import NotFoundPage from "../pages/NotFoundPage";
 
@@ -15,8 +15,8 @@ export const appRoutes = [
         Component: ConverterPage,
       },
       {
-        path: "formats",
-        Component: FormatsPage,
+        path: "about",
+        Component: AboutPage,
       },
       {
         path: "privacy",
