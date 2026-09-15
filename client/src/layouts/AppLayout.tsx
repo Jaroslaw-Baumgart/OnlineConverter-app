@@ -1,7 +1,10 @@
-import { NavLink, Outlet } from "react-router";
+import { NavLink, Outlet, useLocation } from "react-router";
 import "../App.css";
+import ErrorBoundary from "../components/ErrorBoundary";
 
 export default function AppLayout() {
+  const location = useLocation();
+
   return (
     <div className="app-container">
       <nav aria-label="Main navigation" className="app-nav">
@@ -16,7 +19,9 @@ export default function AppLayout() {
         </NavLink>
       </nav>
       <main>
-        <Outlet />
+        <ErrorBoundary key={location.pathname}>
+          <Outlet />
+        </ErrorBoundary>
       </main>
     </div>
   );
