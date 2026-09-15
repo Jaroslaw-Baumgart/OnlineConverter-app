@@ -44,11 +44,11 @@ describe("application routes", () => {
     ).toHaveAttribute("href", "/privacy");
   });
 
-  it("renders the aboutpage", () => {
+  it("renders the aboutpage", async () => {
     renderRoute("/about");
 
     expect(
-      screen.getByRole("heading", {
+      await screen.findByRole("heading", {
         name: "About the application",
       }),
     ).toBeInTheDocument();

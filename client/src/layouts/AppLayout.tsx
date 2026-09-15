@@ -1,6 +1,7 @@
 import { NavLink, Outlet, useLocation } from "react-router";
 import "../App.css";
 import ErrorBoundary from "../components/ErrorBoundary";
+import { Suspense } from "react";
 
 export default function AppLayout() {
   const location = useLocation();
@@ -20,7 +21,9 @@ export default function AppLayout() {
       </nav>
       <main>
         <ErrorBoundary key={location.pathname}>
-          <Outlet />
+          <Suspense fallback={<p role="status">Loading page...</p>}>
+            <Outlet />
+          </Suspense>
         </ErrorBoundary>
       </main>
     </div>
