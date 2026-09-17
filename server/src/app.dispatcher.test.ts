@@ -55,7 +55,7 @@ describe("POST /convert with the real dispatcher", () => {
 
     const response = await request(app)
       .post("/convert")
-      .field("target", "pdf")
+      .field("conversionType", "txt-to-pdf")
       .attach("file", Buffer.from("Example text"), {
         filename: "document.txt",
         contentType: "text/plain",
@@ -76,12 +76,12 @@ describe("POST /convert with the real dispatcher", () => {
     });
   });
 
-  it("rejects an unsupported target for a PDF upload", async () => {
+  it("rejects an unsupported conversion type for a PDF upload", async () => {
     const content = Buffer.from("%PDF-1.4\n%test fixture\n");
 
     const response = await request(app)
       .post("/convert")
-      .field("target", "png")
+      .field("conversionType", "pdf-to-png")
       .attach("file", content, {
         filename: "document.pdf",
         contentType: "application/pdf",
@@ -91,12 +91,48 @@ describe("POST /convert with the real dispatcher", () => {
 
     expect(response.body).toEqual({
       success: false,
-      error: "Please specify target: jpg or txt",
+      error: "Unsupported conversion type.",
       code: "conversion-failed",
     });
 
     expect(pdfToJpg).not.toHaveBeenCalled();
     expect(pdfToTxt).not.toHaveBeenCalled();
+    expect(txtToPdf).not.toHaveBeenCalled();
+  });
+
+  it("rejects an unknown conversion type", async () => {
+    const response = await request(app)
+      .post("/convert")
+      .field("conversionType", "banana-to-pdf")
+      .attach("file", Buffer.from("Example text"), {
+        filename: "document.txt",
+        contentType: "text/plain",
+      })
+      .expect("Content-Type", /json/)
+      .expect(400);
+
+    expect(response.body.success).toBe(false);
+    expect(response.body.error).toBe("Unsupported conversion type.");
+    expect(txtToPdf).not.toHaveBeenCalled();
+  });
+
+  it("rejects a conversion type that does not match the uploaded file", async () => {
+    const response = await request(app)
+      .post("/convert")
+      .field("conversionType", "jpg-to-pdf")
+      .attach("file", Buffer.from("Example text"), {
+        filename: "document.txt",
+        contentType: "text/plain",
+      })
+      .expect("Content-Type", /json/)
+      .expect(400);
+
+    expect(response.body).toEqual({
+      success: false,
+      error: "File type does not match conversion type.",
+      code: "conversion-failed",
+    });
+
     expect(txtToPdf).not.toHaveBeenCalled();
   });
 });
