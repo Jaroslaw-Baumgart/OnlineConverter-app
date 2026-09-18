@@ -4,6 +4,7 @@ import { docxToPdf } from "../controllers/docController";
 import { pdfToTxt, pdfToJpg, txtToPdf } from "../controllers/pdfController";
 import path from "path";
 import { sendErrorResponse } from "../utils/response";
+import { csvToPdf } from "../controllers/csvController";
 
 const handlers = {
   "jpg-to-png": jpgToPng,
@@ -13,6 +14,7 @@ const handlers = {
   "pdf-to-txt": pdfToTxt,
   "pdf-to-jpg": pdfToJpg,
   "txt-to-pdf": txtToPdf,
+  "csv-to-pdf": csvToPdf,
 } as const;
 
 export async function routeDispatcher(req: Request, res: Response) {
@@ -73,6 +75,9 @@ export async function routeDispatcher(req: Request, res: Response) {
       break;
     case "txt-to-pdf":
       isFileValid = file.mimetype === "text/plain";
+      break;
+    case "csv-to-pdf":
+      isFileValid = file.mimetype === "text/csv";
       break;
   }
 

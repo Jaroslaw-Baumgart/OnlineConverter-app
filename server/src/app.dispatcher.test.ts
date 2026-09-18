@@ -3,6 +3,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { mkdtemp, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
+import fsSync from "node:fs";
 
 vi.mock("./controllers/imageController", () => ({
   jpgToPng: vi.fn(),
@@ -134,5 +135,29 @@ describe("POST /convert with the real dispatcher", () => {
     });
 
     expect(txtToPdf).not.toHaveBeenCalled();
+  });
+
+  it("dispatches a CSV upload to the CSV-to-PDF controller", async () => {
+    const response = await request(app)
+      .post("/convert")
+      .field("conversionType", "csv-to-pdf")
+      .attach(
+        "file",
+        fsSync.readFileSync(path.resolve(__dirname, "fixtures/sample.csv")),
+        {
+          filename: "sample.csv",
+          contentType: "text/csv",
+        },
+      )
+      .expect(200);
+
+    expect(response.body.success).toBe(true);
+    expect(response.body.files).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          name: expect.stringMatching(/\.pdf$/),
+        }),
+      ]),
+    );
   });
 });
