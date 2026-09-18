@@ -289,6 +289,48 @@
   background-color: #f0f8ff;
 }
 
+.csv-preview-container {
+  width: 100%;
+  max-height: 420px;
+  overflow: auto;
+  border: 1px solid #cbd5e1;
+}
+
+.csv-preview-table {
+  width: max-content;
+  min-width: 100%;
+  border-collapse: collapse;
+  font-size: 0.875rem;
+}
+
+.csv-preview-table th,
+.csv-preview-table td {
+  border: 1px solid #cbd5e1;
+  padding: 0.45rem 0.65rem;
+  text-align: left;
+  white-space: nowrap;
+  max-width: 220px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.csv-preview-table th {
+  background: #f1f5f9;
+  font-weight: 600;
+}
+
+@media (max-width: 700px) {
+  .csv-preview-table {
+    font-size: 0.75rem;
+  }
+
+  .csv-preview-table th,
+  .csv-preview-table td {
+    padding: 0.3rem 0.45rem;
+    max-width: 140px;
+  }
+}
+
 .drag-drop-hint {
   margin-top: 10px;
   font-size: 14px;
@@ -317,11 +359,15 @@
   font-weight: 600;
 }
 
-.loading-dots::after {
+.loading-dots {
   display: inline-block;
-  width: 1.5em;
+  min-width: 1.5em;
+}
+
+.loading-dots::after {
   content: "";
-  animation: loading-dots 1.2s steps(4 ,end) infinite;
+  display: inline-block;
+  animation: loading-dots 1.2s steps(4, end) infinite;
 }
 
 @keyframes loading-dots {

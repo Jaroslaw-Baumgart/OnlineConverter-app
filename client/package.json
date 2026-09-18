@@ -14,7 +14,9 @@
   },
   "dependencies": {
     "@hookform/resolvers": "^5.9.1",
+    "@types/papaparse": "^5.5.2",
     "client-zip": "^2.5.0",
+    "papaparse": "^5.7.0",
     "react": "^19.1.1",
     "react-dom": "^19.1.0",
     "react-hook-form": "^7.87.0",

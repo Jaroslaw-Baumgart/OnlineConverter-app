@@ -1,5 +1,7 @@
 import { useState, useEffect } from "react";
 import { readFileAsText } from "../utils/fileUtils";
+import { parseCsvFile, type CsvRow } from "../utils/csv";
+import "../styles/FileConverter.css";
 import type { PreviewData } from "../types/preview";
 
 type FilePreviewProps = {
@@ -53,6 +55,81 @@ function WordPreview() {
   );
 }
 
+function CsvPreview({ file, isLoading }: { file: File; isLoading: boolean }) {
+  const [rows, setRows] = useState<CsvRow[]>([]);
+  const [error, setError] = useState<string | null>(null);
+  const [isParsing, setIsParsing] = useState(true);
+
+  useEffect(() => {
+    if (isLoading) {
+      return;
+    }
+
+    setIsParsing(true);
+
+    parseCsvFile(file)
+      .then((parsedRows) => {
+        setRows(parsedRows);
+      })
+      .catch(() => {
+        setError("Failed to load CSV content");
+      })
+      .finally(() => {
+        setIsParsing(false);
+      });
+  }, [file, isLoading]);
+
+  if (isLoading || isParsing) {
+    return (
+      <p className="loading-message" role="status" aria-live="polite">
+        Loading CSV content
+        <span className="loading-dots" aria-hidden="true" />
+      </p>
+    );
+  }
+
+  if (error) {
+    return <p className="error-message">{error}</p>;
+  }
+
+  if (rows.length === 0) {
+    return <p className="error-message">CSV file is empty</p>;
+  }
+
+  const previewRows = rows.slice(0, 100);
+  const headers = Object.keys(rows[0]);
+  return (
+    <div className="csv-preview-container">
+      <table className="csv-preview-table">
+        <thead>
+          <tr>
+            {headers.map((header) => (
+              <th key={header}>{header}</th>
+            ))}
+          </tr>
+        </thead>
+
+        <tbody>
+          {previewRows.map((row, rowIndex) => (
+            <tr key={rowIndex}>
+              {headers.map((header) => (
+                <td key={header} title={row[header]}>
+                  {row[header]}
+                </td>
+              ))}
+            </tr>
+          ))}
+        </tbody>
+      </table>
+      {rows.length > previewRows.length && (
+        <p>
+          Showing first {previewRows.length} of {rows.length} rows.
+        </p>
+      )}
+    </div>
+  );
+}
+
 function UnsupportedPreview({ fileType }: { fileType: string }) {
   return (
     <div className="unsupported-preview">
@@ -79,6 +156,9 @@ export default function FilePreview({ preview }: FilePreviewProps) {
 
     case "word":
       return <WordPreview />;
+
+    case "csv":
+      return <CsvPreview file={preview.file} isLoading={preview.isLoading} />;
 
     case "unsupported":
       return <UnsupportedPreview fileType={preview.fileType} />;

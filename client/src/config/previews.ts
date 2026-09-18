@@ -7,4 +7,5 @@ export const previewKindByFormat = {
   png: "image",
   txt: "text",
   docx: "word",
+  csv: "csv",
 } satisfies Record<SupportedFormat, ConfiguredPreviewKind>;

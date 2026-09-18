@@ -88,4 +88,30 @@ describe("FilePreview", () => {
       screen.getByText("Type: application/octet-stream"),
     ).toBeInTheDocument();
   });
+
+  it("renders parsed CSV rows as a table", async () => {
+    const file = new File(["Name,Amount\nAnna,2\nJan,5"], "payments.csv", {
+      type: "text/csv",
+    });
+
+    render(
+      <FilePreview
+        preview={{
+          kind: "csv",
+          file,
+          isLoading: false,
+        }}
+      />,
+    );
+
+    expect(await screen.findByRole("table")).toBeInTheDocument();
+    expect(
+      screen.getByRole("columnheader", { name: "Name" }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("columnheader", { name: "Amount" }),
+    ).toBeInTheDocument();
+    expect(screen.getByRole("cell", { name: "Anna" })).toBeInTheDocument();
+    expect(screen.getByRole("cell", { name: "2" })).toBeInTheDocument();
+  });
 });

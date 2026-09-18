@@ -18,6 +18,12 @@ type WordPreviewData = {
   kind: "word";
 };
 
+type CsvPreviewData = {
+  kind: "csv";
+  file: File;
+  isLoading: boolean;
+}
+
 type UnsupportedPreviewData = {
   kind: "unsupported";
   fileType: string;
@@ -28,6 +34,7 @@ export type PreviewData =
   | PDFPreviewData
   | TextPreviewData
   | WordPreviewData
+  | CsvPreviewData
   | UnsupportedPreviewData;
 
 export type PreviewKind = PreviewData["kind"];

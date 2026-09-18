@@ -34,6 +34,9 @@ export function createPreviewData(
     case "word":
       return { kind };
 
+    case "csv":
+      return { kind, file, isLoading};
+
     case "unsupported":
       return { kind, fileType: file.type };
 
