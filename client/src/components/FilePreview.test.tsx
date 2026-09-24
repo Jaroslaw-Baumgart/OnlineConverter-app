@@ -283,6 +283,9 @@ describe("FilePreview", () => {
         "Charts are not shown in this preview. To view them, convert the file to PDF using the charts option.",
       ),
     ).toBeInTheDocument();
+    expect(screen.getByRole("columnheader", { name: "A" })).toBeInTheDocument();
+
+    expect(screen.getByRole("columnheader", { name: "B" })).toBeInTheDocument();
   });
 
   it("shows an empty sheet message and allows selecting another sheet", async () => {
@@ -361,7 +364,7 @@ describe("FilePreview", () => {
     );
 
     expect(await screen.findByRole("table")).toBeInTheDocument();
-    expect(screen.getAllByRole("row")).toHaveLength(100);
+    expect(screen.getAllByRole("row")).toHaveLength(101);
     expect(
       screen.getByRole("cell", { name: "Wiersz 100" }),
     ).toBeInTheDocument();

@@ -179,11 +179,12 @@ function XlsxPreview({ file, isLoading }: { file: File; isLoading: boolean }) {
     (sheet) => sheet.name === selectedSheetName,
   );
   const previewRows = selectedSheet?.rows.slice(0, 100) ?? [];
+  const columnCount = selectedSheet?.rows[0]?.length ?? 0;
 
   return (
-    <div>
+    <div className="xlsx-preview">
       <div className="xlsx-sheet-picker">
-        <span>Sheet</span>
+        <span className="xlsx-sheet-label">Sheet</span>
         <div className="xlsx-sheet-buttons" role="group" aria-label="Sheets">
           {sheets.map((sheet) => (
             <button
@@ -199,21 +200,26 @@ function XlsxPreview({ file, isLoading }: { file: File; isLoading: boolean }) {
           ))}
         </div>
       </div>
-      <p>
-        Charts are not shown in this preview. To view them, convert the file to
-        PDF using the charts option.
-      </p>
       {selectedSheet && (
         <section className="xlsx-table-scroll">
           {selectedSheet.rows.length === 0 ? (
             <p>This sheet is empty.</p>
           ) : (
             <table className="csv-preview-table xlsx-preview-table">
+              <thead>
+                <tr>
+                  {Array.from({ length: columnCount }, (_, columnIndex) => (
+                    <th key={columnIndex} scope="col">
+                      {getColumnLabel(columnIndex)}
+                    </th>
+                  ))}
+                </tr>
+              </thead>
               <tbody>
                 {previewRows.map((row, rowIndex) => (
                   <tr key={rowIndex}>
-                    {row.map((cell, columnIndex) => (
-                      <td key={columnIndex}>{cell}</td>
+                    {Array.from({ length: columnCount }, (_, columnIndex) => (
+                      <td key={columnIndex}>{row[columnIndex] ?? ""}</td>
                     ))}
                   </tr>
                 ))}
@@ -228,8 +234,22 @@ function XlsxPreview({ file, isLoading }: { file: File; isLoading: boolean }) {
           rows.
         </p>
       )}
+      <p className="xlsx-chart-notice" role="note">
+        Charts are not shown in this preview. To view them, convert the file to
+        PDF using the charts option.
+      </p>
     </div>
   );
+}
+
+function getColumnLabel(index: number): string {
+  let label = "";
+
+  for (let value = index + 1; value > 0; value = Math.floor((value - 1) / 26)) {
+    label = String.fromCharCode(((value - 1) % 26) + 65) + label;
+  }
+
+  return label;
 }
 
 function UnsupportedPreview({ fileType }: { fileType: string }) {
