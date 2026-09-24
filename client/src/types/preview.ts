@@ -24,6 +24,12 @@ type CsvPreviewData = {
   isLoading: boolean;
 }
 
+type XlsxPreviewData = {
+  kind: "xlsx";
+  file: File;
+  isLoading: boolean;
+}
+
 type UnsupportedPreviewData = {
   kind: "unsupported";
   fileType: string;
@@ -35,6 +41,7 @@ export type PreviewData =
   | TextPreviewData
   | WordPreviewData
   | CsvPreviewData
+  | XlsxPreviewData
   | UnsupportedPreviewData;
 
 export type PreviewKind = PreviewData["kind"];

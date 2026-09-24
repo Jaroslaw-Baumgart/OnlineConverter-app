@@ -3,6 +3,7 @@ import { readFileAsText } from "../utils/fileUtils";
 import { parseCsvFile, type CsvRow } from "../utils/csv";
 import "../styles/FileConverter.css";
 import type { PreviewData } from "../types/preview";
+import { parseXlsxFile, type XlsxSheet } from "../utils/xlsx";
 
 type FilePreviewProps = {
   preview: PreviewData;
@@ -130,6 +131,107 @@ function CsvPreview({ file, isLoading }: { file: File; isLoading: boolean }) {
   );
 }
 
+function XlsxPreview({ file, isLoading }: { file: File; isLoading: boolean }) {
+  const [sheets, setSheets] = useState<XlsxSheet[]>([]);
+  const [error, setError] = useState<string | null>(null);
+  const [isParsing, setIsParsing] = useState(true);
+  const [selectedSheetName, setSelectedSheetName] = useState("");
+
+  useEffect(() => {
+    if (isLoading) {
+      return;
+    }
+
+    let active = true;
+
+    setIsParsing(true);
+    setError(null);
+
+    parseXlsxFile(file)
+      .then((parsedSheets) => {
+        if (!active) return;
+        setSheets(parsedSheets);
+        setSelectedSheetName(parsedSheets[0]?.name ?? "");
+      })
+      .catch(() => {
+        if (!active) return;
+        setError("Failed to load XLSX content");
+      })
+      .finally(() => {
+        if (!active) return;
+        setIsParsing(false);
+      });
+
+    return () => {
+      active = false;
+    };
+  }, [file, isLoading]);
+
+  if (isLoading || isParsing) {
+    return <p>Loading XLSX content...</p>;
+  }
+
+  if (error) {
+    return <p className="error-message">{error}</p>;
+  }
+
+  const selectedSheet = sheets.find(
+    (sheet) => sheet.name === selectedSheetName,
+  );
+  const previewRows = selectedSheet?.rows.slice(0, 100) ?? [];
+
+  return (
+    <div>
+      <div className="xlsx-sheet-picker">
+        <span>Sheet</span>
+        <div className="xlsx-sheet-buttons" role="group" aria-label="Sheets">
+          {sheets.map((sheet) => (
+            <button
+              key={sheet.name}
+              type="button"
+              className="xlsx-sheet-button"
+              value={sheet.name}
+              aria-pressed={sheet.name === selectedSheetName}
+              onClick={() => setSelectedSheetName(sheet.name)}
+            >
+              {sheet.name}
+            </button>
+          ))}
+        </div>
+      </div>
+      <p>
+        Charts are not shown in this preview. To view them, convert the file to
+        PDF using the charts option.
+      </p>
+      {selectedSheet && (
+        <section className="xlsx-table-scroll">
+          {selectedSheet.rows.length === 0 ? (
+            <p>This sheet is empty.</p>
+          ) : (
+            <table className="csv-preview-table xlsx-preview-table">
+              <tbody>
+                {previewRows.map((row, rowIndex) => (
+                  <tr key={rowIndex}>
+                    {row.map((cell, columnIndex) => (
+                      <td key={columnIndex}>{cell}</td>
+                    ))}
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
+        </section>
+      )}
+      {selectedSheet && selectedSheet.rows.length > previewRows.length && (
+        <p>
+          Showing first {previewRows.length} of {selectedSheet.rows.length}{" "}
+          rows.
+        </p>
+      )}
+    </div>
+  );
+}
+
 function UnsupportedPreview({ fileType }: { fileType: string }) {
   return (
     <div className="unsupported-preview">
@@ -159,6 +261,9 @@ export default function FilePreview({ preview }: FilePreviewProps) {
 
     case "csv":
       return <CsvPreview file={preview.file} isLoading={preview.isLoading} />;
+
+    case "xlsx":
+      return <XlsxPreview file={preview.file} isLoading={preview.isLoading} />;
 
     case "unsupported":
       return <UnsupportedPreview fileType={preview.fileType} />;

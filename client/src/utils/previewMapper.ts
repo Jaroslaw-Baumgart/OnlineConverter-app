@@ -35,7 +35,10 @@ export function createPreviewData(
       return { kind };
 
     case "csv":
-      return { kind, file, isLoading};
+      return { kind, file, isLoading };
+
+    case "xlsx":
+      return { kind, file, isLoading };
 
     case "unsupported":
       return { kind, fileType: file.type };

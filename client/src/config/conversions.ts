@@ -45,6 +45,11 @@ export const conversions = [
     sourceFormat: "csv",
     targetFormat: "pdf",
   },
+  {
+    conversionType: "xlsx-to-pdf",
+    sourceFormat: "xlsx",
+    targetFormat: "pdf",
+  },
 ] as const satisfies readonly ConversionDefinitionShape[];
 
 export type ConversionDefinition = (typeof conversions)[number];

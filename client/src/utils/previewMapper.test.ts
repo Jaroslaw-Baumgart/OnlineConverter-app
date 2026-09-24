@@ -3,11 +3,9 @@ import { createPreviewData } from "./previewMapper";
 
 describe("createPreviewData", () => {
   it("creates CSV preview data for a CSV file", () => {
-    const file = new File(
-      ["Name,Amount\nAnna,2"],
-      "payments.csv",
-      { type: "text/csv" },
-    );
+    const file = new File(["Name,Amount\nAnna,2"], "payments.csv", {
+      type: "text/csv",
+    });
 
     const preview = createPreviewData(file, "", false);
 
@@ -15,6 +13,18 @@ describe("createPreviewData", () => {
       kind: "csv",
       file,
       isLoading: false,
+    });
+  });
+
+  it("creates XLSX preview data and preserves the loading state", () => {
+    const file = new File([], "report.XLSX", {
+      type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+    });
+
+    expect(createPreviewData(file, "unused-url", true)).toEqual({
+      kind: "xlsx",
+      file,
+      isLoading: true,
     });
   });
 });
