@@ -4,6 +4,10 @@ import { describe, expect, it, vi } from "vitest";
 import DownloadSection from "./DownloadSection";
 import type { ConvertedResults } from "../types/conversionResult";
 
+vi.mock("docx-preview", () => ({
+  renderAsync: vi.fn().mockResolvedValue(undefined),
+}));
+
 const createMultipleResults = (): ConvertedResults => [
   {
     url: "https://example.com/page-1.jpg",
@@ -84,11 +88,7 @@ describe("DownloadSection", () => {
 
     renderDownloadSection(file, "https://example.com/converted.docx");
 
-    expect(
-      screen.getByText(
-        "To preview Word documents, please convert them to PDF first",
-      ),
-    ).toBeInTheDocument();
+    expect(screen.getByTestId("docx-preview")).toBeInTheDocument();
   });
 
   it("renders an unsupported preview with the MIME type", () => {

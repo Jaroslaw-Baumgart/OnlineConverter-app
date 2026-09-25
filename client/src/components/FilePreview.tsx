@@ -52,6 +52,7 @@ function TextPreview({ file, isLoading }: { file: File; isLoading: boolean }) {
 function WordPreview({ file, isLoading }: { file: File; isLoading: boolean }) {
   const previewRef = useRef<HTMLDivElement>(null);
   const [error, setError] = useState<string | null>(null);
+  const [isRendering, setIsRendering] = useState(false);
 
   useEffect(() => {
     if (isLoading || !previewRef.current) {
@@ -59,31 +60,36 @@ function WordPreview({ file, isLoading }: { file: File; isLoading: boolean }) {
     }
 
     const container = previewRef.current;
+    let active = true;
+
+    setIsRendering(true);
+    setError(null);
+
     renderAsync(file, container)
-      .then(() => {
-        setError(null);
-      })
       .catch(() => {
-        setError("Failed to render DOCX content");
+        if (active) setError("Failed to render DOCX content");
+      })
+      .finally(() => {
+        if (active) {
+          setIsRendering(false);
+        }
       });
+
+    return () => {
+      active = false;
+    };
   }, [file, isLoading]);
 
   return (
-    <div
-      ref={previewRef}
-      data-testid="docx-preview"
-      className="word-preview"
-      aria-busy={isLoading}
-    >
-      {isLoading ? (
-        <p>Loading DOCX content...</p>
-      ) : error ? (
+    <div className="word-preview" aria-busy={isLoading || isRendering}>
+      {isLoading || isRendering ? <p>Loading DOCX content...</p> : null}
+
+      {error ? (
         <p className="error-message" role="alert">
           {error}
         </p>
-      ) : (
-        <p>{file.name}</p>
-      )}
+      ) : null}
+      <div ref={previewRef} data-testid="docx-preview" />
     </div>
   );
 }

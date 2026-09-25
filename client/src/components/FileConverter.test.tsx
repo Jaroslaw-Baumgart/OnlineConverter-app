@@ -7,6 +7,10 @@ import { server } from "../test/server";
 import { conversions as conversionOptions } from "../config/conversions";
 import FileConverter from "./FileConverter";
 
+vi.mock("docx-preview", () => ({
+  renderAsync: vi.fn().mockResolvedValue(undefined),
+}));
+
 const getOptionCard = (text: string): HTMLElement => {
   const optionText = screen.getByText((_, element) => {
     return (
@@ -233,11 +237,7 @@ describe("FileConverter", () => {
 
     await user.upload(input, file);
 
-    expect(
-      screen.getByText(
-        "To preview Word documents, please convert them to PDF first",
-      ),
-    ).toBeInTheDocument();
+    await screen.findByTestId("docx-preview")
   });
 
   it("shows a safe conversion error when the backend rejects the conversion", async () => {

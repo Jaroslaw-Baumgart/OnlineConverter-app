@@ -84,6 +84,104 @@ describe("FilePreview", () => {
     expect(screen.getByTestId("docx-preview")).toBeInTheDocument();
   });
 
+  it("shows loading while DOCX is rendering", async () => {
+    let finishRendering!: () => void;
+
+    const rendering = new Promise<void>((resolve) => {
+      finishRendering = resolve;
+    });
+
+    vi.mocked(renderAsync).mockReturnValueOnce(rendering);
+
+    const file = new File(["DOCX content"], "loading.docx", {
+      type: "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+    });
+
+    render(
+      <FilePreview
+        preview={{
+          kind: "word",
+          file,
+          isLoading: false,
+        }}
+      />,
+    );
+
+    expect(
+      await screen.findByText("Loading DOCX content..."),
+    ).toBeInTheDocument();
+
+    await act(async () => {
+      finishRendering();
+      await rendering;
+    });
+
+    await waitFor(() => {
+      expect(
+        screen.queryByText("Loading DOCX content..."),
+      ).not.toBeInTheDocument();
+    });
+  });
+
+  it("ignores a DOCX rendering failure after changing files", async () => {
+    let rejectFirst!: (reason?: unknown) => void;
+
+    const firstRendering = new Promise<void>((_, reject) => {
+      rejectFirst = reject;
+    });
+
+    vi.mocked(renderAsync)
+      .mockReturnValueOnce(firstRendering)
+      .mockResolvedValueOnce(undefined);
+
+    const firstFile = new File(["first"], "first.docx", {
+      type: "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+    });
+
+    const secondFile = new File(["second"], "second.docx", {
+      type: "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+    });
+
+    const { rerender } = render(
+      <FilePreview
+        preview={{
+          kind: "word",
+          file: firstFile,
+          isLoading: false,
+        }}
+      />,
+    );
+
+    await waitFor(() => {
+      expect(renderAsync).toHaveBeenCalledTimes(1);
+    });
+
+    rerender(
+      <FilePreview
+        preview={{
+          kind: "word",
+          file: secondFile,
+          isLoading: false,
+        }}
+      />,
+    );
+
+    await waitFor(() => {
+      expect(renderAsync).toHaveBeenCalledTimes(2);
+    });
+
+    await act(async () => {
+      rejectFirst(new Error("First file failed"));
+      await firstRendering.catch(() => undefined);
+    });
+
+    expect(screen.queryByRole("alert")).not.toBeInTheDocument();
+    expect(renderAsync).toHaveBeenLastCalledWith(
+      secondFile,
+      screen.getByTestId("docx-preview"),
+    );
+  });
+
   it("shows an error when DOCX rendering fails", async () => {
     vi.mocked(renderAsync).mockRejectedValueOnce(
       new Error("Invalid DOCX file"),
@@ -434,5 +532,40 @@ describe("FilePreview", () => {
       expect.anything(),
       screen.getByTestId("docx-preview"),
     );
+  });
+
+  it("shows XLSX columns that appear only in later rows", async () => {
+    const workbook = XLSX.utils.book_new();
+
+    XLSX.utils.book_append_sheet(
+      workbook,
+      XLSX.utils.aoa_to_sheet([["Produkt"], ["Kawa", "Ilość", "Magazyn"]]),
+      "Dane",
+    );
+
+    const bytes = XLSX.write(workbook, {
+      type: "array",
+      bookType: "xlsx",
+    });
+
+    const file = new File([bytes], "uneven-columns.xlsx", {
+      type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+    });
+
+    render(
+      <FilePreview
+        preview={{
+          kind: "xlsx",
+          file,
+          isLoading: false,
+        }}
+      />,
+    );
+
+    expect(await screen.findByRole("table")).toBeInTheDocument();
+    expect(screen.getByRole("columnheader", { name: "A" })).toBeInTheDocument();
+    expect(screen.getByRole("columnheader", { name: "B" })).toBeInTheDocument();
+    expect(screen.getByRole("columnheader", { name: "C" })).toBeInTheDocument();
+    expect(screen.getByRole("cell", { name: "Magazyn" })).toBeInTheDocument();
   });
 });
