@@ -32,7 +32,7 @@ export function createPreviewData(
       return { kind, file, isLoading };
 
     case "word":
-      return { kind };
+      return { kind, file, isLoading };
 
     case "csv":
       return { kind, file, isLoading };

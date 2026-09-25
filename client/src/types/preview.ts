@@ -16,6 +16,8 @@ type TextPreviewData = {
 
 type WordPreviewData = {
   kind: "word";
+  file: File;
+  isLoading: boolean;
 };
 
 type CsvPreviewData = {

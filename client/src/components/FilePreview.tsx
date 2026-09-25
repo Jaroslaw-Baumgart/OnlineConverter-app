@@ -1,9 +1,10 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { readFileAsText } from "../utils/fileUtils";
 import { parseCsvFile, type CsvRow } from "../utils/csv";
 import "../styles/FileConverter.css";
 import type { PreviewData } from "../types/preview";
 import { parseXlsxFile, type XlsxSheet } from "../utils/xlsx";
+import { renderAsync } from "docx-preview";
 
 type FilePreviewProps = {
   preview: PreviewData;
@@ -48,10 +49,41 @@ function TextPreview({ file, isLoading }: { file: File; isLoading: boolean }) {
   return <textarea readOnly value={text} className="text-preview" />;
 }
 
-function WordPreview() {
+function WordPreview({ file, isLoading }: { file: File; isLoading: boolean }) {
+  const previewRef = useRef<HTMLDivElement>(null);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (isLoading || !previewRef.current) {
+      return;
+    }
+
+    const container = previewRef.current;
+    renderAsync(file, container)
+      .then(() => {
+        setError(null);
+      })
+      .catch(() => {
+        setError("Failed to render DOCX content");
+      });
+  }, [file, isLoading]);
+
   return (
-    <div className="word-preview">
-      <p>To preview Word documents, please convert them to PDF first</p>
+    <div
+      ref={previewRef}
+      data-testid="docx-preview"
+      className="word-preview"
+      aria-busy={isLoading}
+    >
+      {isLoading ? (
+        <p>Loading DOCX content...</p>
+      ) : error ? (
+        <p className="error-message" role="alert">
+          {error}
+        </p>
+      ) : (
+        <p>{file.name}</p>
+      )}
     </div>
   );
 }
@@ -277,7 +309,7 @@ export default function FilePreview({ preview }: FilePreviewProps) {
       return <TextPreview file={preview.file} isLoading={preview.isLoading} />;
 
     case "word":
-      return <WordPreview />;
+      return <WordPreview file={preview.file} isLoading={preview.isLoading} />;
 
     case "csv":
       return <CsvPreview file={preview.file} isLoading={preview.isLoading} />;

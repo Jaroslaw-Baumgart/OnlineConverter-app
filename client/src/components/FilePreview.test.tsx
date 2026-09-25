@@ -1,10 +1,19 @@
-import { render, screen, act } from "@testing-library/react";
-import { describe, expect, it, vi } from "vitest";
+import { render, screen, act, waitFor } from "@testing-library/react";
+import { describe, expect, it, vi, beforeEach } from "vitest";
 import * as XLSX from "xlsx";
 import userEvent from "@testing-library/user-event";
 
 import FilePreview from "./FilePreview";
 import * as xlsxUtils from "../utils/xlsx";
+import { renderAsync } from "docx-preview";
+
+vi.mock("docx-preview", () => ({
+  renderAsync: vi.fn().mockResolvedValue(undefined),
+}));
+
+beforeEach(() => {
+  vi.clearAllMocks();
+});
 
 describe("FilePreview", () => {
   it("renders an image preview", () => {
@@ -57,20 +66,46 @@ describe("FilePreview", () => {
     expect(await screen.findByDisplayValue("text content")).toBeInTheDocument();
   });
 
-  it("renders Word preview guidance", () => {
+  it("renders a DOCX preview container", () => {
+    const file = new File([], "document.docx", {
+      type: "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+    });
+
     render(
       <FilePreview
         preview={{
           kind: "word",
+          file,
+          isLoading: false,
         }}
       />,
     );
 
-    expect(
-      screen.getByText(
-        "To preview Word documents, please convert them to PDF first",
-      ),
-    ).toBeInTheDocument();
+    expect(screen.getByTestId("docx-preview")).toBeInTheDocument();
+  });
+
+  it("shows an error when DOCX rendering fails", async () => {
+    vi.mocked(renderAsync).mockRejectedValueOnce(
+      new Error("Invalid DOCX file"),
+    );
+
+    const file = new File(["broken content"], "broken.docx", {
+      type: "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+    });
+
+    render(
+      <FilePreview
+        preview={{
+          kind: "word",
+          file,
+          isLoading: false,
+        }}
+      />,
+    );
+
+    expect(await screen.findByRole("alert")).toHaveTextContent(
+      "Failed to render DOCX content",
+    );
   });
 
   it("renders an unsupported file message", () => {
@@ -374,5 +409,30 @@ describe("FilePreview", () => {
     expect(
       screen.getByText("Showing first 100 of 105 rows."),
     ).toBeInTheDocument();
+  });
+
+  it("renders DOCX content inside the preview container", async () => {
+    const file = new File(["docx content"], "document.docx", {
+      type: "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+    });
+
+    render(
+      <FilePreview
+        preview={{
+          kind: "word",
+          file,
+          isLoading: false,
+        }}
+      />,
+    );
+
+    await waitFor(() => {
+      expect(renderAsync).toHaveBeenCalledTimes(1);
+    });
+
+    expect(renderAsync).toHaveBeenCalledWith(
+      expect.anything(),
+      screen.getByTestId("docx-preview"),
+    );
   });
 });

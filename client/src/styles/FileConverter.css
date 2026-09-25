@@ -227,16 +227,6 @@
   resize: none;
 }
 
-/* Podgląd Word */
-.word-preview {
-  text-align: center;
-  padding: 2rem;
-}
-
-.word-icon {
-  margin-bottom: 1rem;
-}
-
 .unsupported-preview {
   padding: 2rem;
   text-align: center;
@@ -513,4 +503,11 @@
   border: 1px solid #cbd5e1;
   border-radius: 0.5rem;
   background: white;
+}
+
+.word-preview {
+  max-height: 600px;
+  overflow: auto;
+  padding: 1rem;
+  text-align: initial;
 }
