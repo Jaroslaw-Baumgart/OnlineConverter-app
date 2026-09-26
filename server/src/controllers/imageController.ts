@@ -10,7 +10,10 @@ import {
   sendErrorResponse,
   sendSuccessResponse,
 } from "../utils/response";
-import { pngToJpgSettingsSchema, pdfPageSettingsSchema } from "../schemas/conversionSettings";
+import {
+  pngToJpgSettingsSchema,
+  pdfPageSettingsSchema,
+} from "../schemas/conversionSettings";
 
 const getBaseFileName = (file: Express.Multer.File) => {
   return path.parse(file.filename).name;
@@ -90,9 +93,12 @@ export const jpgToPdf = async (req: Request, res: Response) => {
     const settings = settingsResult.data;
 
     const doc = new PDFDocument({ autoFirstPage: false });
-    doc.addPage({ size: "A4", layout: settings.pageOrientation });
+    doc.addPage({ size: settings.pageSize, layout: settings.pageOrientation });
+    const pageMargin = 36;
+    const imageWidth = doc.page.width - pageMargin * 2;
+    const imageHeight = doc.page.height - pageMargin * 2;
     doc.image(req.file.path, {
-      fit: [500, 700],
+      fit: [imageWidth, imageHeight],
       align: "center",
       valign: "center",
     });

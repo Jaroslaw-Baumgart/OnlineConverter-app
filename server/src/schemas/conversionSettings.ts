@@ -20,4 +20,5 @@ export type PngToJpgSettings = z.infer<
 
 export const pdfPageSettingsSchema = z.object({
   pageOrientation: z.enum(["portrait", "landscape"]).default("portrait"),
+  pageSize: z.enum(["A4", "A3"]).default("A4"),
 });

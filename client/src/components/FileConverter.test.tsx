@@ -62,6 +62,11 @@ const createTestFile = {
     new File(["docx content"], name, {
       type: "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
     }),
+
+  csv: (name = "report.csv") =>
+    new File(["ID,Name\n1,Ada"], name, {
+      type: "text/csv",
+    }),
 };
 
 const setupFileConverter = () => {
@@ -237,7 +242,7 @@ describe("FileConverter", () => {
 
     await user.upload(input, file);
 
-    await screen.findByTestId("docx-preview")
+    await screen.findByTestId("docx-preview");
   });
 
   it("shows a safe conversion error when the backend rejects the conversion", async () => {
@@ -744,5 +749,43 @@ describe("FileConverter", () => {
       "src",
       "http://localhost:5000/output/page-2.jpg",
     );
+  });
+
+  it("shows PDF page settings for CSV to PDF", async () => {
+    const { user, input } = setupFileConverter();
+
+    await user.upload(input, createTestFile.csv());
+
+    const csvToPdfCard = getOptionCard("CSV→PDF");
+
+    await user.click(
+      within(csvToPdfCard).getByRole("button", {
+        name: "Customize output",
+      }),
+    );
+
+    expect(
+      within(csvToPdfCard).getByRole("radio", {
+        name: "A4",
+      }),
+    ).toBeChecked();
+
+    expect(
+      within(csvToPdfCard).getByRole("radio", {
+        name: "A3",
+      }),
+    ).toBeInTheDocument();
+
+    expect(
+      within(csvToPdfCard).getByRole("radio", {
+        name: "Portrait",
+      }),
+    ).toBeChecked();
+
+    expect(
+      within(csvToPdfCard).getByRole("radio", {
+        name: "Landscape",
+      }),
+    ).toBeInTheDocument();
   });
 });

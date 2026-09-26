@@ -43,7 +43,8 @@ export default function ConversionOptions({
                   onConvert={(settings) => onConvert(option, settings)}
                 />
               ) : (option.conversionType === "jpg-to-pdf" ||
-                  option.conversionType === "txt-to-pdf") &&
+                  option.conversionType === "txt-to-pdf" ||
+                  option.conversionType === "csv-to-pdf") &&
                 option.disabled === false ? (
                 <PdfPageControls
                   disabled={option.disabled || isConverting}

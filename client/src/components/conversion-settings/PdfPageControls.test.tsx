@@ -14,7 +14,7 @@ const setup = (disabled = false) => {
 };
 
 describe("PdfPageControls", () => {
-  it("reveals portrait as the default orientation", async () => {
+  it("reveals A4 portrait as the default page settings", async () => {
     const { user } = setup();
 
     await user.click(
@@ -23,20 +23,14 @@ describe("PdfPageControls", () => {
       }),
     );
 
-    expect(
-      screen.getByRole("radio", {
-        name: "Portrait",
-      }),
-    ).toBeChecked();
+    expect(screen.getByRole("radio", { name: "A4" })).toBeChecked();
+    expect(screen.getByRole("radio", { name: "A3" })).not.toBeChecked();
 
-    expect(
-      screen.getByRole("radio", {
-        name: "Landscape",
-      }),
-    ).not.toBeChecked();
+    expect(screen.getByRole("radio", { name: "Portrait" })).toBeChecked();
+    expect(screen.getByRole("radio", { name: "Landscape" })).not.toBeChecked();
   });
 
-  it("submits the default orientation without opening settings", async () => {
+  it("submits default page settings without opening settings", async () => {
     const { user, onConvert } = setup();
 
     await user.click(
@@ -46,11 +40,12 @@ describe("PdfPageControls", () => {
     );
 
     expect(onConvert.mock.calls[0]?.[0]).toEqual({
+      pageSize: "A4",
       pageOrientation: "portrait",
     });
   });
 
-  it("submits landscape orientation", async () => {
+  it("submits A3 landscape settings", async () => {
     const { user, onConvert } = setup();
 
     await user.click(
@@ -59,6 +54,7 @@ describe("PdfPageControls", () => {
       }),
     );
 
+    await user.click(screen.getByRole("radio", { name: "A3" }));
     await user.click(
       screen.getByRole("radio", {
         name: "Landscape",
@@ -72,6 +68,7 @@ describe("PdfPageControls", () => {
     );
 
     expect(onConvert.mock.calls[0]?.[0]).toEqual({
+      pageSize: "A3",
       pageOrientation: "landscape",
     });
   });

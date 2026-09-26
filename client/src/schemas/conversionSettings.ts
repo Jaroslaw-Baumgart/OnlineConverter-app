@@ -19,6 +19,7 @@ export type PngToJpgSettings = z.infer<typeof pngToJpgSettingsSchema>;
 
 export const pdfPageSettingsSchema = z.object({
   pageOrientation: z.enum(["portrait", "landscape"]).default("portrait"),
+  pageSize: z.enum(["A4", "A3"]).default("A4"),
 });
 
 export type PdfPageSettings = z.infer<typeof pdfPageSettingsSchema>;
@@ -30,6 +31,7 @@ export const getConversionSettingsSchema = (conversionType: ConversionType) => {
 
     case "jpg-to-pdf":
     case "txt-to-pdf":
+    case "csv-to-pdf":
       return pdfPageSettingsSchema;
 
     default:

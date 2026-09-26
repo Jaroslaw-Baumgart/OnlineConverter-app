@@ -246,4 +246,14 @@ describe("DownloadSection", () => {
       }),
     ).not.toBeInTheDocument();
   });
+
+  it("does not render a result picker for one converted file", () => {
+    const file = new File(["pdf content"], "converted.pdf", {
+      type: "application/pdf",
+    });
+
+    renderDownloadSection(file, "https://example.com/converted.pdf");
+
+    expect(screen.queryByLabelText("Converted files")).not.toBeInTheDocument();
+  });
 });

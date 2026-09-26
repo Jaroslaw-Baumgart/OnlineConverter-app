@@ -57,6 +57,23 @@ export default function PdfPageControls({
             />
             <label htmlFor="pdf-page-orientation-landscape">Landscape</label>
           </fieldset>
+          <fieldset id="pdf-page-size">
+            <legend>Page Size</legend>
+            <input
+              type="radio"
+              id="pdf-page-size-a4"
+              value="A4"
+              {...register("pageSize")}
+            />
+            <label htmlFor="pdf-page-size-a4">A4</label>
+            <input
+              type="radio"
+              id="pdf-page-size-a3"
+              value="A3"
+              {...register("pageSize")}
+            />
+            <label htmlFor="pdf-page-size-a3">A3</label>
+          </fieldset>
         </div>
       )}
       <button type="submit" disabled={disabled}>

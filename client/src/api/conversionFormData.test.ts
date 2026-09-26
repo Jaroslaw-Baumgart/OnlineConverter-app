@@ -28,7 +28,7 @@ describe("createConversionFormData", () => {
     expect(formData.get("backgroundColor")).toBe("#000000");
   });
 
-  it("includes PDF page orientation in the conversion payload", () => {
+  it("includes PDF page settings in the conversion payload", () => {
     const file = new File(["jpg content"], "image.jpg", {
       type: "image/jpeg",
     });
@@ -41,12 +41,14 @@ describe("createConversionFormData", () => {
     } satisfies ConversionOption;
 
     const formData = createConversionFormData(file, option, {
+      pageSize: "A3",
       pageOrientation: "landscape",
     });
 
     expect(formData.get("file")).toBe(file);
     expect(formData.get("conversionType")).toBe("jpg-to-pdf");
     expect(formData.get("target")).toBe("pdf");
+    expect(formData.get("pageSize")).toBe("A3");
     expect(formData.get("pageOrientation")).toBe("landscape");
 
     expect(formData.has("quality")).toBe(false);

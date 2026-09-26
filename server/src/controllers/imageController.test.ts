@@ -43,6 +43,10 @@ const pdfMocks = vi.hoisted(() => {
       image,
       pipe,
       end,
+      page: {
+        width: 1190.55,
+        height: 841.89,
+      },
     };
   });
 
@@ -150,8 +154,9 @@ describe("jpgToPdf", () => {
     vi.clearAllMocks();
   });
 
-  it("creates an A4 PDF with the validated landscape orientation", async () => {
+  it("creates an A3 PDF with the validated landscape orientation", async () => {
     const request = createRequest({
+      pageSize: "A3",
       pageOrientation: "landscape",
     });
     const { response, status } = createResponse();
@@ -162,7 +167,7 @@ describe("jpgToPdf", () => {
       autoFirstPage: false,
     });
     expect(pdfMocks.addPage).toHaveBeenCalledWith({
-      size: "A4",
+      size: "A3",
       layout: "landscape",
     });
     expect(status).toHaveBeenCalledWith(200);
@@ -185,5 +190,21 @@ describe("jpgToPdf", () => {
       code: "conversion-failed",
     });
     expect(sharpMocks.safeUnlink).toHaveBeenCalledWith("uploads/image.png");
+  });
+
+  it("fits the image inside the selected A3 page margins", async () => {
+    const request = createRequest({
+      pageSize: "A3",
+      pageOrientation: "landscape",
+    });
+    const { response } = createResponse();
+
+    await jpgToPdf(request, response);
+
+    expect(pdfMocks.image).toHaveBeenCalledWith("uploads/image.png", {
+      fit: [1118.55, 769.89],
+      align: "center",
+      valign: "center",
+    });
   });
 });

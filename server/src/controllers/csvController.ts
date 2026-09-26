@@ -42,13 +42,13 @@ export const csvToPdf = async (req: Request, res: Response) => {
     const rows = parseCsv(csvText);
 
     if (rows.length === 0) {
-      throw new Error("CSV file is empty.");
+      return sendErrorResponse(res, 400, "CSV file is empty.");
     }
 
     const headers = Object.keys(rows[0] ?? {});
 
     const doc = new PDFDocument({
-      size: "A4",
+      size: settings.pageSize,
       layout: settings.pageOrientation,
     });
 
@@ -69,14 +69,112 @@ export const csvToPdf = async (req: Request, res: Response) => {
       "../assets/fonts/NotoSans-Bold.ttf",
     );
 
-    doc.font(boldFontPath).fontSize(10);
-    doc.text(headers.join(" | "));
+    const margin = 36;
+    const cellPadding = 6;
+    const rowHeight = 24;
+    const tableWidth = doc.page.width - margin * 2;
+    const minFontSize = 5;
+    const maxFontSize = 10;
 
-    doc.font(regularFontPath);
+    let fontSize = minFontSize;
+
+    for (
+      let candidateSize = maxFontSize;
+      candidateSize >= minFontSize;
+      candidateSize -= 1
+    ) {
+      doc.font(regularFontPath).fontSize(candidateSize);
+
+      const requiredTableWidth = headers.reduce((totalWidth, header) => {
+        const widestValue = Math.max(
+          doc.widthOfString(header),
+          ...rows.map((row) => doc.widthOfString(row[header] ?? "")),
+        );
+
+        return totalWidth + widestValue + cellPadding * 2;
+      }, 0);
+
+      if (requiredTableWidth <= tableWidth) {
+        fontSize = candidateSize;
+        break;
+      }
+    }
+
+    const columnWidth = tableWidth / headers.length;
+
+    const getRowHeight = (values: string[]) => {
+      const contentWidth = columnWidth - cellPadding * 2;
+
+      const tallestContent = Math.max(
+        ...values.map((value) =>
+          doc.heightOfString(value, { width: contentWidth }),
+        ),
+      );
+
+      return Math.max(rowHeight, tallestContent + cellPadding * 2);
+    };
+
+    const drawCell = (
+      value: string,
+      x: number,
+      y: number,
+      height: number,
+      isHeader = false,
+    ) => {
+      if (isHeader) {
+        doc.rect(x, y, columnWidth, height).fill("#e8eef7");
+      }
+
+      doc
+        .rect(x, y, columnWidth, height)
+        .lineWidth(0.5)
+        .strokeColor("#94a3b8")
+        .stroke();
+
+      doc.fillColor("#111827").text(value, x + cellPadding, y + cellPadding, {
+        width: columnWidth - cellPadding * 2,
+        height: height - cellPadding * 2,
+      });
+    };
+
+    let y = margin;
+
+    const drawHeaders = () => {
+      doc.font(boldFontPath).fontSize(fontSize);
+
+      const headerHeight = getRowHeight(headers);
+
+      headers.forEach((header, columnIndex) => {
+        const x = margin + columnIndex * columnWidth;
+
+        drawCell(header, x, y, headerHeight, true);
+      });
+
+      y += headerHeight;
+      doc.font(regularFontPath).fontSize(fontSize).fillColor("#111827");
+    };
+
+    drawHeaders();
 
     for (const row of rows) {
-      doc.text(headers.map((header) => row[header] ?? "").join(" | "));
+      const values = headers.map((header) => row[header] ?? "");
+      const currentRowHeight = getRowHeight(values);
+
+      if (y + currentRowHeight > doc.page.height - margin) {
+        doc.addPage();
+        y = margin;
+        drawHeaders();
+      }
+
+      values.forEach((value, columnIndex) => {
+        const x = margin + columnIndex * columnWidth;
+
+        drawCell(value, x, y, currentRowHeight);
+      });
+
+      y += currentRowHeight;
     }
+
     doc.end();
 
     await streamFinished;

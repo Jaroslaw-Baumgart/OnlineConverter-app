@@ -96,8 +96,9 @@ describe("txtToPdf", () => {
     vi.clearAllMocks();
   });
 
-  it("creates an A4 PDF with the validated landscape orientation", async () => {
+  it("creates an A3 PDF with the validated landscape orientation", async () => {
     const request = createRequest({
+      pageSize: "A3",
       pageOrientation: "landscape",
     });
     const { response, status } = createResponse();
@@ -106,7 +107,7 @@ describe("txtToPdf", () => {
 
     expect(mocks.readFile).toHaveBeenCalledWith("uploads/document.txt", "utf8");
     expect(mocks.PDFDocument).toHaveBeenCalledWith({
-      size: "A4",
+      size: "A3",
       layout: "landscape",
     });
     expect(mocks.fontSize).toHaveBeenCalledWith(12);

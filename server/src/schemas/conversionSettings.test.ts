@@ -1,6 +1,9 @@
 import { describe, expect, it } from "vitest";
 
-import { pngToJpgSettingsSchema, pdfPageSettingsSchema } from "./conversionSettings";
+import {
+  pngToJpgSettingsSchema,
+  pdfPageSettingsSchema,
+} from "./conversionSettings";
 
 describe("pngToJpgSettingsSchema", () => {
   it("provides safe defaults when settings are missing", () => {
@@ -45,18 +48,21 @@ describe("pngToJpgSettingsSchema", () => {
 });
 
 describe("pdfPageSettingsSchema", () => {
-  it("provides portrait as the safe default", () => {
+  it("provides A4 portrait as safe defaults", () => {
     expect(pdfPageSettingsSchema.parse({})).toEqual({
+      pageSize: "A4",
       pageOrientation: "portrait",
     });
   });
 
-  it("accepts landscape orientation from multipart form data", () => {
+  it("accepts A3 landscape settings from multipart form data", () => {
     expect(
       pdfPageSettingsSchema.parse({
+        pageSize: "A3",
         pageOrientation: "landscape",
       }),
     ).toEqual({
+      pageSize: "A3",
       pageOrientation: "landscape",
     });
   });
@@ -65,6 +71,14 @@ describe("pdfPageSettingsSchema", () => {
     expect(
       pdfPageSettingsSchema.safeParse({
         pageOrientation: "sideways",
+      }).success,
+    ).toBe(false);
+  });
+
+  it("rejects an unsupported page size", () => {
+    expect(
+      pdfPageSettingsSchema.safeParse({
+        pageSize: "Letter",
       }).success,
     ).toBe(false);
   });

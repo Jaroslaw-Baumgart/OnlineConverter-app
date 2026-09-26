@@ -128,7 +128,7 @@ export const txtToPdf = async (req: Request, res: Response) => {
     const text = await fs.readFile(file.path, "utf8");
 
     const doc = new PDFDocument({
-      size: "A4",
+      size: settings.pageSize,
       layout: settings.pageOrientation,
     });
     const stream = doc.pipe(fsSync.createWriteStream(outputPath));

@@ -18,6 +18,7 @@ export const createConversionFormData = (
 
   if (settings && "pageOrientation" in settings) {
     formData.append("pageOrientation", settings.pageOrientation);
+    formData.append("pageSize", settings.pageSize);
   }
 
   return formData;

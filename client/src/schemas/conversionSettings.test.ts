@@ -55,18 +55,21 @@ describe("pngToJpgSettingsSchema", () => {
 });
 
 describe("pdfPageSettingsSchema", () => {
-  it("uses portrait orientation by default", () => {
+  it("uses A4 portrait as user-friendly defaults", () => {
     expect(pdfPageSettingsSchema.parse({})).toEqual({
+      pageSize: "A4",
       pageOrientation: "portrait",
     });
   });
 
-  it("accepts landscape orientation", () => {
+  it("accepts A3 landscape settings", () => {
     expect(
       pdfPageSettingsSchema.parse({
+        pageSize: "A3",
         pageOrientation: "landscape",
       }),
     ).toEqual({
+      pageSize: "A3",
       pageOrientation: "landscape",
     });
   });
@@ -75,6 +78,14 @@ describe("pdfPageSettingsSchema", () => {
     expect(
       pdfPageSettingsSchema.safeParse({
         pageOrientation: "sideways",
+      }).success,
+    ).toBe(false);
+  });
+
+  it("rejects an unsupported page size", () => {
+    expect(
+      pdfPageSettingsSchema.safeParse({
+        pageSize: "Letter",
       }).success,
     ).toBe(false);
   });
@@ -87,7 +98,7 @@ describe("getConversionSettingsSchema", () => {
     );
   });
 
-  it.each(["jpg-to-pdf", "txt-to-pdf"] as const)(
+  it.each(["jpg-to-pdf", "txt-to-pdf", "csv-to-pdf"] as const)(
     "returns PDF page settings schema for %s",
     (conversionType) => {
       expect(getConversionSettingsSchema(conversionType)).toBe(
