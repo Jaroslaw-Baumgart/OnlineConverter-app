@@ -1,16 +1,14 @@
 import { Request, Response } from "express";
 import path from "path";
-import fs from "fs/promises";
-import { exec } from "child_process";
 import { OUTPUT_DIR } from "../utils/constants";
 import { safeUnlink } from "../utils/file";
-import fsSync from "fs";
 import {
   createOutputFileItem,
   sendErrorResponse,
   sendSuccessResponse,
 } from "../utils/response";
 import { getConversionFailureCode } from "../utils/conversionError";
+import { convertOfficeToPdf } from "../utils/office2pdf";
 
 const getBaseFileName = (file: Express.Multer.File) => {
   return path.parse(file.filename).name;
@@ -30,28 +28,9 @@ export const docxToPdf = async (req: Request, res: Response) => {
 
   // DOCX --> PDF
   try {
-    await new Promise((resolve, reject) => {
-      exec(
-        `soffice --headless --convert-to pdf --outdir "${OUTPUT_DIR}" "${file.path}"`,
-        (err) => {
-          if (err) reject(err);
-          else resolve(null);
-        },
-      );
-    });
+    await convertOfficeToPdf(file.path, outputPath);
 
-    const originalOutputPath = path.join(
-      OUTPUT_DIR,
-      `${path.parse(file.originalname).name}.pdf`,
-    );
-    if (
-      originalOutputPath !== outputPath &&
-      fsSync.existsSync(originalOutputPath)
-    ) {
-      await fs.rename(originalOutputPath, outputPath);
-    }
-
-    sendSuccessResponse(res, [createOutputFileItem(outputName)]);
+    return sendSuccessResponse(res, [createOutputFileItem(outputName)]);
   } catch (err: unknown) {
     const errorMessage =
       err instanceof Error ? err.message : "Failed to convert DOCX to PDF.";
