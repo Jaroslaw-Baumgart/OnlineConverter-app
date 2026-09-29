@@ -22,6 +22,12 @@ export const pdfPageSettingsSchema = z.object({
   pageSize: z.enum(["A4", "A3"]).default("A4"),
 });
 
+export const xlsxPdfSettingsSchema = pdfPageSettingsSchema.extend({
+  sheetName: z.string().trim().min(1),
+});
+
+export type XlsxPdfSettings = z.infer<typeof xlsxPdfSettingsSchema>;
+
 export type PdfPageSettings = z.infer<typeof pdfPageSettingsSchema>;
 
 export const getConversionSettingsSchema = (conversionType: ConversionType) => {
@@ -34,9 +40,15 @@ export const getConversionSettingsSchema = (conversionType: ConversionType) => {
     case "csv-to-pdf":
       return pdfPageSettingsSchema;
 
+    case "xlsx-to-pdf":
+      return xlsxPdfSettingsSchema;
+
     default:
       return null;
   }
 };
 
-export type ConversionSettings = PngToJpgSettings | PdfPageSettings;
+export type ConversionSettings =
+  | PngToJpgSettings
+  | PdfPageSettings
+  | XlsxPdfSettings;

@@ -1,4 +1,10 @@
-import { render, screen, within, fireEvent } from "@testing-library/react";
+import {
+  render,
+  screen,
+  within,
+  fireEvent,
+  waitFor,
+} from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { http, HttpResponse } from "msw";
@@ -6,6 +12,7 @@ import { http, HttpResponse } from "msw";
 import { server } from "../test/server";
 import { conversions as conversionOptions } from "../config/conversions";
 import FileConverter from "./FileConverter";
+import * as XLSX from "xlsx";
 
 vi.mock("docx-preview", () => ({
   renderAsync: vi.fn().mockResolvedValue(undefined),
@@ -67,6 +74,31 @@ const createTestFile = {
     new File(["ID,Name\n1,Ada"], name, {
       type: "text/csv",
     }),
+
+  xlsx: () => {
+    const workbook = XLSX.utils.book_new();
+
+    XLSX.utils.book_append_sheet(
+      workbook,
+      XLSX.utils.aoa_to_sheet([["Product"], ["Coffee"]]),
+      "Overview",
+    );
+
+    XLSX.utils.book_append_sheet(
+      workbook,
+      XLSX.utils.aoa_to_sheet([["City"], ["Warsaw"]]),
+      "Warehouse",
+    );
+
+    const bytes = XLSX.write(workbook, {
+      type: "array",
+      bookType: "xlsx",
+    });
+
+    return new File([bytes], "workbook.xlsx", {
+      type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+    });
+  },
 };
 
 const setupFileConverter = () => {
@@ -195,6 +227,7 @@ describe("FileConverter", () => {
           },
         });
       }),
+
     );
 
     const { user, input } = setupFileConverter();
@@ -787,5 +820,85 @@ describe("FileConverter", () => {
         name: "Landscape",
       }),
     ).toBeInTheDocument();
+  });
+
+  it("sends the selected XLSX sheet with page settings", async () => {
+    const fetchMock = vi.fn<
+      (input: RequestInfo | URL, init?: RequestInit) => Promise<Response>
+    >(async (input) => {
+      if (String(input).endsWith("/convert")) {
+        return HttpResponse.json({
+          success: true,
+          files: [
+            {
+              name: "workbook.pdf",
+              url: "/output/workbook.pdf",
+            },
+          ],
+        });
+      }
+
+      return new HttpResponse("PDF content", {
+        headers: {
+          "Content-Type": "application/pdf",
+        },
+      });
+    });
+
+    vi.stubGlobal("fetch", fetchMock);
+
+    const { user, input } = setupFileConverter();
+
+    await user.upload(input, createTestFile.xlsx());
+
+    await screen.findByRole("button", { name: "Overview" });
+    await user.click(screen.getByRole("button", { name: "Warehouse" }));
+
+    const xlsxToPdfCard = getOptionCard("XLSX→PDF");
+
+    await user.click(
+      within(xlsxToPdfCard).getByRole("button", {
+        name: "Customize output",
+      }),
+    );
+
+    await user.click(
+      within(xlsxToPdfCard).getByRole("radio", {
+        name: "A3",
+      }),
+    );
+
+    await user.click(
+      within(xlsxToPdfCard).getByRole("radio", {
+        name: "Landscape",
+      }),
+    );
+
+    await user.click(
+      within(xlsxToPdfCard).getByRole("button", {
+        name: "Convert",
+      }),
+    );
+
+    await waitFor(() => {
+      expect(fetchMock).toHaveBeenCalledWith(
+        "http://localhost:5000/convert",
+        expect.objectContaining({ method: "POST" }),
+      );
+    });
+
+    const [, requestOptions] = fetchMock.mock.calls[0] ?? [];
+    const formData = requestOptions?.body;
+
+    expect(formData).toBeInstanceOf(FormData);
+
+    if (!(formData instanceof FormData)) {
+      throw new Error("Conversion request did not contain FormData.");
+    }
+
+    expect(formData.get("conversionType")).toBe("xlsx-to-pdf");
+    expect(formData.get("sheetName")).toBe("Warehouse");
+    expect(formData.get("pageSize")).toBe("A3");
+    expect(formData.get("pageOrientation")).toBe("landscape");
   });
 });

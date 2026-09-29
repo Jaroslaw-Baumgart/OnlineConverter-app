@@ -289,6 +289,49 @@ describe("FilePreview", () => {
     expect(await screen.findByText("Podsumowanie")).toBeInTheDocument();
   });
 
+  it("reports the initial and newly selected XLSX sheet", async () => {
+    const user = userEvent.setup();
+    const onXlsxSheetChange = vi.fn();
+
+    const parseSpy = vi.spyOn(xlsxUtils, "parseXlsxFile").mockResolvedValue([
+      {
+        name: "Sprzedaż",
+        rows: [["Produkt"], ["Kawa"]],
+      },
+      {
+        name: "Magazyn",
+        rows: [["Miasto"], ["Warszawa"]],
+      },
+    ]);
+
+    try {
+      const file = new File(["placeholder"], "report.xlsx", {
+        type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+      });
+
+      render(
+        <FilePreview
+          preview={{
+            kind: "xlsx",
+            file,
+            isLoading: false,
+          }}
+          onXlsxSheetChange={onXlsxSheetChange}
+        />,
+      );
+
+      await waitFor(() => {
+        expect(onXlsxSheetChange).toHaveBeenCalledWith("Sprzedaż");
+      });
+
+      await user.click(screen.getByRole("button", { name: "Magazyn" }));
+
+      expect(onXlsxSheetChange).toHaveBeenLastCalledWith("Magazyn");
+    } finally {
+      parseSpy.mockRestore();
+    }
+  });
+
   it("ignores an earlier XLSX result after changing files", async () => {
     let finishFirst!: (sheets: xlsxUtils.XlsxSheet[]) => void;
     let finishSecond!: (sheets: xlsxUtils.XlsxSheet[]) => void;

@@ -8,6 +8,7 @@ import { renderAsync } from "docx-preview";
 
 type FilePreviewProps = {
   preview: PreviewData;
+  onXlsxSheetChange?: (sheetName: string) => void;
 };
 
 function ImagePreview({ url }: { url: string }) {
@@ -169,7 +170,15 @@ function CsvPreview({ file, isLoading }: { file: File; isLoading: boolean }) {
   );
 }
 
-function XlsxPreview({ file, isLoading }: { file: File; isLoading: boolean }) {
+function XlsxPreview({
+  file,
+  isLoading,
+  onXlsxSheetChange,
+}: {
+  file: File;
+  isLoading: boolean;
+  onXlsxSheetChange?: (sheetName: string) => void;
+}) {
   const [sheets, setSheets] = useState<XlsxSheet[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [isParsing, setIsParsing] = useState(true);
@@ -188,8 +197,11 @@ function XlsxPreview({ file, isLoading }: { file: File; isLoading: boolean }) {
     parseXlsxFile(file)
       .then((parsedSheets) => {
         if (!active) return;
+        const initialSheetName = parsedSheets[0]?.name ?? "";
+
         setSheets(parsedSheets);
-        setSelectedSheetName(parsedSheets[0]?.name ?? "");
+        setSelectedSheetName(initialSheetName);
+        onXlsxSheetChange?.(initialSheetName);
       })
       .catch(() => {
         if (!active) return;
@@ -231,7 +243,10 @@ function XlsxPreview({ file, isLoading }: { file: File; isLoading: boolean }) {
               className="xlsx-sheet-button"
               value={sheet.name}
               aria-pressed={sheet.name === selectedSheetName}
-              onClick={() => setSelectedSheetName(sheet.name)}
+              onClick={() => {
+                setSelectedSheetName(sheet.name);
+                onXlsxSheetChange?.(sheet.name);
+              }}
             >
               {sheet.name}
             </button>
@@ -303,7 +318,10 @@ function assertNever(value: never): never {
   throw new Error(`Unhandled preview variant: ${JSON.stringify(value)}`);
 }
 
-export default function FilePreview({ preview }: FilePreviewProps) {
+export default function FilePreview({
+  preview,
+  onXlsxSheetChange,
+}: FilePreviewProps) {
   switch (preview.kind) {
     case "image":
       return <ImagePreview url={preview.url} />;
@@ -321,7 +339,13 @@ export default function FilePreview({ preview }: FilePreviewProps) {
       return <CsvPreview file={preview.file} isLoading={preview.isLoading} />;
 
     case "xlsx":
-      return <XlsxPreview file={preview.file} isLoading={preview.isLoading} />;
+      return (
+        <XlsxPreview
+          file={preview.file}
+          isLoading={preview.isLoading}
+          onXlsxSheetChange={onXlsxSheetChange}
+        />
+      );
 
     case "unsupported":
       return <UnsupportedPreview fileType={preview.fileType} />;

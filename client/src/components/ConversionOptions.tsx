@@ -7,12 +7,14 @@ interface ConversionOptionsProps {
   options: ConversionOption[];
   onConvert: (option: ConversionOption, settings?: ConversionSettings) => void;
   isConverting: boolean;
+  selectedXlsxSheetName: string;
 }
 
 export default function ConversionOptions({
   options,
   onConvert,
   isConverting,
+  selectedXlsxSheetName,
 }: ConversionOptionsProps) {
   return (
     <div className="options-section" aria-busy={isConverting}>
@@ -44,11 +46,24 @@ export default function ConversionOptions({
                 />
               ) : (option.conversionType === "jpg-to-pdf" ||
                   option.conversionType === "txt-to-pdf" ||
-                  option.conversionType === "csv-to-pdf") &&
+                  option.conversionType === "csv-to-pdf" ||
+                  option.conversionType === "xlsx-to-pdf") &&
                 option.disabled === false ? (
                 <PdfPageControls
-                  disabled={option.disabled || isConverting}
-                  onConvert={(settings) => onConvert(option, settings)}
+                  disabled={
+                    option.disabled ||
+                    isConverting ||
+                    (option.conversionType === "xlsx-to-pdf" &&
+                      !selectedXlsxSheetName)
+                  }
+                  onConvert={(settings) =>
+                    option.conversionType === "xlsx-to-pdf"
+                      ? onConvert(option, {
+                          ...settings,
+                          sheetName: selectedXlsxSheetName,
+                        })
+                      : onConvert(option, settings)
+                  }
                 />
               ) : (
                 <button

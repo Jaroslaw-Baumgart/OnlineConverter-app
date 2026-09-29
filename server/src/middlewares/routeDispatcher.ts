@@ -5,6 +5,7 @@ import { pdfToTxt, pdfToJpg, txtToPdf } from "../controllers/pdfController";
 import path from "path";
 import { sendErrorResponse } from "../utils/response";
 import { csvToPdf } from "../controllers/csvController";
+import { xlsxToPdf } from "../controllers/xlsxController";
 
 const handlers = {
   "jpg-to-png": jpgToPng,
@@ -15,6 +16,7 @@ const handlers = {
   "pdf-to-jpg": pdfToJpg,
   "txt-to-pdf": txtToPdf,
   "csv-to-pdf": csvToPdf,
+  "xlsx-to-pdf": xlsxToPdf,
 } as const;
 
 export async function routeDispatcher(req: Request, res: Response) {
@@ -78,6 +80,9 @@ export async function routeDispatcher(req: Request, res: Response) {
       break;
     case "csv-to-pdf":
       isFileValid = file.mimetype === "text/csv";
+      break;
+    case "xlsx-to-pdf":
+      isFileValid = file.mimetype === "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
       break;
   }
 

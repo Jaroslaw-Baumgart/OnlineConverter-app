@@ -60,6 +60,8 @@ export default function FileConverter({
       ? createPreviewData(file, previewUrl, isLoadingText)
       : null;
 
+  const [selectedXlsxSheetName, setSelectedXlsxSheetName] = useState("");
+
   useEffect(() => {
     const loadTextContent = async () => {
       if (file && (file.type === "text/plain" || file.name.endsWith(".txt"))) {
@@ -80,11 +82,13 @@ export default function FileConverter({
   const handleFileSelect = (selectedFile: File) => {
     setPreviewError(null);
     selectFile(selectedFile);
+    setSelectedXlsxSheetName("");
   };
 
   const handleFileRemove = () => {
     setPreviewError(null);
     removeFile();
+    setSelectedXlsxSheetName("");
   };
 
   const handleConvert = async (
@@ -115,7 +119,10 @@ export default function FileConverter({
 
       {previewData && (
         <div className="file-preview">
-          <FilePreview preview={previewData} />
+          <FilePreview
+            preview={previewData}
+            onXlsxSheetChange={setSelectedXlsxSheetName}
+          />
         </div>
       )}
 
@@ -123,6 +130,7 @@ export default function FileConverter({
         options={availableOptions}
         onConvert={handleConvert}
         isConverting={isConverting}
+        selectedXlsxSheetName={selectedXlsxSheetName}
       />
 
       {error && (

@@ -4,6 +4,7 @@ import { mkdtemp, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import fsSync from "node:fs";
+import { strToU8, zipSync } from "fflate";
 
 vi.mock("./controllers/imageController", () => ({
   jpgToPng: vi.fn(),
@@ -21,8 +22,45 @@ vi.mock("./controllers/pdfController", () => ({
   txtToPdf: vi.fn(),
 }));
 
+vi.mock("./controllers/xlsxController", () => ({
+  xlsxToPdf: vi.fn(),
+}));
+
 import { createApp } from "./app";
 import { txtToPdf, pdfToJpg, pdfToTxt } from "./controllers/pdfController";
+import { xlsxToPdf } from "./controllers/xlsxController";
+
+const createXlsxBuffer = () =>
+  Buffer.from(
+    zipSync({
+      "[Content_Types].xml": strToU8(`
+        <Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">
+          <Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml" />
+          <Default Extension="xml" ContentType="application/xml" />
+          <Override
+            PartName="/xl/workbook.xml"
+            ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"
+          />
+        </Types>
+      `),
+      "_rels/.rels": strToU8(`
+        <Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
+          <Relationship
+            Id="rId1"
+            Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument"
+            Target="xl/workbook.xml"
+          />
+        </Relationships>
+      `),
+      "xl/workbook.xml": strToU8(`
+        <workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">
+          <sheets>
+            <sheet name="Overview" sheetId="1" />
+          </sheets>
+        </workbook>
+      `),
+    }),
+  );
 
 let uploadDirectory: string;
 let app: ReturnType<typeof createApp>;
@@ -159,5 +197,51 @@ describe("POST /convert with the real dispatcher", () => {
         }),
       ]),
     );
+  });
+
+  it("dispatches a valid XLSX upload to the XLSX-to-PDF controller", async () => {
+    vi.mocked(xlsxToPdf).mockImplementationOnce(async (req, res) => {
+      expect(req.body).toMatchObject({
+        conversionType: "xlsx-to-pdf",
+        sheetName: "Overview",
+        pageSize: "A3",
+        pageOrientation: "landscape",
+      });
+
+      res.status(200).json({
+        success: true,
+        files: [
+          {
+            name: "workbook.pdf",
+            url: "/output/workbook.pdf",
+          },
+        ],
+      });
+    });
+
+    const response = await request(app)
+      .post("/convert")
+      .field("conversionType", "xlsx-to-pdf")
+      .field("sheetName", "Overview")
+      .field("pageSize", "A3")
+      .field("pageOrientation", "landscape")
+      .attach("file", createXlsxBuffer(), {
+        filename: "workbook.xlsx",
+        contentType:
+          "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+      })
+      .expect("Content-Type", /json/)
+      .expect(200);
+
+    expect(xlsxToPdf).toHaveBeenCalledOnce();
+    expect(response.body).toEqual({
+      success: true,
+      files: [
+        {
+          name: "workbook.pdf",
+          url: "/output/workbook.pdf",
+        },
+      ],
+    });
   });
 });

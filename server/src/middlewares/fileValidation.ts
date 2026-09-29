@@ -3,14 +3,15 @@ import fs from "fs/promises";
 import { validateFileSecure } from "../utils/sourceValidation";
 import { sendErrorResponse } from "../utils/response";
 
-const ALLOWED_EXT = [".pdf", ".txt", ".jpg", ".png", ".docx", ".csv"];
+const ALLOWED_EXT = [".pdf", ".txt", ".jpg", ".png", ".docx", ".csv", ".xlsx"];
 const ALLOWED_MIME = [
   "application/pdf",
   "text/plain",
   "image/jpeg",
   "image/png",
-  "application/vnd.openxmlformats-officedocument.wordprocessingml.document", // DOCX
+  "application/vnd.openxmlformats-officedocument.wordprocessingml.document", //docx
   "text/csv",
+  "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", //xlsx
 ];
 
 export async function fileValidation(

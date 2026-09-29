@@ -21,5 +21,9 @@ export const createConversionFormData = (
     formData.append("pageSize", settings.pageSize);
   }
 
+  if (settings && "sheetName" in settings) {
+    formData.append("sheetName", settings.sheetName);
+  }
+
   return formData;
 };

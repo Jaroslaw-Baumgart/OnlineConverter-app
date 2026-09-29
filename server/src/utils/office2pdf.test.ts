@@ -58,4 +58,32 @@ describe("convertOfficeToPdf", () => {
       convertOfficeToPdf("uploads/source.docx", "output/converted.pdf"),
     ).rejects.toThrow("office2pdf failed");
   });
+
+  it("passes a selected XLSX sheet to office2pdf", async () => {
+    mocks.execFile.mockImplementation(
+      (
+        _executablePath: string,
+        _arguments: string[],
+        callback: (error: Error | null) => void,
+      ) => {
+        callback(null);
+      },
+    );
+
+    await convertOfficeToPdf("uploads/workbook.xlsx", "output/workbook.pdf", {
+      sheetNames: ["Warehouse"],
+    });
+
+    expect(mocks.execFile).toHaveBeenCalledWith(
+      OFFICE2PDF_PATH,
+      [
+        "uploads/workbook.xlsx",
+        "--output",
+        "output/workbook.pdf",
+        "--sheets",
+        "Warehouse",
+      ],
+      expect.any(Function),
+    );
+  });
 });

@@ -1,0 +1,173 @@
+import path from "path";
+import type { Request, Response } from "express";
+import { beforeEach, describe, expect, it, vi } from "vitest";
+
+const mocks = vi.hoisted(() => ({
+  mkdir: vi.fn(),
+  readFile: vi.fn(),
+  writeFile: vi.fn(),
+  safeUnlink: vi.fn(),
+  applyXlsxPageSetup: vi.fn(),
+  convertOfficeToPdf: vi.fn(),
+}));
+
+vi.mock("fs/promises", () => ({
+  default: {
+    mkdir: mocks.mkdir,
+    readFile: mocks.readFile,
+    writeFile: mocks.writeFile,
+  },
+}));
+
+vi.mock("../utils/file", () => ({
+  safeUnlink: mocks.safeUnlink,
+}));
+
+vi.mock("../utils/xlsxPageSetup", () => ({
+  applyXlsxPageSetup: mocks.applyXlsxPageSetup,
+}));
+
+vi.mock("../utils/office2pdf", () => ({
+  convertOfficeToPdf: mocks.convertOfficeToPdf,
+}));
+
+import { xlsxToPdf } from "./xlsxController";
+import { OUTPUT_DIR } from "../utils/constants";
+
+const inputBytes = new Uint8Array([1, 2, 3]);
+const preparedBytes = new Uint8Array([4, 5, 6]);
+
+const createRequest = (body: unknown): Request =>
+  ({
+    body,
+    file: {
+      path: "uploads/workbook.xlsx",
+      filename: "workbook.xlsx",
+      originalname: "workbook.xlsx",
+    } as Express.Multer.File,
+  }) as Request;
+
+const createResponse = () => {
+  const status = vi.fn();
+  const json = vi.fn();
+  const response = { status, json };
+
+  status.mockReturnValue(response);
+
+  return {
+    response: response as unknown as Response,
+    status,
+    json,
+  };
+};
+
+describe("xlsxToPdf", () => {
+  const preparedPath = path.join(OUTPUT_DIR, "workbook.prepared.xlsx");
+  const outputPath = path.join(OUTPUT_DIR, "workbook.pdf");
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+
+    mocks.mkdir.mockResolvedValue(undefined);
+    mocks.readFile.mockResolvedValue(inputBytes);
+    mocks.writeFile.mockResolvedValue(undefined);
+    mocks.applyXlsxPageSetup.mockReturnValue(preparedBytes);
+    mocks.convertOfficeToPdf.mockResolvedValue(undefined);
+  });
+
+  it("prepares the selected sheet and converts the prepared XLSX", async () => {
+    const { response, status, json } = createResponse();
+
+    await xlsxToPdf(
+      createRequest({
+        sheetName: "Overview",
+        pageSize: "A3",
+        pageOrientation: "landscape",
+      }),
+      response,
+    );
+
+    expect(mocks.mkdir).toHaveBeenCalledWith(OUTPUT_DIR, {
+      recursive: true,
+    });
+    expect(mocks.readFile).toHaveBeenCalledWith("uploads/workbook.xlsx");
+    expect(mocks.applyXlsxPageSetup).toHaveBeenCalledWith(
+      inputBytes,
+      "Overview",
+      {
+        pageSize: "A3",
+        pageOrientation: "landscape",
+      },
+    );
+    expect(mocks.writeFile).toHaveBeenCalledWith(preparedPath, preparedBytes);
+    expect(mocks.convertOfficeToPdf).toHaveBeenCalledWith(
+      preparedPath,
+      outputPath,
+      { sheetNames: ["Overview"] },
+    );
+    expect(status).toHaveBeenCalledWith(200);
+    expect(json).toHaveBeenCalledWith({
+      success: true,
+      files: [
+        {
+          name: "workbook.pdf",
+          url: "/output/workbook.pdf",
+        },
+      ],
+    });
+    expect(mocks.safeUnlink).toHaveBeenCalledWith("uploads/workbook.xlsx");
+    expect(mocks.safeUnlink).toHaveBeenCalledWith(preparedPath);
+  });
+
+  it("rejects invalid settings before reading the XLSX", async () => {
+    const { response, status, json } = createResponse();
+
+    await xlsxToPdf(
+      createRequest({
+        sheetName: "",
+        pageSize: "A4",
+        pageOrientation: "portrait",
+      }),
+      response,
+    );
+
+    expect(mocks.readFile).not.toHaveBeenCalled();
+    expect(mocks.applyXlsxPageSetup).not.toHaveBeenCalled();
+    expect(mocks.convertOfficeToPdf).not.toHaveBeenCalled();
+    expect(status).toHaveBeenCalledWith(400);
+    expect(json).toHaveBeenCalledWith({
+      success: false,
+      error: "Invalid conversion settings.",
+      code: "conversion-failed",
+    });
+    expect(mocks.safeUnlink).toHaveBeenCalledWith("uploads/workbook.xlsx");
+  });
+
+  it("returns a safe error and removes temporary files when office2pdf fails", async () => {
+    mocks.convertOfficeToPdf.mockRejectedValue(
+      Object.assign(new Error("office2pdf is unavailable"), {
+        code: "ENOENT",
+      }),
+    );
+
+    const { response, status, json } = createResponse();
+
+    await xlsxToPdf(
+      createRequest({
+        sheetName: "Overview",
+        pageSize: "A4",
+        pageOrientation: "portrait",
+      }),
+      response,
+    );
+
+    expect(status).toHaveBeenCalledWith(500);
+    expect(json).toHaveBeenCalledWith({
+      success: false,
+      error: "office2pdf is unavailable",
+      code: "tool-unavailable",
+    });
+    expect(mocks.safeUnlink).toHaveBeenCalledWith("uploads/workbook.xlsx");
+    expect(mocks.safeUnlink).toHaveBeenCalledWith(preparedPath);
+  });
+});
