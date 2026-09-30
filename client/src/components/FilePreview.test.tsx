@@ -6,9 +6,20 @@ import userEvent from "@testing-library/user-event";
 import FilePreview from "./FilePreview";
 import * as xlsxUtils from "../utils/xlsx";
 import { renderAsync } from "docx-preview";
+import { getSlides, loadPresentation } from "@office-kit/pptx";
+import { renderSlideToSvg } from "@office-kit/pptx-preview";
 
 vi.mock("docx-preview", () => ({
   renderAsync: vi.fn().mockResolvedValue(undefined),
+}));
+
+vi.mock("@office-kit/pptx", () => ({
+  getSlides: vi.fn(),
+  loadPresentation: vi.fn(),
+}));
+
+vi.mock("@office-kit/pptx-preview", () => ({
+  renderSlideToSvg: vi.fn(),
 }));
 
 beforeEach(() => {
@@ -203,6 +214,74 @@ describe("FilePreview", () => {
 
     expect(await screen.findByRole("alert")).toHaveTextContent(
       "Failed to render DOCX content",
+    );
+  });
+
+  it("renders every PowerPoint slide as an SVG image", async () => {
+    const createObjectUrl = vi
+      .fn()
+      .mockReturnValueOnce("blob:pptx-slide-1")
+      .mockReturnValueOnce("blob:pptx-slide-2");
+    vi.stubGlobal("URL", {
+      createObjectURL: createObjectUrl,
+      revokeObjectURL: vi.fn(),
+    });
+    vi.mocked(loadPresentation).mockResolvedValue({} as never);
+    vi.mocked(getSlides).mockReturnValue([{}, {}] as never);
+    vi.mocked(renderSlideToSvg)
+      .mockReturnValueOnce("<svg />")
+      .mockReturnValueOnce("<svg />");
+
+    const file = new File(["presentation"], "slides.pptx", {
+      type: "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+    });
+    Object.defineProperty(file, "arrayBuffer", {
+      value: vi.fn().mockResolvedValue(new ArrayBuffer(0)),
+    });
+
+    render(
+      <FilePreview
+        preview={{
+          kind: "pptx",
+          file,
+          isLoading: false,
+        }}
+      />,
+    );
+
+    expect(await screen.findAllByRole("img")).toHaveLength(2);
+    expect(screen.getByRole("img", { name: "PowerPoint slide 1" })).toHaveAttribute(
+      "src",
+      "blob:pptx-slide-1",
+    );
+    expect(screen.getByRole("img", { name: "PowerPoint slide 2" })).toBeInTheDocument();
+    expect(createObjectUrl).toHaveBeenCalledTimes(2);
+  });
+
+  it("shows an error when a PowerPoint presentation cannot be rendered", async () => {
+    vi.mocked(loadPresentation).mockRejectedValueOnce(
+      new Error("Invalid PPTX file"),
+    );
+
+    const file = new File(["broken presentation"], "broken.pptx", {
+      type: "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+    });
+    Object.defineProperty(file, "arrayBuffer", {
+      value: vi.fn().mockResolvedValue(new ArrayBuffer(0)),
+    });
+
+    render(
+      <FilePreview
+        preview={{
+          kind: "pptx",
+          file,
+          isLoading: false,
+        }}
+      />,
+    );
+
+    expect(await screen.findByRole("alert")).toHaveTextContent(
+      "Failed to render PowerPoint presentation.",
     );
   });
 

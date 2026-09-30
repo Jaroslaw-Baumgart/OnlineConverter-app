@@ -3,7 +3,7 @@ import fs from "fs/promises";
 import { validateFileSecure } from "../utils/sourceValidation";
 import { sendErrorResponse } from "../utils/response";
 
-const ALLOWED_EXT = [".pdf", ".txt", ".jpg", ".png", ".docx", ".csv", ".xlsx"];
+const ALLOWED_EXT = [".pdf", ".txt", ".jpg", ".png", ".docx", ".csv", ".xlsx", ".pptx"];
 const ALLOWED_MIME = [
   "application/pdf",
   "text/plain",
@@ -12,6 +12,7 @@ const ALLOWED_MIME = [
   "application/vnd.openxmlformats-officedocument.wordprocessingml.document", //docx
   "text/csv",
   "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", //xlsx
+  "application/vnd.openxmlformats-officedocument.presentationml.presentation", //pptx
 ];
 
 export async function fileValidation(

@@ -33,7 +33,7 @@ describe("FileUpload", () => {
     await user.upload(input, unsupportedFile);
 
     expect(screen.getByRole("alert")).toHaveTextContent(
-      "Unsupported file format. Supported formats: PDF, JPG, PNG, TXT, DOCX, CSV, XLSX.",
+      "Unsupported file format. Supported formats: PDF, JPG, PNG, TXT, DOCX, CSV, XLSX, PPTX.",
     );
 
     expect(onFileSelect).not.toHaveBeenCalled();
@@ -101,7 +101,7 @@ describe("FileUpload", () => {
     });
 
     expect(screen.getByRole("alert")).toHaveTextContent(
-      "Unsupported file format. Supported formats: PDF, JPG, PNG, TXT, DOCX, CSV, XLSX.",
+      "Unsupported file format. Supported formats: PDF, JPG, PNG, TXT, DOCX, CSV, XLSX, PPTX.",
     );
     expect(onFileSelect).not.toHaveBeenCalled();
   });
@@ -136,7 +136,7 @@ describe("FileUpload", () => {
 
     expect(
       screen.getByText(
-        "Supported formats: PDF, JPG, PNG, TXT, DOCX, CSV, XLSX. Maximum size: 10 MB.",
+        "Supported formats: PDF, JPG, PNG, TXT, DOCX, CSV, XLSX, PPTX. Maximum size: 10 MB.",
       ),
     ).toBeInTheDocument();
   });
@@ -148,7 +148,7 @@ describe("FileUpload", () => {
 
     expect(screen.getByLabelText("Choose File")).toHaveAttribute(
       "accept",
-      ".pdf,.jpg,.png,.txt,.docx,.csv,.xlsx",
+      ".pdf,.jpg,.png,.txt,.docx,.csv,.xlsx,.pptx",
     );
   });
 

@@ -40,6 +40,9 @@ export function createPreviewData(
     case "xlsx":
       return { kind, file, isLoading };
 
+    case "pptx":
+      return { kind, file, isLoading };
+
     case "unsupported":
       return { kind, fileType: file.type };
 

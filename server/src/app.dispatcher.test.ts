@@ -16,6 +16,10 @@ vi.mock("./controllers/docController", () => ({
   docxToPdf: vi.fn(),
 }));
 
+vi.mock("./controllers/pptxController", () => ({
+  pptxToPdf: vi.fn(),
+}));
+
 vi.mock("./controllers/pdfController", () => ({
   pdfToTxt: vi.fn(),
   pdfToJpg: vi.fn(),
@@ -29,6 +33,7 @@ vi.mock("./controllers/xlsxController", () => ({
 import { createApp } from "./app";
 import { txtToPdf, pdfToJpg, pdfToTxt } from "./controllers/pdfController";
 import { xlsxToPdf } from "./controllers/xlsxController";
+import { pptxToPdf } from "./controllers/pptxController";
 
 const createXlsxBuffer = () =>
   Buffer.from(
@@ -58,6 +63,34 @@ const createXlsxBuffer = () =>
             <sheet name="Overview" sheetId="1" />
           </sheets>
         </workbook>
+      `),
+    }),
+  );
+
+const createPptxBuffer = () =>
+  Buffer.from(
+    zipSync({
+      "[Content_Types].xml": strToU8(`
+        <Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">
+          <Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml" />
+          <Default Extension="xml" ContentType="application/xml" />
+          <Override
+            PartName="/ppt/presentation.xml"
+            ContentType="application/vnd.openxmlformats-officedocument.presentationml.presentation.main+xml"
+          />
+        </Types>
+      `),
+      "_rels/.rels": strToU8(`
+        <Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
+          <Relationship
+            Id="rId1"
+            Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument"
+            Target="ppt/presentation.xml"
+          />
+        </Relationships>
+      `),
+      "ppt/presentation.xml": strToU8(`
+        <p:presentation xmlns:p="http://schemas.openxmlformats.org/presentationml/2006/main" />
       `),
     }),
   );
@@ -240,6 +273,46 @@ describe("POST /convert with the real dispatcher", () => {
         {
           name: "workbook.pdf",
           url: "/output/workbook.pdf",
+        },
+      ],
+    });
+  });
+
+  it("dispatches a valid PPTX upload to the PPTX-to-PDF controller", async () => {
+    vi.mocked(pptxToPdf).mockImplementationOnce(async (req, res) => {
+      expect(req.body).toMatchObject({
+        conversionType: "pptx-to-pdf",
+      });
+
+      res.status(200).json({
+        success: true,
+        files: [
+          {
+            name: "presentation.pdf",
+            url: "/output/presentation.pdf",
+          },
+        ],
+      });
+    });
+
+    const response = await request(app)
+      .post("/convert")
+      .field("conversionType", "pptx-to-pdf")
+      .attach("file", createPptxBuffer(), {
+        filename: "presentation.pptx",
+        contentType:
+          "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+      })
+      .expect("Content-Type", /json/)
+      .expect(200);
+
+    expect(pptxToPdf).toHaveBeenCalledOnce();
+    expect(response.body).toEqual({
+      success: true,
+      files: [
+        {
+          name: "presentation.pdf",
+          url: "/output/presentation.pdf",
         },
       ],
     });

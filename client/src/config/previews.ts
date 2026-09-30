@@ -9,4 +9,5 @@ export const previewKindByFormat = {
   docx: "word",
   csv: "csv",
   xlsx: "xlsx",
+  pptx: "pptx",
 } satisfies Record<SupportedFormat, ConfiguredPreviewKind>;

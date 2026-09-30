@@ -541,3 +541,17 @@
   padding: 1rem;
   text-align: initial;
 }
+
+.pptx-preview {
+  max-height: 600px;
+  overflow: auto;
+  padding: 1rem;
+}
+
+.file-preview .pptx-slide-preview {
+  display: block;
+  width: auto;
+  max-width: none;
+  max-height: 600px;
+  margin: 0 auto 1.5rem;
+}

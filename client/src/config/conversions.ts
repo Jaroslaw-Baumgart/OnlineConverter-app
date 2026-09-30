@@ -50,6 +50,11 @@ export const conversions = [
     sourceFormat: "xlsx",
     targetFormat: "pdf",
   },
+  {
+    conversionType: "pptx-to-pdf",
+    sourceFormat: "pptx",
+    targetFormat: "pdf",
+  },
 ] as const satisfies readonly ConversionDefinitionShape[];
 
 export type ConversionDefinition = (typeof conversions)[number];
