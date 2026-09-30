@@ -8,7 +8,7 @@ import { renderAsync } from "docx-preview";
 
 type FilePreviewProps = {
   preview: PreviewData;
-  onXlsxSheetChange?: (sheetName: string) => void;
+  onXlsxSheetChange?: (sheetName: string | undefined) => void;
 };
 
 function ImagePreview({ url }: { url: string }) {
@@ -170,6 +170,56 @@ function CsvPreview({ file, isLoading }: { file: File; isLoading: boolean }) {
   );
 }
 
+function XlsxSheetPreview({
+  sheet,
+  showName,
+}: {
+  sheet: XlsxSheet;
+  showName: boolean;
+}) {
+  const previewRows = sheet.rows.slice(0, 100);
+  const columnCount = sheet.rows[0]?.length ?? 0;
+
+  return (
+    <section>
+      {showName && <h3>{sheet.name}</h3>}
+
+      <div className="xlsx-table-scroll">
+        {sheet.rows.length === 0 ? (
+          <p>This sheet is empty.</p>
+        ) : (
+          <table className="csv-preview-table xlsx-preview-table">
+            <thead>
+              <tr>
+                {Array.from({ length: columnCount }, (_, columnIndex) => (
+                  <th key={columnIndex} scope="col">
+                    {getColumnLabel(columnIndex)}
+                  </th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {previewRows.map((row, rowIndex) => (
+                <tr key={rowIndex}>
+                  {Array.from({ length: columnCount }, (_, columnIndex) => (
+                    <td key={columnIndex}>{row[columnIndex] ?? ""}</td>
+                  ))}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )}
+      </div>
+
+      {sheet.rows.length > previewRows.length && (
+        <p>
+          Showing first {previewRows.length} of {sheet.rows.length} rows.
+        </p>
+      )}
+    </section>
+  );
+}
+
 function XlsxPreview({
   file,
   isLoading,
@@ -177,12 +227,13 @@ function XlsxPreview({
 }: {
   file: File;
   isLoading: boolean;
-  onXlsxSheetChange?: (sheetName: string) => void;
+  onXlsxSheetChange?: (sheetName: string | undefined) => void;
 }) {
   const [sheets, setSheets] = useState<XlsxSheet[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [isParsing, setIsParsing] = useState(true);
   const [selectedSheetName, setSelectedSheetName] = useState("");
+  const [isAllSheetsSelected, setIsAllSheetsSelected] = useState(false);
 
   useEffect(() => {
     if (isLoading) {
@@ -201,6 +252,7 @@ function XlsxPreview({
 
         setSheets(parsedSheets);
         setSelectedSheetName(initialSheetName);
+        setIsAllSheetsSelected(false);
         onXlsxSheetChange?.(initialSheetName);
       })
       .catch(() => {
@@ -228,8 +280,12 @@ function XlsxPreview({
   const selectedSheet = sheets.find(
     (sheet) => sheet.name === selectedSheetName,
   );
-  const previewRows = selectedSheet?.rows.slice(0, 100) ?? [];
-  const columnCount = selectedSheet?.rows[0]?.length ?? 0;
+
+  const previewSheets = isAllSheetsSelected
+    ? sheets
+    : selectedSheet
+      ? [selectedSheet]
+      : [];
 
   return (
     <div className="xlsx-preview">
@@ -242,8 +298,11 @@ function XlsxPreview({
               type="button"
               className="xlsx-sheet-button"
               value={sheet.name}
-              aria-pressed={sheet.name === selectedSheetName}
+              aria-pressed={
+                !isAllSheetsSelected && sheet.name === selectedSheetName
+              }
               onClick={() => {
+                setIsAllSheetsSelected(false);
                 setSelectedSheetName(sheet.name);
                 onXlsxSheetChange?.(sheet.name);
               }}
@@ -251,42 +310,32 @@ function XlsxPreview({
               {sheet.name}
             </button>
           ))}
+          <button
+            type="button"
+            className="xlsx-sheet-button xlsx-all-sheet-button"
+            aria-pressed={isAllSheetsSelected}
+            onClick={() => {
+              setIsAllSheetsSelected(true);
+              onXlsxSheetChange?.(undefined);
+            }}
+          >
+            All sheets
+          </button>
         </div>
       </div>
-      {selectedSheet && (
-        <section className="xlsx-table-scroll">
-          {selectedSheet.rows.length === 0 ? (
-            <p>This sheet is empty.</p>
-          ) : (
-            <table className="csv-preview-table xlsx-preview-table">
-              <thead>
-                <tr>
-                  {Array.from({ length: columnCount }, (_, columnIndex) => (
-                    <th key={columnIndex} scope="col">
-                      {getColumnLabel(columnIndex)}
-                    </th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody>
-                {previewRows.map((row, rowIndex) => (
-                  <tr key={rowIndex}>
-                    {Array.from({ length: columnCount }, (_, columnIndex) => (
-                      <td key={columnIndex}>{row[columnIndex] ?? ""}</td>
-                    ))}
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          )}
-        </section>
-      )}
-      {selectedSheet && selectedSheet.rows.length > previewRows.length && (
-        <p>
-          Showing first {previewRows.length} of {selectedSheet.rows.length}{" "}
-          rows.
+      {!isAllSheetsSelected && (
+        <p className="xlsx-dependency-notice" role="note">
+          If this sheet depends on formulas or charts from other sheets, choose
+          All sheets.
         </p>
       )}
+      {previewSheets.map((sheet) => (
+        <XlsxSheetPreview
+          key={sheet.name}
+          sheet={sheet}
+          showName={isAllSheetsSelected}
+        />
+      ))}
       <p className="xlsx-chart-notice" role="note">
         Charts are not shown in this preview. To view them, convert the file to
         PDF using the charts option.

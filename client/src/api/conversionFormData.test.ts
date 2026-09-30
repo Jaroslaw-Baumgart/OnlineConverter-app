@@ -78,4 +78,27 @@ describe("createConversionFormData", () => {
     expect(formData.get("pageSize")).toBe("A3");
     expect(formData.get("pageOrientation")).toBe("landscape");
   });
+
+  it("omits the sheet name when converting all XLSX sheets", () => {
+    const file = new File(["xlsx content"], "workbook.xlsx", {
+      type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+    });
+
+    const option = {
+      conversionType: "xlsx-to-pdf",
+      sourceFormat: "xlsx",
+      targetFormat: "pdf",
+      disabled: false,
+    } satisfies ConversionOption;
+
+    const formData = createConversionFormData(file, option, {
+      pageSize: "A3",
+      pageOrientation: "landscape",
+    });
+
+    expect(formData.get("conversionType")).toBe("xlsx-to-pdf");
+    expect(formData.has("sheetName")).toBe(false);
+    expect(formData.get("pageSize")).toBe("A3");
+    expect(formData.get("pageOrientation")).toBe("landscape");
+  });
 });

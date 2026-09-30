@@ -23,7 +23,7 @@ export const pdfPageSettingsSchema = z.object({
 });
 
 export const xlsxPdfSettingsSchema = pdfPageSettingsSchema.extend({
-  sheetName: z.string().trim().min(1),
+  sheetName: z.string().trim().min(1).optional(),
 });
 
 export type XlsxPdfSettings = z.infer<typeof xlsxPdfSettingsSchema>;

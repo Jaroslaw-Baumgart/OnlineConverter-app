@@ -324,6 +324,25 @@ describe("FilePreview", () => {
         expect(onXlsxSheetChange).toHaveBeenCalledWith("Sprzedaż");
       });
 
+      expect(
+        screen.getByText(
+          "If this sheet depends on formulas or charts from other sheets, choose All sheets.",
+        ),
+      ).toBeInTheDocument();
+
+      await user.click(screen.getByRole("button", { name: "All sheets" }));
+
+      expect(onXlsxSheetChange).toHaveBeenLastCalledWith(undefined);
+      expect(
+        screen.queryByText(
+          "If this sheet depends on formulas or charts from other sheets, choose All sheets.",
+        ),
+      ).not.toBeInTheDocument();
+      expect(screen.getByRole("cell", { name: "Kawa" })).toBeInTheDocument();
+      expect(
+        screen.getByRole("cell", { name: "Warszawa" }),
+      ).toBeInTheDocument();
+
       await user.click(screen.getByRole("button", { name: "Magazyn" }));
 
       expect(onXlsxSheetChange).toHaveBeenLastCalledWith("Magazyn");

@@ -60,7 +60,9 @@ export default function FileConverter({
       ? createPreviewData(file, previewUrl, isLoadingText)
       : null;
 
-  const [selectedXlsxSheetName, setSelectedXlsxSheetName] = useState("");
+  const [selectedXlsxSheetName, setSelectedXlsxSheetName] = useState<
+    string | undefined | null
+  >(null);
 
   useEffect(() => {
     const loadTextContent = async () => {
@@ -82,13 +84,13 @@ export default function FileConverter({
   const handleFileSelect = (selectedFile: File) => {
     setPreviewError(null);
     selectFile(selectedFile);
-    setSelectedXlsxSheetName("");
+    setSelectedXlsxSheetName(null);
   };
 
   const handleFileRemove = () => {
     setPreviewError(null);
     removeFile();
-    setSelectedXlsxSheetName("");
+    setSelectedXlsxSheetName(null);
   };
 
   const handleConvert = async (

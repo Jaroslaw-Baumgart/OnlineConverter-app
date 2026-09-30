@@ -7,7 +7,7 @@ interface ConversionOptionsProps {
   options: ConversionOption[];
   onConvert: (option: ConversionOption, settings?: ConversionSettings) => void;
   isConverting: boolean;
-  selectedXlsxSheetName: string;
+  selectedXlsxSheetName: string | undefined | null;
 }
 
 export default function ConversionOptions({
@@ -54,16 +54,28 @@ export default function ConversionOptions({
                     option.disabled ||
                     isConverting ||
                     (option.conversionType === "xlsx-to-pdf" &&
-                      !selectedXlsxSheetName)
+                      selectedXlsxSheetName === null)
                   }
-                  onConvert={(settings) =>
-                    option.conversionType === "xlsx-to-pdf"
-                      ? onConvert(option, {
-                          ...settings,
-                          sheetName: selectedXlsxSheetName,
-                        })
-                      : onConvert(option, settings)
-                  }
+                  onConvert={(settings) => {
+                    if (option.conversionType !== "xlsx-to-pdf") {
+                      onConvert(option, settings);
+                      return;
+                    }
+
+                    if (selectedXlsxSheetName === null) {
+                      return;
+                    }
+
+                    const xlsxSettings =
+                      selectedXlsxSheetName === undefined
+                        ? settings
+                        : {
+                            ...settings,
+                            sheetName: selectedXlsxSheetName,
+                          };
+
+                    onConvert(option, xlsxSettings);
+                  }}
                 />
               ) : (
                 <button

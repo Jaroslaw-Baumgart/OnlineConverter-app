@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { xlsxPdfSettingsSchema } from "./conversionSettings";
 
 import {
   pdfPageSettingsSchema,
@@ -106,6 +107,28 @@ describe("getConversionSettingsSchema", () => {
       );
     },
   );
+
+  describe("xlsxPdfSettingsSchema", () => {
+    it("allows all sheets when no sheet name is provided", () => {
+      expect(
+        xlsxPdfSettingsSchema.parse({
+          pageSize: "A3",
+          pageOrientation: "landscape",
+        }),
+      ).toEqual({
+        pageSize: "A3",
+        pageOrientation: "landscape",
+      });
+    });
+
+    it("rejects an empty provided sheet name", () => {
+      expect(
+        xlsxPdfSettingsSchema.safeParse({
+          sheetName: "",
+        }).success,
+      ).toBe(false);
+    });
+  });
 
   it("returns null for a conversion without additional settings", () => {
     expect(getConversionSettingsSchema("jpg-to-png")).toBeNull();
