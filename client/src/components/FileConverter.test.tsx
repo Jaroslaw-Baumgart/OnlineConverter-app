@@ -227,7 +227,6 @@ describe("FileConverter", () => {
           },
         });
       }),
-
     );
 
     const { user, input } = setupFileConverter();
@@ -881,24 +880,63 @@ describe("FileConverter", () => {
     );
 
     await waitFor(() => {
-      expect(fetchMock).toHaveBeenCalledWith(
-        "http://localhost:5000/convert",
-        expect.objectContaining({ method: "POST" }),
+      const conversionRequests = fetchMock.mock.calls.filter(([input]) =>
+        String(input).endsWith("/convert"),
       );
+
+      expect(conversionRequests).toHaveLength(1);
     });
 
-    const [, requestOptions] = fetchMock.mock.calls[0] ?? [];
-    const formData = requestOptions?.body;
+    const selectedSheetRequests = fetchMock.mock.calls.filter(([input]) =>
+      String(input).endsWith("/convert"),
+    );
 
-    expect(formData).toBeInstanceOf(FormData);
+    const [, selectedSheetRequestOptions] = selectedSheetRequests[0] ?? [];
+    const selectedSheetFormData = selectedSheetRequestOptions?.body;
 
-    if (!(formData instanceof FormData)) {
+    expect(selectedSheetFormData).toBeInstanceOf(FormData);
+
+    if (!(selectedSheetFormData instanceof FormData)) {
       throw new Error("Conversion request did not contain FormData.");
     }
 
-    expect(formData.get("conversionType")).toBe("xlsx-to-pdf");
-    expect(formData.get("sheetName")).toBe("Warehouse");
-    expect(formData.get("pageSize")).toBe("A3");
-    expect(formData.get("pageOrientation")).toBe("landscape");
+    expect(selectedSheetFormData.get("conversionType")).toBe("xlsx-to-pdf");
+    expect(selectedSheetFormData.get("sheetName")).toBe("Warehouse");
+    expect(selectedSheetFormData.get("pageSize")).toBe("A3");
+    expect(selectedSheetFormData.get("pageOrientation")).toBe("landscape");
+
+    await user.click(screen.getByRole("button", { name: "All sheets" }));
+
+    await user.click(
+      within(xlsxToPdfCard).getByRole("button", {
+        name: "Convert",
+      }),
+    );
+
+    await waitFor(() => {
+      const conversionRequests = fetchMock.mock.calls.filter(([input]) =>
+        String(input).endsWith("/convert"),
+      );
+
+      expect(conversionRequests).toHaveLength(2);
+    });
+
+    const allSheetsRequests = fetchMock.mock.calls.filter(([input]) =>
+      String(input).endsWith("/convert"),
+    );
+
+    const [, allSheetsRequestOptions] = allSheetsRequests[1] ?? [];
+    const allSheetsFormData = allSheetsRequestOptions?.body;
+
+    expect(allSheetsFormData).toBeInstanceOf(FormData);
+
+    if (!(allSheetsFormData instanceof FormData)) {
+      throw new Error("All-sheets request did not contain FormData.");
+    }
+
+    expect(allSheetsFormData.get("conversionType")).toBe("xlsx-to-pdf");
+    expect(allSheetsFormData.has("sheetName")).toBe(false);
+    expect(allSheetsFormData.get("pageSize")).toBe("A3");
+    expect(allSheetsFormData.get("pageOrientation")).toBe("landscape");
   });
 });

@@ -8,7 +8,7 @@ import {
   sendSuccessResponse,
 } from "../utils/response";
 import { getConversionFailureCode } from "../utils/conversionError";
-import { convertOfficeToPdf } from "../utils/office2pdf";
+import { convertLibreOfficeToPdf } from "../utils/libreOffice";
 
 const getBaseFileName = (file: Express.Multer.File) => {
   return path.parse(file.filename).name;
@@ -26,9 +26,8 @@ export const docxToPdf = async (req: Request, res: Response) => {
   const outputPath = path.join(OUTPUT_DIR, outputName);
   const file = req.file;
 
-  // DOCX --> PDF
   try {
-    await convertOfficeToPdf(file.path, outputPath);
+    await convertLibreOfficeToPdf(file.path, outputPath);
 
     return sendSuccessResponse(res, [createOutputFileItem(outputName)]);
   } catch (err: unknown) {

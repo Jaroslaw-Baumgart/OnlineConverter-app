@@ -9,9 +9,9 @@ import {
   sendSuccessResponse,
 } from "../utils/response";
 import { getConversionFailureCode } from "../utils/conversionError";
-import { convertOfficeToPdf } from "../utils/office2pdf";
-import { applyXlsxPageSetup } from "../utils/xlsxPageSetup";
 import { xlsxPdfSettingsSchema } from "../schemas/conversionSettings";
+import { convertLibreOfficeToPdf } from "../utils/libreOffice";
+import { applyXlsxPageSetup } from "../utils/xlsxPageSetup";
 
 const getBaseFileName = (file: Express.Multer.File) => {
   return path.parse(file.filename).name;
@@ -29,7 +29,7 @@ export const xlsxToPdf = async (req: Request, res: Response) => {
   const baseName = getBaseFileName(file);
   const outputName = `${baseName}.pdf`;
   const outputPath = path.join(OUTPUT_DIR, outputName);
-  const preparedPath = path.join(OUTPUT_DIR, `${baseName}.prepared.xlsx`);
+  const preparedPath = path.join(OUTPUT_DIR, `${baseName}.xlsx`);
 
   try {
     const settingsResult = xlsxPdfSettingsSchema.safeParse(req.body);
@@ -39,9 +39,11 @@ export const xlsxToPdf = async (req: Request, res: Response) => {
     }
 
     const { sheetName, ...pageSettings } = settingsResult.data;
+
     await fs.mkdir(OUTPUT_DIR, { recursive: true });
 
     const inputBytes = await fs.readFile(file.path);
+
     const preparedBytes = applyXlsxPageSetup(
       inputBytes,
       sheetName,
@@ -50,9 +52,7 @@ export const xlsxToPdf = async (req: Request, res: Response) => {
 
     await fs.writeFile(preparedPath, preparedBytes);
 
-    await convertOfficeToPdf(preparedPath, outputPath, {
-      sheetNames: [sheetName],
-    });
+    await convertLibreOfficeToPdf(preparedPath, outputPath);
 
     return sendSuccessResponse(res, [createOutputFileItem(outputName)]);
   } catch (err: unknown) {

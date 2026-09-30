@@ -3,12 +3,12 @@ import type { Request, Response } from "express";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const mocks = vi.hoisted(() => ({
-  convertOfficeToPdf: vi.fn(),
+  convertLibreOfficeToPdf: vi.fn(),
   safeUnlink: vi.fn(),
 }));
 
-vi.mock("../utils/office2pdf", () => ({
-  convertOfficeToPdf: mocks.convertOfficeToPdf,
+vi.mock("../utils/libreOffice", () => ({
+  convertLibreOfficeToPdf: mocks.convertLibreOfficeToPdf,
 }));
 
 vi.mock("../utils/file", () => ({
@@ -46,13 +46,13 @@ describe("docxToPdf", () => {
     vi.clearAllMocks();
   });
 
-  it("converts a DOCX through the office2pdf adapter", async () => {
-    mocks.convertOfficeToPdf.mockResolvedValue(undefined);
+  it("converts a DOCX through the LibreOffice adapter", async () => {
+    mocks.convertLibreOfficeToPdf.mockResolvedValue(undefined);
     const { response, status, json } = createResponse();
 
     await docxToPdf(createRequest(), response);
 
-    expect(mocks.convertOfficeToPdf).toHaveBeenCalledWith(
+    expect(mocks.convertLibreOfficeToPdf).toHaveBeenCalledWith(
       "uploads/document.docx",
       path.join(OUTPUT_DIR, "document.pdf"),
     );
@@ -69,9 +69,9 @@ describe("docxToPdf", () => {
     expect(mocks.safeUnlink).toHaveBeenCalledWith("uploads/document.docx");
   });
 
-  it("returns a safe error and removes the upload when office2pdf fails", async () => {
-    mocks.convertOfficeToPdf.mockRejectedValue(
-      Object.assign(new Error("office2pdf is unavailable"), {
+  it("returns a safe error and removes the upload when LibreOffice fails", async () => {
+    mocks.convertLibreOfficeToPdf.mockRejectedValue(
+      Object.assign(new Error("LibreOffice is unavailable"), {
         code: "ENOENT",
       }),
     );
@@ -82,7 +82,7 @@ describe("docxToPdf", () => {
     expect(status).toHaveBeenCalledWith(500);
     expect(json).toHaveBeenCalledWith({
       success: false,
-      error: "office2pdf is unavailable",
+      error: "LibreOffice is unavailable",
       code: "tool-unavailable",
     });
     expect(mocks.safeUnlink).toHaveBeenCalledWith("uploads/document.docx");

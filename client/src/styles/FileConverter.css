@@ -446,6 +446,26 @@
   outline-offset: 2px;
 }
 
+.xlsx-all-sheet-button {
+  border-color: #0f766e;
+  color: #0f766e;
+  background: #f0fdfa;
+}
+
+.xlsx-all-sheet-button:hover {
+  background: #ccfbf1;
+}
+
+.xlsx-all-sheet-button[aria-pressed="true"] {
+  background: #0f766e;
+  border-color: #0f766e;
+  color: white;
+}
+
+.xlsx-all-sheet-button:focus-visible {
+  outline-color: #0f766e;
+}
+
 .xlsx-table-scroll {
   max-width: 100%;
   max-height: 400px;
@@ -503,6 +523,16 @@
   border: 1px solid #cbd5e1;
   border-radius: 0.5rem;
   background: white;
+}
+
+.xlsx-dependency-notice {
+  margin: 0 0 1rem;
+  padding: 0.75rem 1rem;
+  border: 1px solid #facc15;
+  border-radius: 0.5rem;
+  background: #fefce8;
+  color: #854d0e;
+  font-size: 0.9rem;
 }
 
 .word-preview {
