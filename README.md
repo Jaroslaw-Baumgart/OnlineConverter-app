@@ -105,7 +105,7 @@ The privacy page in the app describes temporary file handling in more detail.
 client/       React application
 server/       Express API and conversion logic
 tools/        Local converter binaries, not committed to Git
-docs/         Local mentoring and project documentation, not committed to Git
+docs/         Local project documentation, not committed to Git
 ```
 
 ## License and third-party software
