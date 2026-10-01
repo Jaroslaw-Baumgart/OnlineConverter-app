@@ -3,7 +3,6 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const mocks = vi.hoisted(() => {
   const readFile = vi.fn().mockResolvedValue("example text");
-  const safeUnlink = vi.fn();
 
   const stream = {
     on: vi.fn((event: string, callback: () => void) => {
@@ -31,7 +30,6 @@ const mocks = vi.hoisted(() => {
 
   return {
     readFile,
-    safeUnlink,
     createWriteStream,
     text,
     fontSize,
@@ -55,10 +53,6 @@ vi.mock("fs", () => ({
 
 vi.mock("pdfkit", () => ({
   default: mocks.PDFDocument,
-}));
-
-vi.mock("../utils/file", () => ({
-  safeUnlink: mocks.safeUnlink,
 }));
 
 vi.mock("pdf-parse", () => ({
@@ -115,7 +109,6 @@ describe("txtToPdf", () => {
       align: "left",
     });
     expect(status).toHaveBeenCalledWith(200);
-    expect(mocks.safeUnlink).toHaveBeenCalledWith("uploads/document.txt");
   });
 
   it("rejects invalid settings before reading the text file", async () => {
@@ -134,6 +127,5 @@ describe("txtToPdf", () => {
       error: "Invalid conversion settings.",
       code: "conversion-failed",
     });
-    expect(mocks.safeUnlink).toHaveBeenCalledWith("uploads/document.txt");
   });
 });

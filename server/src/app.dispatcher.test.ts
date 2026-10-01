@@ -1,6 +1,6 @@
 import request from "supertest";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { mkdtemp, rm } from "node:fs/promises";
+import { mkdtemp, readdir, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import fsSync from "node:fs";
@@ -12,13 +12,7 @@ vi.mock("./controllers/imageController", () => ({
   jpgToPdf: vi.fn(),
 }));
 
-vi.mock("./controllers/docController", () => ({
-  docxToPdf: vi.fn(),
-}));
 
-vi.mock("./controllers/pptxController", () => ({
-  pptxToPdf: vi.fn(),
-}));
 
 vi.mock("./controllers/pdfController", () => ({
   pdfToTxt: vi.fn(),
@@ -33,7 +27,14 @@ vi.mock("./controllers/xlsxController", () => ({
 import { createApp } from "./app";
 import { txtToPdf, pdfToJpg, pdfToTxt } from "./controllers/pdfController";
 import { xlsxToPdf } from "./controllers/xlsxController";
-import { pptxToPdf } from "./controllers/pptxController";
+
+const libreOfficeMocks = vi.hoisted(() => ({
+  convertLibreOfficeToPdf: vi.fn(),
+}));
+
+vi.mock("./utils/libreOffice", () => ({
+  convertLibreOfficeToPdf: libreOfficeMocks.convertLibreOfficeToPdf,
+}));
 
 const createXlsxBuffer = () =>
   Buffer.from(
@@ -136,6 +137,7 @@ describe("POST /convert with the real dispatcher", () => {
       .expect(200);
 
     expect(txtToPdf).toHaveBeenCalledTimes(1);
+    expect(await readdir(uploadDirectory)).toEqual([]);
 
     expect(response.body).toEqual({
       success: true,
@@ -170,6 +172,7 @@ describe("POST /convert with the real dispatcher", () => {
     expect(pdfToJpg).not.toHaveBeenCalled();
     expect(pdfToTxt).not.toHaveBeenCalled();
     expect(txtToPdf).not.toHaveBeenCalled();
+    expect(await readdir(uploadDirectory)).toEqual([]);
   });
 
   it("rejects an unknown conversion type", async () => {
@@ -278,22 +281,8 @@ describe("POST /convert with the real dispatcher", () => {
     });
   });
 
-  it("dispatches a valid PPTX upload to the PPTX-to-PDF controller", async () => {
-    vi.mocked(pptxToPdf).mockImplementationOnce(async (req, res) => {
-      expect(req.body).toMatchObject({
-        conversionType: "pptx-to-pdf",
-      });
-
-      res.status(200).json({
-        success: true,
-        files: [
-          {
-            name: "presentation.pdf",
-            url: "/output/presentation.pdf",
-          },
-        ],
-      });
-    });
+  it("dispatches a valid PPTX upload to the LibreOffice controller", async () => {
+    libreOfficeMocks.convertLibreOfficeToPdf.mockResolvedValueOnce(undefined);
 
     const response = await request(app)
       .post("/convert")
@@ -306,14 +295,13 @@ describe("POST /convert with the real dispatcher", () => {
       .expect("Content-Type", /json/)
       .expect(200);
 
-    expect(pptxToPdf).toHaveBeenCalledOnce();
     expect(response.body).toEqual({
       success: true,
       files: [
-        {
-          name: "presentation.pdf",
-          url: "/output/presentation.pdf",
-        },
+        expect.objectContaining({
+          name: expect.stringMatching(/\.pdf$/),
+          url: expect.stringMatching(/^\/output\/.+\.pdf$/),
+        }),
       ],
     });
   });

@@ -1,25 +1,8 @@
 import { Request, Response } from "express";
-import { jpgToPng, pngToJpg, jpgToPdf } from "../controllers/imageController";
-import { docxToPdf } from "../controllers/docController";
-import { pdfToTxt, pdfToJpg, txtToPdf } from "../controllers/pdfController";
-import path from "path";
 import { sendErrorResponse } from "../utils/response";
-import { csvToPdf } from "../controllers/csvController";
-import { xlsxToPdf } from "../controllers/xlsxController";
-import { pptxToPdf } from "../controllers/pptxController";
-
-const handlers = {
-  "jpg-to-png": jpgToPng,
-  "png-to-jpg": pngToJpg,
-  "jpg-to-pdf": jpgToPdf,
-  "docx-to-pdf": docxToPdf,
-  "pdf-to-txt": pdfToTxt,
-  "pdf-to-jpg": pdfToJpg,
-  "txt-to-pdf": txtToPdf,
-  "csv-to-pdf": csvToPdf,
-  "xlsx-to-pdf": xlsxToPdf,
-  "pptx-to-pdf": pptxToPdf,
-} as const;
+import { conversionDefinitions } from "../config/conversions";
+import path from "path";
+import { safeUnlink } from "../utils/file";
 
 export async function routeDispatcher(req: Request, res: Response) {
   if (!req.file) {
@@ -27,77 +10,45 @@ export async function routeDispatcher(req: Request, res: Response) {
   }
 
   const file = req.file;
-  const conversionType = (req.body.conversionType || "").toLowerCase();
 
-  if (!conversionType) {
-    return sendErrorResponse(res, 400, "Please specify conversionType.");
-  }
+  try {
+    const conversionType = (req.body.conversionType || "").toLowerCase();
 
-  const handler = handlers[conversionType as keyof typeof handlers];
+    if (!conversionType) {
+      return sendErrorResponse(res, 400, "Please specify conversionType.");
+    }
 
-  if (!handler) {
-    return sendErrorResponse(res, 400, "Unsupported conversion type.");
-  }
-
-  const fileExtension = path
-    .extname(file.originalname)
-    .substring(1)
-    .toLowerCase();
-
-  const sourceFormat = conversionType.split("-")[0];
-
-  if (sourceFormat !== fileExtension) {
-    return sendErrorResponse(
-      res,
-      400,
-      "File type does not match conversion type.",
+    const definition = conversionDefinitions.find(
+      (candidate) => candidate.conversionType === conversionType,
     );
+
+    if (!definition) {
+      return sendErrorResponse(res, 400, "Unsupported conversion type.");
+    }
+
+    const fileExtension = path
+      .extname(file.originalname)
+      .substring(1)
+      .toLowerCase();
+
+    if (definition.sourceExtension !== fileExtension) {
+      return sendErrorResponse(
+        res,
+        400,
+        "File type does not match conversion type.",
+      );
+    }
+
+    if (file.mimetype !== definition.mimeType) {
+      return sendErrorResponse(
+        res,
+        400,
+        "File type does not match conversion type.",
+      );
+    }
+
+    return await definition.handler(req, res);
+  } finally {
+    await safeUnlink(file.path);
   }
-
-  let isFileValid = false;
-
-  switch (conversionType) {
-    case "jpg-to-png":
-      isFileValid = file.mimetype === "image/jpeg";
-      break;
-    case "png-to-jpg":
-      isFileValid = file.mimetype === "image/png";
-      break;
-    case "jpg-to-pdf":
-      isFileValid = file.mimetype === "image/jpeg";
-      break;
-    case "docx-to-pdf":
-      isFileValid =
-        file.mimetype ===
-        "application/vnd.openxmlformats-officedocument.wordprocessingml.document";
-      break;
-    case "pdf-to-txt":
-      isFileValid = file.mimetype === "application/pdf";
-      break;
-    case "pdf-to-jpg":
-      isFileValid = file.mimetype === "application/pdf";
-      break;
-    case "txt-to-pdf":
-      isFileValid = file.mimetype === "text/plain";
-      break;
-    case "csv-to-pdf":
-      isFileValid = file.mimetype === "text/csv";
-      break;
-    case "xlsx-to-pdf":
-      isFileValid = file.mimetype === "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
-      break;
-    case "pptx-to-pdf":
-      isFileValid = file.mimetype === "application/vnd.openxmlformats-officedocument.presentationml.presentation";
-      break;
-  }
-
-  if (!isFileValid) {
-    return sendErrorResponse(
-      res,
-      400,
-      "File type does not match conversion type.",
-    );
-  }
-
-  return handler(req, res);
 }

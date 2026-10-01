@@ -8,6 +8,10 @@ vi.mock("./middlewares/routeDispatcher", () => ({
   routeDispatcher: vi.fn(),
 }));
 
+vi.mock("pdf-parse", () => ({
+  default: vi.fn(),
+}));
+
 import { createApp } from "./app";
 import { routeDispatcher } from "./middlewares/routeDispatcher";
 

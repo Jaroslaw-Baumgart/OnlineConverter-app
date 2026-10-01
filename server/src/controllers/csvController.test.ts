@@ -4,7 +4,6 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 const mocks = vi.hoisted(() => {
   const readFile = vi.fn();
   const mkdir = vi.fn();
-  const safeUnlink = vi.fn();
   const parseCsv = vi.fn();
 
   const stream = {
@@ -83,7 +82,6 @@ const mocks = vi.hoisted(() => {
   return {
     readFile,
     mkdir,
-    safeUnlink,
     parseCsv,
     createWriteStream,
     pipe,
@@ -119,10 +117,6 @@ vi.mock("fs", () => ({
 
 vi.mock("pdfkit", () => ({
   default: mocks.PDFDocument,
-}));
-
-vi.mock("../utils/file", () => ({
-  safeUnlink: mocks.safeUnlink,
 }));
 
 vi.mock("../utils/csv", () => ({
@@ -204,7 +198,6 @@ describe("csvToPdf", () => {
       error: "CSV file is empty.",
       code: "conversion-failed",
     });
-    expect(mocks.safeUnlink).toHaveBeenCalledWith("uploads/payroll.csv");
   });
 
   it("starts a new page and repeats headers when rows exceed the page height", async () => {

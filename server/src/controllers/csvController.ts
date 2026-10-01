@@ -5,7 +5,6 @@ import PDFDocument from "pdfkit";
 import path from "path";
 
 import { OUTPUT_DIR } from "../utils/constants";
-import { safeUnlink } from "../utils/file";
 import {
   createOutputFileItem,
   sendErrorResponse,
@@ -184,7 +183,5 @@ export const csvToPdf = async (req: Request, res: Response) => {
       err instanceof Error ? err.message : "Failed to convert CSV to PDF.";
 
     return sendErrorResponse(res, 500, errorMessage);
-  } finally {
-    safeUnlink(file.path);
   }
 };

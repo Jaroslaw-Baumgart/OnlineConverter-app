@@ -6,14 +6,12 @@ const sharpMocks = vi.hoisted(() => {
   const jpeg = vi.fn(() => ({ toFile }));
   const flatten = vi.fn(() => ({ jpeg }));
   const sharp = vi.fn(() => ({ flatten }));
-  const safeUnlink = vi.fn();
 
   return {
     sharp,
     flatten,
     jpeg,
     toFile,
-    safeUnlink,
   };
 });
 
@@ -61,10 +59,6 @@ const pdfMocks = vi.hoisted(() => {
     createWriteStream,
   };
 });
-
-vi.mock("../utils/file", () => ({
-  safeUnlink: sharpMocks.safeUnlink,
-}));
 
 vi.mock("pdfkit", () => ({
   default: pdfMocks.PDFDocument,
@@ -126,7 +120,6 @@ describe("pngToJpg", () => {
       expect.stringMatching(/image\.jpg$/),
     );
     expect(status).toHaveBeenCalledWith(200);
-    expect(sharpMocks.safeUnlink).toHaveBeenCalledWith("uploads/image.png");
   });
 
   it("rejects invalid settings without starting Sharp", async () => {
@@ -145,7 +138,6 @@ describe("pngToJpg", () => {
       error: "Invalid conversion settings.",
       code: "conversion-failed",
     });
-    expect(sharpMocks.safeUnlink).toHaveBeenCalledWith("uploads/image.png");
   });
 });
 
@@ -171,7 +163,6 @@ describe("jpgToPdf", () => {
       layout: "landscape",
     });
     expect(status).toHaveBeenCalledWith(200);
-    expect(sharpMocks.safeUnlink).toHaveBeenCalledWith("uploads/image.png");
   });
 
   it("rejects invalid settings without creating a PDF document", async () => {
@@ -189,7 +180,6 @@ describe("jpgToPdf", () => {
       error: "Invalid conversion settings.",
       code: "conversion-failed",
     });
-    expect(sharpMocks.safeUnlink).toHaveBeenCalledWith("uploads/image.png");
   });
 
   it("fits the image inside the selected A3 page margins", async () => {

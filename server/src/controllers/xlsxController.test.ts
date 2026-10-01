@@ -114,7 +114,6 @@ describe("xlsxToPdf", () => {
         },
       ],
     });
-    expect(mocks.safeUnlink).toHaveBeenCalledWith("uploads/workbook.xlsx");
     expect(mocks.safeUnlink).toHaveBeenCalledWith(preparedPath);
   });
 
@@ -139,7 +138,6 @@ describe("xlsxToPdf", () => {
       error: "Invalid conversion settings.",
       code: "conversion-failed",
     });
-    expect(mocks.safeUnlink).toHaveBeenCalledWith("uploads/workbook.xlsx");
   });
 
   it("returns a safe error and removes temporary files when LibreOffice fails", async () => {
@@ -166,8 +164,8 @@ describe("xlsxToPdf", () => {
       error: "LibreOffice is unavailable",
       code: "tool-unavailable",
     });
-    expect(mocks.safeUnlink).toHaveBeenCalledWith("uploads/workbook.xlsx");
     expect(mocks.safeUnlink).toHaveBeenCalledWith(preparedPath);
+    expect(mocks.safeUnlink).toHaveBeenCalledWith(outputPath);
   });
 
   it("prepares every sheet when no sheet is selected", async () => {

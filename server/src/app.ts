@@ -4,6 +4,7 @@ import path from "path";
 import { createUpload } from "./middlewares/upload";
 import { fileValidation } from "./middlewares/fileValidation";
 import { routeDispatcher } from "./middlewares/routeDispatcher";
+import { outputRetention } from "./middlewares/outputRetention";
 
 export function createApp(uploadDirectory = "uploads/") {
   const upload = createUpload(uploadDirectory);
@@ -13,7 +14,13 @@ export function createApp(uploadDirectory = "uploads/") {
   app.use(express.json());
   app.use("/output", express.static(path.join(__dirname, "../output")));
 
-  app.post("/convert", upload.single("file"), fileValidation, routeDispatcher);
+  app.post(
+    "/convert",
+    upload.single("file"),
+    outputRetention,
+    fileValidation,
+    routeDispatcher,
+  );
 
   return app;
 }

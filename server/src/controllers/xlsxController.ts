@@ -61,9 +61,10 @@ export const xlsxToPdf = async (req: Request, res: Response) => {
 
     const errorCode = getConversionFailureCode(err);
 
-    sendErrorResponse(res, 500, errorMessage, errorCode);
+    await safeUnlink(outputPath);
+
+    return sendErrorResponse(res, 500, errorMessage, errorCode);
   } finally {
-    safeUnlink(file.path);
-    safeUnlink(preparedPath);
+    await safeUnlink(preparedPath);
   }
 };

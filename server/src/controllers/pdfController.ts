@@ -7,7 +7,6 @@ import pdfPoppler from "pdf-poppler";
 import pdfParse from "pdf-parse";
 import { exec } from "child_process";
 import { OUTPUT_DIR } from "../utils/constants";
-import { safeUnlink } from "../utils/file";
 import {
   createOutputFileItem,
   sendErrorResponse,
@@ -65,8 +64,6 @@ export const pdfToJpg = async (req: Request, res: Response) => {
       err instanceof Error ? err.message : "Failed to convert PDF to JPG.";
 
     sendErrorResponse(res, 500, errorMessage);
-  } finally {
-    safeUnlink(file.path);
   }
 };
 
@@ -98,8 +95,6 @@ export const pdfToTxt = async (req: Request, res: Response) => {
       err instanceof Error ? err.message : "Failed to convert PDF to TXT.";
 
     sendErrorResponse(res, 500, errorMessage);
-  } finally {
-    safeUnlink(file.path);
   }
 };
 
@@ -149,7 +144,5 @@ export const txtToPdf = async (req: Request, res: Response) => {
       err instanceof Error ? err.message : "Failed to convert TXT to PDF.";
 
     sendErrorResponse(res, 500, errorMessage);
-  } finally {
-    safeUnlink(file.path);
   }
 };

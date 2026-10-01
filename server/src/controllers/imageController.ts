@@ -3,7 +3,6 @@ import path from "path";
 import sharp from "sharp";
 import PDFDocument from "pdfkit";
 import { OUTPUT_DIR } from "../utils/constants";
-import { safeUnlink } from "../utils/file";
 import fs from "fs";
 import {
   createOutputFileItem,
@@ -37,8 +36,6 @@ export const jpgToPng = async (req: Request, res: Response) => {
       err instanceof Error ? err.message : "Failed to convert JPG to PNG.";
 
     sendErrorResponse(res, 500, errorMessage);
-  } finally {
-    safeUnlink(req.file.path);
   }
 };
 
@@ -70,8 +67,6 @@ export const pngToJpg = async (req: Request, res: Response) => {
       err instanceof Error ? err.message : "Failed to convert PNG to JPG.";
 
     sendErrorResponse(res, 500, errorMessage);
-  } finally {
-    safeUnlink(req.file.path);
   }
 };
 
@@ -116,7 +111,5 @@ export const jpgToPdf = async (req: Request, res: Response) => {
       err instanceof Error ? err.message : "Failed to convert JPG to PDF.";
 
     sendErrorResponse(res, 500, errorMessage);
-  } finally {
-    safeUnlink(req.file.path);
   }
 };
