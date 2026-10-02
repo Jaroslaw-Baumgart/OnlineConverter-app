@@ -1,7 +1,6 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import "../styles/FileConverter.css";
 import type { ConversionOption, FileConverterProps } from "../types/converter";
-import { readFileAsText } from "../utils/fileUtils";
 import FileUpload from "./FileUpload";
 import ConversionOptions from "./ConversionOptions";
 import DownloadSection from "./DownloadSection";
@@ -48,47 +47,26 @@ export default function FileConverter({
     downloadAllConvertedFiles,
   } = useConversion();
 
-  const [isLoadingText, setIsLoadingText] = useState(false);
-  const [previewError, setPreviewError] = useState<string | null>(null);
-
-  const error = conversionError ?? previewError;
+  const [formError, setFormError] = useState<string | null>(null);
+  const error = conversionError ?? formError;
 
   const previewUrl = useObjectUrl(file);
   const availableOptions = getAvailableOptions(file, conversionOptions);
   const previewData =
-    file && previewUrl
-      ? createPreviewData(file, previewUrl, isLoadingText)
-      : null;
+    file && previewUrl ? createPreviewData(file, previewUrl) : null;
 
   const [selectedXlsxSheetName, setSelectedXlsxSheetName] = useState<
     string | undefined | null
   >(null);
 
-  useEffect(() => {
-    const loadTextContent = async () => {
-      if (file && (file.type === "text/plain" || file.name.endsWith(".txt"))) {
-        setIsLoadingText(true);
-        try {
-          await readFileAsText(file);
-          setPreviewError(null);
-        } catch {
-          setPreviewError("Failed to read file content");
-        } finally {
-          setIsLoadingText(false);
-        }
-      }
-    };
-    loadTextContent();
-  }, [file]);
-
   const handleFileSelect = (selectedFile: File) => {
-    setPreviewError(null);
+    setFormError(null);
     selectFile(selectedFile);
     setSelectedXlsxSheetName(null);
   };
 
   const handleFileRemove = () => {
-    setPreviewError(null);
+    setFormError(null);
     removeFile();
     setSelectedXlsxSheetName(null);
   };
@@ -98,16 +76,16 @@ export default function FileConverter({
     settings?: ConversionSettings,
   ) => {
     if (!file) {
-      setPreviewError("Please upload a file first.");
+      setFormError("Please upload a file first.");
       return;
     }
 
-    setPreviewError(null);
+    setFormError(null);
     await convert(option, settings);
   };
 
   const handleDownloadBlob = (result: ConvertedResult) => {
-    setPreviewError(null);
+    setFormError(null);
     downloadConvertedFile(result);
   };
 

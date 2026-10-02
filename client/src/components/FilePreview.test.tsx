@@ -69,7 +69,6 @@ describe("FilePreview", () => {
         preview={{
           kind: "text",
           file,
-          isLoading: false,
         }}
       />,
     );
@@ -87,7 +86,6 @@ describe("FilePreview", () => {
         preview={{
           kind: "word",
           file,
-          isLoading: false,
         }}
       />,
     );
@@ -113,7 +111,6 @@ describe("FilePreview", () => {
         preview={{
           kind: "word",
           file,
-          isLoading: false,
         }}
       />,
     );
@@ -158,7 +155,6 @@ describe("FilePreview", () => {
         preview={{
           kind: "word",
           file: firstFile,
-          isLoading: false,
         }}
       />,
     );
@@ -172,7 +168,6 @@ describe("FilePreview", () => {
         preview={{
           kind: "word",
           file: secondFile,
-          isLoading: false,
         }}
       />,
     );
@@ -207,7 +202,6 @@ describe("FilePreview", () => {
         preview={{
           kind: "word",
           file,
-          isLoading: false,
         }}
       />,
     );
@@ -244,7 +238,6 @@ describe("FilePreview", () => {
         preview={{
           kind: "pptx",
           file,
-          isLoading: false,
         }}
       />,
     );
@@ -275,7 +268,6 @@ describe("FilePreview", () => {
         preview={{
           kind: "pptx",
           file,
-          isLoading: false,
         }}
       />,
     );
@@ -314,7 +306,6 @@ describe("FilePreview", () => {
         preview={{
           kind: "csv",
           file,
-          isLoading: false,
         }}
       />,
     );
@@ -359,7 +350,6 @@ describe("FilePreview", () => {
         preview={{
           kind: "xlsx",
           file,
-          isLoading: false,
         }}
       />,
     );
@@ -393,7 +383,6 @@ describe("FilePreview", () => {
           preview={{
             kind: "xlsx",
             file,
-            isLoading: false,
           }}
           onXlsxSheetChange={onXlsxSheetChange}
         />,
@@ -453,7 +442,6 @@ describe("FilePreview", () => {
           preview={{
             kind: "xlsx",
             file: new File([], "first.xlsx"),
-            isLoading: false,
           }}
         />,
       );
@@ -463,7 +451,6 @@ describe("FilePreview", () => {
           preview={{
             kind: "xlsx",
             file: new File([], "second.xlsx"),
-            isLoading: false,
           }}
         />,
       );
@@ -523,7 +510,6 @@ describe("FilePreview", () => {
         preview={{
           kind: "xlsx",
           file,
-          isLoading: false,
         }}
       />,
     );
@@ -592,7 +578,6 @@ describe("FilePreview", () => {
         preview={{
           kind: "xlsx",
           file,
-          isLoading: false,
         }}
       />,
     );
@@ -632,7 +617,6 @@ describe("FilePreview", () => {
         preview={{
           kind: "xlsx",
           file,
-          isLoading: false,
         }}
       />,
     );
@@ -660,7 +644,6 @@ describe("FilePreview", () => {
         preview={{
           kind: "word",
           file,
-          isLoading: false,
         }}
       />,
     );
@@ -698,7 +681,6 @@ describe("FilePreview", () => {
         preview={{
           kind: "xlsx",
           file,
-          isLoading: false,
         }}
       />,
     );

@@ -16,7 +16,6 @@ function assertNever(value: never): never {
 export function createPreviewData(
   file: File,
   url: string,
-  isLoading: boolean,
 ): PreviewData {
   const format = file.name.split(".").pop()?.toLowerCase() ?? "";
   const kind = getPreviewKind(format);
@@ -29,19 +28,19 @@ export function createPreviewData(
       return { kind, url };
 
     case "text":
-      return { kind, file, isLoading };
+      return { kind, file };
 
     case "word":
-      return { kind, file, isLoading };
+      return { kind, file };
 
     case "csv":
-      return { kind, file, isLoading };
+      return { kind, file };
 
     case "xlsx":
-      return { kind, file, isLoading };
+      return { kind, file };
 
     case "pptx":
-      return { kind, file, isLoading };
+      return { kind, file };
 
     case "unsupported":
       return { kind, fileType: file.type };

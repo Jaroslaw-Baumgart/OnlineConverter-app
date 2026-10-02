@@ -7,12 +7,11 @@ describe("createPreviewData", () => {
       type: "text/csv",
     });
 
-    const preview = createPreviewData(file, "", false);
+    const preview = createPreviewData(file, "");
 
     expect(preview).toEqual({
       kind: "csv",
       file,
-      isLoading: false,
     });
   });
 
@@ -21,10 +20,9 @@ describe("createPreviewData", () => {
       type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
     });
 
-    expect(createPreviewData(file, "unused-url", true)).toEqual({
+    expect(createPreviewData(file, "unused-url")).toEqual({
       kind: "xlsx",
       file,
-      isLoading: true,
     });
   });
 });

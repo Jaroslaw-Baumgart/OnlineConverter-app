@@ -11,31 +11,26 @@ type PDFPreviewData = {
 type TextPreviewData = {
   kind: "text";
   file: File;
-  isLoading: boolean;
 };
 
 type WordPreviewData = {
   kind: "word";
   file: File;
-  isLoading: boolean;
 };
 
 type CsvPreviewData = {
   kind: "csv";
   file: File;
-  isLoading: boolean;
 }
 
 type XlsxPreviewData = {
   kind: "xlsx";
   file: File;
-  isLoading: boolean;
 }
 
 type PptxPreviewData = {
   kind: "pptx";
   file: File;
-  isLoading: boolean;
 }
 
 type UnsupportedPreviewData = {

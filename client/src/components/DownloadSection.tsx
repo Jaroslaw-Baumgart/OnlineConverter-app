@@ -27,11 +27,7 @@ export default function DownloadSection({
     convertedResults.find((result) => result.url === activeResultUrl) ??
     convertedResults[0];
 
-  const previewData = createPreviewData(
-    activeResult.file,
-    activeResult.url,
-    false,
-  );
+  const previewData = createPreviewData(activeResult.file, activeResult.url);
 
   return (
     <div className="download-section">
