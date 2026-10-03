@@ -2,12 +2,10 @@ import { http, HttpResponse } from "msw";
 import { describe, expect, it } from "vitest";
 
 import { server } from "../test/server";
-import { fetchConvertedFile, requestConversion } from "./conversionClient";
+import { convertFile } from "./conversionClient";
 
-describe("requestConversion", () => {
-  it("posts the conversion form data to the configured endpoint", async () => {
-    expect.assertions(2);
-
+describe("convertFile", () => {
+  it("posts form data and returns downloaded converted files", async () => {
     const formData = new FormData();
     formData.append("conversionType", "jpg-to-png");
 
@@ -27,17 +25,6 @@ describe("requestConversion", () => {
           ],
         });
       }),
-    );
-
-    const response = await requestConversion(formData);
-
-    expect(response.ok).toBe(true);
-  });
-});
-
-describe("fetchConvertedFile", () => {
-  it("gets a converted file from a relative URL", async () => {
-    server.use(
       http.get("http://localhost:5000/output/converted.png", () => {
         return new HttpResponse("converted content", {
           headers: {
@@ -47,9 +34,36 @@ describe("fetchConvertedFile", () => {
       }),
     );
 
-    const response = await fetchConvertedFile("/output/converted.png");
+    const results = await convertFile(formData);
+    const [result] = results;
 
-    expect(response.ok).toBe(true);
-    expect(await response.text()).toBe("converted content");
+    expect(results).toHaveLength(1);
+    expect(result?.url).toBe("http://localhost:5000/output/converted.png");
+    expect(result?.file.name).toBe("converted.png");
+    expect(await result?.file.text()).toBe("converted content");
+  });
+
+  it("reports a download failure when a converted file cannot be fetched", async () => {
+    server.use(
+      http.post("http://localhost:5000/convert", () =>
+        HttpResponse.json({
+          success: true,
+          files: [
+            {
+              url: "/output/missing.png",
+              name: "missing.png",
+            },
+          ],
+        }),
+      ),
+      http.get(
+        "http://localhost:5000/output/missing.png",
+        () => new HttpResponse(null, { status: 404 }),
+      ),
+    );
+
+    await expect(convertFile(new FormData())).rejects.toMatchObject({
+      code: "download-failed",
+    });
   });
 });

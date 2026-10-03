@@ -4,11 +4,9 @@ import {
   initialConversionState,
 } from "../reducers/conversionReducer";
 import type { ConversionOption } from "../types/converter";
-import { parseConversionResponse } from "../api/conversionResponse";
 import { ConversionError } from "../api/conversionError";
 import { downloadFile } from "../utils/downloadFile";
-import { buildApiUrl } from "../api/apiUrl";
-import { fetchConvertedFile, requestConversion } from "../api/conversionClient";
+import { convertFile } from "../api/conversionClient";
 import type { ConversionSettings } from "../schemas/conversionSettings";
 import { createConversionFormData } from "../api/conversionFormData";
 import type {
@@ -92,77 +90,7 @@ export function useConversion(): UseConversionResult {
     const formData = createConversionFormData(file, option, settings);
 
     try {
-      let res: Response;
-
-      try {
-        res = await requestConversion(formData);
-      } catch (cause: unknown) {
-        throw new ConversionError("network", cause);
-      }
-
-      let data: unknown;
-
-      try {
-        data = await res.json();
-      } catch (cause: unknown) {
-        throw new ConversionError("invalid-response", cause);
-      }
-
-      const conversionResponse = parseConversionResponse(data);
-
-      if (!conversionResponse) {
-        throw new ConversionError("invalid-response", data);
-      }
-
-      if (conversionResponse.success === false) {
-        throw new ConversionError(
-          conversionResponse.code,
-          conversionResponse.error,
-        );
-      }
-
-      if (!res.ok) {
-        throw new ConversionError("conversion-failed", {
-          status: res.status,
-          response: conversionResponse,
-        });
-      }
-
-      let downloadedResults: ConvertedResult[];
-
-      try {
-        downloadedResults = await Promise.all(
-          conversionResponse.files.map(async (convertedFileInfo) => {
-            const convertedFileUrl = buildApiUrl(convertedFileInfo.url);
-
-            const fileRes = await fetchConvertedFile(convertedFileUrl);
-            if (!fileRes.ok) {
-              throw new Error(`Download failed with status ${fileRes.status}`);
-            }
-            const blob = await fileRes.blob();
-
-            const downloadedFile = new File([blob], convertedFileInfo.name, {
-              type: blob.type,
-            });
-            return {
-              url: convertedFileUrl,
-              file: downloadedFile,
-            };
-          }),
-        );
-      } catch (cause: unknown) {
-        throw new ConversionError("download-failed", cause);
-      }
-      const [firstResult, ...remainingResults] = downloadedResults;
-
-      if (!firstResult) {
-        throw new ConversionError("invalid-response", conversionResponse);
-      }
-
-      const convertedResults: ConvertedResults = [
-        firstResult,
-        ...remainingResults,
-      ];
+      const convertedResults = await convertFile(formData);
 
       dispatch({
         type: "conversionSucceeded",
