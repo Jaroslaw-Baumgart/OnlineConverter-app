@@ -1,11 +1,7 @@
-import { useState, useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { renderAsync } from "docx-preview";
 
-export function WordPreview({
-  file,
-}: {
-  file: File;
-}) {
+export function WordPreview({ file }: { file: File }) {
   const previewRef = useRef<HTMLDivElement>(null);
   const [error, setError] = useState<string | null>(null);
   const [isRendering, setIsRendering] = useState(false);
@@ -23,7 +19,9 @@ export function WordPreview({
 
     renderAsync(file, container)
       .catch(() => {
-        if (active) setError("Failed to render DOCX content");
+        if (active) {
+          setError("Failed to render DOCX content");
+        }
       })
       .finally(() => {
         if (active) {
@@ -45,6 +43,7 @@ export function WordPreview({
           {error}
         </p>
       ) : null}
+
       <div ref={previewRef} data-testid="docx-preview" />
     </div>
   );

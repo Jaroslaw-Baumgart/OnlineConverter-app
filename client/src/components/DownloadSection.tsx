@@ -31,7 +31,29 @@ export default function DownloadSection({
 
   return (
     <div className="download-section">
-      <h2>Download Converted File</h2>
+      <div className="download-header">
+        <h2>Converted file</h2>
+
+        <div className="download-actions">
+          <button
+            type="button"
+            className="download-btn"
+            onClick={() => onDownload(activeResult)}
+          >
+            Download file
+          </button>
+
+          {convertedResults.length > 1 && (
+            <button
+              type="button"
+              onClick={onDownloadAll}
+              disabled={isPreparingArchive}
+            >
+              {isPreparingArchive ? "Preparing archive..." : "Download all"}
+            </button>
+          )}
+        </div>
+      </div>
       {convertedResults.length > 1 && (
         <div aria-label="Converted files">
           {convertedResults.map((result, index) => (
@@ -47,18 +69,6 @@ export default function DownloadSection({
         </div>
       )}
       {previewData && <FilePreview preview={previewData} />}
-      <button onClick={() => onDownload(activeResult)} className="download-btn">
-        Download File
-      </button>
-      {convertedResults.length > 1 && (
-        <button
-          type="button"
-          onClick={onDownloadAll}
-          disabled={isPreparingArchive}
-        >
-          {isPreparingArchive ? "Preparing archive..." : "Download all"}
-        </button>
-      )}
     </div>
   );
 }

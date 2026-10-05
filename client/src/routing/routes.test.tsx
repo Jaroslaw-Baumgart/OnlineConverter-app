@@ -18,8 +18,8 @@ describe("application routes", () => {
     renderRoute("/");
 
     expect(
-      screen.getByRole("heading", {
-        name: "Online File Converter",
+      screen.getByRole("region", {
+        name: "Upload File",
       }),
     ).toBeInTheDocument();
   });

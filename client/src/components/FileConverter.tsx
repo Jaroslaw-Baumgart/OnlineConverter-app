@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import "../styles/FileConverter.css";
 import type { ConversionOption, FileConverterProps } from "../types/converter";
 import FileUpload from "./FileUpload";
@@ -59,6 +59,19 @@ export default function FileConverter({
     string | undefined | null
   >(null);
 
+  const convertedResultRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!convertedResults) {
+      return;
+    }
+
+    convertedResultRef.current?.scrollIntoView({
+      behavior: "smooth",
+      block: "start",
+    });
+  }, [convertedResults]);
+
   const handleFileSelect = (selectedFile: File) => {
     setFormError(null);
     selectFile(selectedFile);
@@ -91,27 +104,49 @@ export default function FileConverter({
 
   return (
     <div className="converter-container">
-      <FileUpload
-        file={file}
-        onFileSelect={handleFileSelect}
-        onFileRemove={handleFileRemove}
-      />
+      {file && previewData ? (
+        <div className="conversion-workspace">
+          <section
+            className="source-preview-section"
+            aria-labelledby="source-preview-heading"
+          >
+            <h2 id="source-preview-heading">1. File preview</h2>
 
-      {previewData && (
-        <div className="file-preview">
-          <FilePreview
-            preview={previewData}
-            onXlsxSheetChange={setSelectedXlsxSheetName}
-          />
+            <div className="preview-file-actions">
+              <span className="preview-file-name">{file.name}</span>
+
+              <button
+                type="button"
+                className="remove-file-btn"
+                onClick={handleFileRemove}
+              >
+                Remove file
+              </button>
+            </div>
+
+            <div className="file-preview">
+              <FilePreview
+                preview={previewData}
+                onXlsxSheetChange={setSelectedXlsxSheetName}
+              />
+            </div>
+          </section>
+          <aside className="conversion-sidebar">
+            <ConversionOptions
+              options={availableOptions}
+              onConvert={handleConvert}
+              isConverting={isConverting}
+              selectedXlsxSheetName={selectedXlsxSheetName}
+            />
+          </aside>
         </div>
+      ) : file ? (
+        <p className="loading-message" role="status">
+          Preparing preview...
+        </p>
+      ) : (
+        <FileUpload onFileSelect={handleFileSelect} />
       )}
-
-      <ConversionOptions
-        options={availableOptions}
-        onConvert={handleConvert}
-        isConverting={isConverting}
-        selectedXlsxSheetName={selectedXlsxSheetName}
-      />
 
       {error && (
         <div className="error-message" role="alert">
@@ -120,12 +155,14 @@ export default function FileConverter({
       )}
 
       {convertedResults && (
-        <DownloadSection
-          convertedResults={convertedResults}
-          onDownload={handleDownloadBlob}
-          isPreparingArchive={isPreparingArchive}
-          onDownloadAll={downloadAllConvertedFiles}
-        />
+        <div ref={convertedResultRef}>
+          <DownloadSection
+            convertedResults={convertedResults}
+            onDownload={handleDownloadBlob}
+            isPreparingArchive={isPreparingArchive}
+            onDownloadAll={downloadAllConvertedFiles}
+          />
+        </div>
       )}
     </div>
   );

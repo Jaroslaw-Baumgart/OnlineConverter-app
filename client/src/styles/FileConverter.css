@@ -1,49 +1,83 @@
+/* ==========================================================================
+   1. MAIN CONVERTER LAYOUT
+   ========================================================================== */
+
 .converter-container {
   display: flex;
   flex-direction: column;
-  gap: 1.5rem;
+  gap: var(--space-5);
 }
 
+.conversion-workspace {
+  display: grid;
+  grid-template-columns: minmax(0, 1.7fr) minmax(16rem, 0.9fr);
+  align-items: stretch;
+  gap: var(--space-5);
+}
+
+.source-preview-section,
+.conversion-sidebar {
+  min-width: 0;
+}
+
+.conversion-sidebar {
+  display: flex;
+  position: sticky;
+  top: var(--space-4);
+}
+
+/* ==========================================================================
+   2. SHARED PANELS
+   ========================================================================== */
+
 .upload-section,
+.source-preview-section,
 .options-section,
 .download-section {
-  border: 1px solid #e2e8f0;
-  border-radius: 0.5rem;
-  padding: 1.5rem;
-  background-color: white;
+  padding: var(--space-5);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+  box-shadow: var(--shadow-sm);
 }
 
 .upload-section h2,
+.source-preview-section h2,
 .options-section h2,
 .download-section h2 {
+  margin: 0 0 var(--space-2);
+  color: var(--color-text);
   font-size: 1.25rem;
-  font-weight: 600;
-  margin-bottom: 1rem;
-  color: #333;
+  font-weight: 700;
 }
 
-.file-input-group {
-  display: flex;
-  align-items: center;
-  gap: 1rem;
+.source-preview-section h2 {
+  margin-bottom: var(--space-4);
 }
 
-.file-input-label {
-  background-color: #3b82f6;
-  color: white;
-  padding: 0.5rem 1rem;
-  border-radius: 0.25rem;
-  cursor: pointer;
-  transition: background-color 0.2s;
+.source-preview-section .file-preview {
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
 }
 
-.file-input-label:focus-within {
-  outline: 3px solid #111827;
-  outline-offset: 3px;
+/* ==========================================================================
+   3. FILE UPLOAD
+   ========================================================================== */
+
+.upload-section {
+  border-style: dashed;
+  border-width: 2px;
+  text-align: center;
+  transition:
+    border-color var(--transition-fast),
+    background-color var(--transition-fast);
 }
 
-.file-input-label:hover {
-  background-color: #2563eb;
+.upload-section.dragging {
+  border-color: var(--color-primary);
+  background: var(--color-primary-soft);
 }
 
 .file-input {
@@ -58,295 +92,302 @@
   border: 0;
 }
 
-.file-name {
-  color: #64748b;
+.file-input-label,
+.convert-btn,
+.download-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 2.75rem;
+  padding: var(--space-2) var(--space-4);
+  border: 1px solid transparent;
+  border-radius: var(--radius-sm);
+  background: var(--color-primary);
+  color: white;
+  cursor: pointer;
+  font: inherit;
+  font-weight: 700;
+  text-decoration: none;
+  transition:
+    background-color var(--transition-fast),
+    border-color var(--transition-fast),
+    box-shadow var(--transition-fast);
+}
+
+.file-input-label:hover,
+.convert-btn:hover:not(:disabled),
+.download-btn:hover {
+  background: var(--color-primary-hover);
+}
+
+.drag-drop-hint,
+.upload-requirements {
+  margin: 0;
+  color: var(--color-text-muted);
+}
+
+.drag-drop-hint {
+  margin-top: var(--space-3);
+}
+
+.upload-requirements {
+  margin-top: var(--space-2);
+  font-size: 0.875rem;
+}
+
+.supported-conversions {
+  width: fit-content;
+  max-width: 100%;
+  margin: var(--space-3) auto 0;
+  color: var(--color-text-muted);
+  text-align: left;
+}
+
+.supported-conversions summary {
+  cursor: pointer;
+  font-size: 0.875rem;
+  font-weight: 600;
+}
+
+.supported-conversions[open] summary {
+  margin-bottom: var(--space-2);
+  color: var(--color-primary-hover);
+}
+
+.supported-conversions ul {
+  display: grid;
+  gap: var(--space-1);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font-size: 0.875rem;
+}
+
+.supported-conversions li {
+  display: grid;
+  grid-template-columns: 4rem 1fr;
+  gap: var(--space-2);
+}
+
+.supported-conversions strong {
+  color: var(--color-text);
+}
+
+/* ==========================================================================
+   4. PREVIEW FILE ACTIONS
+   ========================================================================== */
+
+.preview-file-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  margin: 0 0 var(--space-4);
+  padding: 0 0 var(--space-4);
+  border-bottom: 1px solid var(--color-border);
+}
+
+.preview-file-name {
+  min-width: 0;
+  overflow: hidden;
+  color: var(--color-text);
+  font-weight: 600;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.remove-file-btn {
+  flex: 0 0 auto;
+  min-height: 2.5rem;
+  padding: var(--space-2) var(--space-3);
+  border: 1px solid var(--color-danger);
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--color-danger);
+  cursor: pointer;
+  font: inherit;
+  font-weight: 600;
+  transition:
+    background-color var(--transition-fast),
+    color var(--transition-fast);
+}
+
+.remove-file-btn:hover {
+  background: var(--color-danger-soft);
+}
+
+/* ==========================================================================
+   5. CONVERSION OPTIONS AND SETTINGS
+   ========================================================================== */
+
+.options-section {
+  position: relative;
+  flex: 1;
+}
+
+.conversion-section-description,
+.conversion-choice-hint {
+  margin: 0;
+  color: var(--color-text-muted);
+}
+
+.conversion-section-description {
+  margin-bottom: var(--space-4);
+}
+
+.conversion-choice-hint {
+  margin-top: var(--space-4);
 }
 
 .options-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-  gap: 1rem;
+  grid-template-columns: repeat(auto-fit, minmax(7.5rem, 1fr));
+  gap: var(--space-3);
 }
 
 .option-card {
-  border: 1px solid #e2e8f0;
-  border-radius: 0.25rem;
-  padding: 1rem;
-}
-
-.option-card.disabled {
-  background-color: #f8fafc;
-}
-
-.option-content {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-
-.option-text {
   display: flex;
   align-items: center;
-  gap: 0.5rem;
+  justify-content: center;
+  gap: var(--space-2);
+  width: 100%;
+  min-height: 4.75rem;
+  padding: var(--space-3);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  background: var(--color-surface);
+  color: var(--color-text);
+  cursor: pointer;
+  font: inherit;
+  transition:
+    border-color var(--transition-fast),
+    background-color var(--transition-fast),
+    box-shadow var(--transition-fast);
+}
+
+.option-card:hover:not(:disabled),
+.option-card[aria-pressed="true"] {
+  border-color: var(--color-primary);
+  background: var(--color-primary-soft);
+}
+
+.option-card[aria-pressed="true"] {
+  box-shadow: 0 0 0 1px var(--color-primary);
+}
+
+.option-card:disabled {
+  cursor: wait;
+  opacity: 0.65;
 }
 
 .format {
-  font-weight: 500;
+  font-weight: 700;
 }
 
 .arrow {
-  color: #64748b;
+  color: var(--color-text-muted);
 }
 
-.convert-btn {
-  background-color: #10b981;
-  color: white;
-  padding: 0.25rem 0.75rem;
-  border-radius: 0.25rem;
-  border: none;
-  cursor: pointer;
-  transition: background-color 0.2s;
+.conversion-settings {
+  margin-top: var(--space-4);
+  padding-top: var(--space-4);
+  border-top: 1px solid var(--color-border);
 }
 
-.convert-btn:hover:not(:disabled) {
-  background-color: #059669;
+.conversion-settings h3 {
+  margin: 0 0 var(--space-3);
+  color: var(--color-text);
+  font-size: 1rem;
+  font-weight: 700;
 }
 
-.convert-btn.disabled {
-  background-color: #cbd5e1;
-  cursor: not-allowed;
+.conversion-settings form {
+  display: grid;
+  gap: var(--space-3);
 }
 
-.download-btn {
-  background-color: #3b82f6;
-  color: white;
-  padding: 0.5rem 1rem;
-  border-radius: 0.25rem;
-  border: none;
-  cursor: pointer;
-  transition: background-color 0.2s;
+.conversion-settings form > div {
+  display: grid;
+  gap: var(--space-2);
 }
 
-.download-btn:hover {
-  background-color: #2563eb;
-}
-
-.remove-file-btn {
-  margin-left: 0.75rem;
-  padding: 0.4rem 0.75rem;
-  color: #dc2626;
-  background-color: transparent;
-  border: 1px solid #dc2626;
-  border-radius: 0.25rem;
-  cursor: pointer;
-  transition:
-    color 0.2s,
-    background-color 0.2s;
-}
-
-.remove-file-btn:hover {
-  color: #991b1b;
-  background-color: #fef2f2;
-}
-
-.remove-file-btn:focus-visible {
-  outline: 3px solid #111827;
-  outline-offset: 3px;
-}
-
-.preview-text {
-  margin: 1rem 0;
-}
-
-.text-content {
-  width: 100%;
-  height: 300px;
-  padding: 0.5rem;
-  border: 1px solid #e2e8f0;
-  border-radius: 0.25rem;
-  font-family: monospace;
-  resize: none;
-  background-color: #f8fafc;
-}
-
-.preview-word {
-  text-align: center;
-  padding: 2rem;
-  background-color: #f8fafc;
-  border-radius: 0.25rem;
-}
-
-.word-icon {
-  margin-bottom: 1rem;
-}
-
-.word-message {
-  color: #4b5563;
-  max-width: 300px;
-  margin: 0 auto;
-}
-/* Podglądy plików */
-.file-preview {
-  margin-top: 1rem;
-  border: 1px solid #e2e8f0;
-  border-radius: 0.5rem;
-  padding: 1rem;
-  background: white;
-}
-
-.preview-container {
-  margin: 1rem 0;
-  max-height: 400px;
-  overflow: auto;
-}
-
-/* Podgląd obrazów */
-.file-preview img {
-  max-width: 100%;
-  max-height: 300px;
-  display: block;
-  margin: 0 auto;
-}
-
-/* Podgląd PDF */
-.pdf-preview {
-  width: 100%;
-  height: min(75vh, 800px);
-  border: none;
-  background: #f8fafc;
-}
-
-/* Podgląd tekstu */
-.text-preview {
-  width: 100%;
-  height: 300px;
-  padding: 0.5rem;
-  font-family: monospace;
-  border: 1px solid #e2e8f0;
-  background: #f8fafc;
-  resize: none;
-}
-
-.unsupported-preview {
-  padding: 2rem;
-  text-align: center;
-  color: #64748b;
-}
-.error-message {
-  padding: 1rem;
-  background: #ffebee;
-  color: #c62828;
-  border-radius: 4px;
-  margin-bottom: 1rem;
-}
-
-.error-preview {
-  padding: 2rem;
-  text-align: center;
-  color: #c62828;
-  background: #ffebee;
-}
-.convert-btn {
-  background-color: #4caf50; /* green */
-  color: white;
-  padding: 8px 16px;
-  border: none;
-  border-radius: 6px;
-  cursor: pointer;
-  transition: background-color 0.3s;
-}
-
-.convert-btn:hover:not(:disabled) {
-  background-color: #45a049;
-}
-
-.convert-btn:disabled {
-  background-color: #ccc; /* grey when disabled */
-  color: #666;
-  cursor: not-allowed;
-}
-
-.upload-section {
-  border: 2px dashed #ccc;
-  padding: 20px;
-  border-radius: 12px;
-  text-align: center;
-  transition: border-color 0.3s, background-color 0.3s;
-}
-
-.upload-section.dragging {
-  border-color: #007bff;
-  background-color: #f0f8ff;
-}
-
-.csv-preview-container {
-  width: 100%;
-  max-height: 420px;
-  overflow: auto;
-  border: 1px solid #cbd5e1;
-}
-
-.csv-preview-table {
-  width: max-content;
-  min-width: 100%;
-  border-collapse: collapse;
+.conversion-settings label,
+.conversion-settings legend {
+  color: var(--color-text);
   font-size: 0.875rem;
-}
-
-.csv-preview-table th,
-.csv-preview-table td {
-  border: 1px solid #cbd5e1;
-  padding: 0.45rem 0.65rem;
-  text-align: left;
-  white-space: nowrap;
-  max-width: 220px;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.csv-preview-table th {
-  background: #f1f5f9;
   font-weight: 600;
 }
 
-@media (max-width: 700px) {
-  .csv-preview-table {
-    font-size: 0.75rem;
-  }
-
-  .csv-preview-table th,
-  .csv-preview-table td {
-    padding: 0.3rem 0.45rem;
-    max-width: 140px;
-  }
+.conversion-settings input[type="number"],
+.conversion-settings input[type="color"] {
+  min-height: 2.5rem;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  background: var(--color-surface);
+  color: var(--color-text);
 }
 
-.drag-drop-hint {
-  margin-top: 10px;
-  font-size: 14px;
-  color: #777;
+.conversion-settings input[type="number"] {
+  width: 100%;
+  padding: 0 var(--space-3);
 }
 
-.options-section {
-  position: relative;
+.conversion-settings input[type="color"] {
+  width: 100%;
+  padding: var(--space-1);
+}
+
+.conversion-settings fieldset {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+  margin: 0;
+  padding: var(--space-3);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+}
+
+.conversion-settings legend {
+  padding: 0 var(--space-1);
+}
+
+.conversion-settings fieldset label {
+  margin-right: var(--space-2);
+  font-weight: 500;
+}
+
+.convert-btn {
+  width: 100%;
+}
+
+.convert-btn:disabled,
+.download-section button:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
 }
 
 .conversion-overlay {
   position: absolute;
   inset: 0;
   z-index: 10;
-
   display: flex;
   align-items: center;
   justify-content: center;
-
   border-radius: inherit;
-  background: rgba(255, 255, 255, 0.72);
-  backdrop-filter: blur(3px);
+  background: rgb(255 255 255 / 0.78);
+  color: var(--color-text);
+  font-size: 1.125rem;
+  font-weight: 700;
+}
 
-  color: #333;
-  font-size: 1.25rem;
-  font-weight: 600;
+/* ==========================================================================
+   6. SHARED STATES
+   ========================================================================== */
+
+.loading-message {
+  margin: 0;
+  color: var(--color-text-muted);
 }
 
 .loading-dots {
@@ -379,179 +420,479 @@
   }
 }
 
-.xlsx-preview {
+.error-message,
+.error-preview {
+  margin: var(--space-3) 0 0;
+  padding: var(--space-3);
+  border: 1px solid #fecaca;
+  border-radius: var(--radius-sm);
+  background: var(--color-danger-soft);
+  color: var(--color-danger);
+}
+
+.error-preview,
+.unsupported-preview {
+  padding: var(--space-6);
+  text-align: center;
+}
+
+.unsupported-preview {
+  color: var(--color-text-muted);
+}
+
+/* ==========================================================================
+   7. PREVIEW LIGHTBOX
+   ========================================================================== */
+
+.preview-lightbox {
+  position: relative;
+  min-width: 0;
+}
+
+.preview-expand-btn,
+.preview-close-btn {
+  min-height: 2.5rem;
+  padding: var(--space-2) var(--space-3);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  background: var(--color-surface);
+  color: var(--color-text);
+  cursor: pointer;
+  font: inherit;
+  font-weight: 600;
+  transition:
+    border-color var(--transition-fast),
+    background-color var(--transition-fast);
+}
+
+.preview-expand-btn {
+  display: block;
+  margin: 0 0 var(--space-3);
+}
+
+.preview-expand-btn:hover,
+.preview-close-btn:hover {
+  border-color: var(--color-primary);
+  background: var(--color-primary-soft);
+}
+
+.preview-lightbox.is-open {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: grid;
+  place-items: center;
+  padding: var(--space-5);
+}
+
+.preview-lightbox-backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgb(15 23 42 / 0.72);
+}
+
+.preview-lightbox.is-open .preview-expand-btn {
+  display: none;
+}
+
+.preview-lightbox-panel {
+  min-width: 0;
+}
+
+.preview-lightbox.is-open .preview-lightbox-panel {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  width: min(100%, 80rem);
+  height: min(100%, 52rem);
+  padding: var(--space-5);
+  overflow: hidden;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+  box-shadow: 0 1.5rem 4rem rgb(15 23 42 / 0.35);
+}
+
+.preview-close-btn {
+  align-self: start;
+  margin-bottom: var(--space-3);
+}
+
+.preview-lightbox-content {
+  min-width: 0;
+}
+
+.preview-lightbox.is-open .preview-lightbox-content {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+}
+
+.preview-lightbox.is-open .preview-image {
+  height: min(76vh, 46rem);
+}
+
+.preview-lightbox.is-open .pdf-preview {
+  height: 100%;
+  min-height: 32rem;
+}
+
+.preview-lightbox.is-open .text-preview {
+  min-height: 100%;
+  resize: none;
+}
+
+.preview-lightbox.is-open .word-preview {
+  max-height: none;
+  overflow: visible;
+}
+
+.preview-lightbox.is-open .word-preview .docx-wrapper {
+  zoom: 1;
+}
+
+.preview-lightbox.is-open .pptx-preview,
+.preview-lightbox.is-open .csv-preview-container,
+.preview-lightbox.is-open .xlsx-table-scroll {
+  max-height: none;
+}
+
+.preview-lightbox.is-open .pptx-slide-preview {
+  max-height: none;
+}
+
+/* ==========================================================================
+   8. IMAGE AND PDF PREVIEW
+   ========================================================================== */
+
+.preview-image {
+  display: block;
+  width: 100%;
+  height: min(32rem, 55vw);
+  margin: 0 auto;
+  object-fit: contain;
+}
+
+.pdf-preview {
+  display: block;
+  width: 100%;
+  height: min(70vh, 48rem);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  background: var(--color-page);
+}
+
+/* ==========================================================================
+   9. TEXT AND DOCX PREVIEW
+   ========================================================================== */
+
+.text-preview {
+  display: block;
+  width: 100%;
+  min-height: 20rem;
+  padding: var(--space-3);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  background: var(--color-page);
+  color: var(--color-text);
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  line-height: 1.5;
+  resize: vertical;
+}
+
+.word-preview {
+  max-height: 32rem;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding: var(--space-4);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  background: var(--color-page);
+}
+
+.word-preview [data-testid="docx-preview"] {
   width: 100%;
   min-width: 0;
-  max-width: 100%;
+}
+
+.word-preview .docx-wrapper {
+  width: 100%;
+  min-width: 0;
+  padding: 0;
+  background: transparent;
+  zoom: 0.55;
+}
+
+.word-preview .docx-wrapper > section.docx {
+  margin: 0 auto var(--space-4);
+}
+
+/* ==========================================================================
+   10. PPTX PREVIEW
+   ========================================================================== */
+
+.pptx-preview {
+  max-height: 37.5rem;
+  overflow: auto;
+  padding: var(--space-3);
+}
+
+.pptx-slide-preview {
+  display: block;
+  width: auto;
+  max-width: none;
+  max-height: 37.5rem;
+  margin: 0 auto var(--space-5);
+}
+
+/* ==========================================================================
+   11. CSV AND XLSX PREVIEW
+   ========================================================================== */
+
+.csv-preview-container,
+.xlsx-table-scroll {
+  width: 100%;
+  max-height: 26rem;
+  overflow: auto;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  background: var(--color-surface);
+}
+
+.csv-preview-table,
+.xlsx-preview-table {
+  width: max-content;
+  min-width: 100%;
+  border-collapse: collapse;
+  font-size: 0.875rem;
+}
+
+.csv-preview-table th,
+.csv-preview-table td {
+  max-width: 13.75rem;
+  padding: 0.5rem 0.75rem;
+  overflow: hidden;
+  border: 1px solid var(--color-border);
+  text-align: left;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.csv-preview-table th {
+  background: var(--color-page);
+  color: var(--color-text);
+  font-weight: 700;
+}
+
+.xlsx-preview {
+  min-width: 0;
 }
 
 .xlsx-sheet-picker {
   display: flex;
   align-items: center;
-  gap: 0.75rem;
+  gap: var(--space-2);
   width: fit-content;
   max-width: 100%;
-  min-width: 0;
-  margin-bottom: 1rem;
-  padding: 0.6rem;
-  border: 1px solid #cbd5e1;
-  border-radius: 0.6rem;
-  background: #f8fafc;
+  margin-bottom: var(--space-3);
+  padding: var(--space-2);
+  overflow-x: auto;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  background: var(--color-page);
+}
+
+.xlsx-sheet-label,
+.xlsx-sheet-button {
+  flex: 0 0 auto;
+  white-space: nowrap;
+}
+
+.xlsx-sheet-label {
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--radius-sm);
+  background: #e2e8f0;
+  color: var(--color-text);
+  font-weight: 700;
 }
 
 .xlsx-sheet-buttons {
   display: flex;
-  flex: 0 1 auto;
-  gap: 0.4rem;
-  min-width: 0;
-  max-width: 100%;
-  overflow-x: auto;
-  padding: 0.1rem;
-}
-
-.xlsx-sheet-label {
-  flex: 0 0 auto;
-  padding: 0.55rem 0.8rem;
-  border-radius: 0.45rem;
-  background: #334155;
-  color: white;
-  font-weight: 700;
-  white-space: nowrap;
+  gap: var(--space-2);
 }
 
 .xlsx-sheet-button {
-  flex-shrink: 0;
-  padding: 0.35rem 0.65rem;
-  border: 1px solid #cbd5e1;
-  border-radius: 0.4rem;
-  background: white;
-  color: #334155;
-  font-size: 0.85rem;
-  white-space: nowrap;
+  min-height: 2.25rem;
+  padding: var(--space-1) var(--space-3);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  background: var(--color-surface);
+  color: var(--color-text);
   cursor: pointer;
+  font: inherit;
 }
 
 .xlsx-sheet-button:hover {
-  background: #dbeafe;
+  border-color: var(--color-primary);
+  background: var(--color-primary-soft);
 }
 
 .xlsx-sheet-button[aria-pressed="true"] {
-  background: #1d4ed8;
-  border-color: #1d4ed8;
+  border-color: var(--color-primary);
+  background: var(--color-primary);
   color: white;
 }
 
-.xlsx-sheet-button:focus-visible {
-  outline: 2px solid #1d4ed8;
-  outline-offset: 2px;
-}
-
-.xlsx-all-sheet-button {
-  border-color: #0f766e;
-  color: #0f766e;
-  background: #f0fdfa;
-}
-
-.xlsx-all-sheet-button:hover {
-  background: #ccfbf1;
-}
-
-.xlsx-all-sheet-button[aria-pressed="true"] {
-  background: #0f766e;
-  border-color: #0f766e;
-  color: white;
-}
-
-.xlsx-all-sheet-button:focus-visible {
-  outline-color: #0f766e;
-}
-
-.xlsx-table-scroll {
-  max-width: 100%;
-  max-height: 400px;
-  overflow: auto;
-}
-
-.xlsx-preview-table {
-  width: max-content;
-  min-width: 100%;
-  table-layout: auto;
-}
-
-.xlsx-preview-table td {
-  white-space: nowrap;
-}
-
+.xlsx-dependency-notice,
 .xlsx-chart-notice {
-  margin: 0 0 0.6rem;
-  margin-top: 1rem;
-  padding: 0.75rem 1rem;
-  border: 1px solid #93c5fd;
-  border-radius: 0.5rem;
-  background: #eff6ff;
-  color: #1e3a8a;
-  font-size: 0.9rem;
-}
-
-.xlsx-table-scroll {
-  width: 100%;
-  max-width: 100%;
-  max-height: 400px;
-  overflow: auto;
-}
-
-.xlsx-preview-table {
-  width: max-content;
-  min-width: max-content;
-}
-
-.xlsx-sheet-label {
-  flex: 0 0 auto;
-  padding: 0.45rem 0.7rem;
-  border-radius: 0.4rem;
-  background: #e2e8f0;
-  color: #0f172a;
-  font-weight: 700;
-  white-space: nowrap;
-}
-
-.xlsx-table-scroll {
-  width: fit-content;
-  max-width: 100%;
-  max-height: 400px;
-  overflow: auto;
-  border: 1px solid #cbd5e1;
-  border-radius: 0.5rem;
-  background: white;
+  margin: 0 0 var(--space-3);
+  padding: var(--space-3);
+  border-radius: var(--radius-sm);
+  font-size: 0.875rem;
 }
 
 .xlsx-dependency-notice {
-  margin: 0 0 1rem;
-  padding: 0.75rem 1rem;
-  border: 1px solid #facc15;
-  border-radius: 0.5rem;
+  border: 1px solid #fde68a;
   background: #fefce8;
   color: #854d0e;
-  font-size: 0.9rem;
 }
 
-.word-preview {
-  max-height: 600px;
-  overflow: auto;
-  padding: 1rem;
-  text-align: initial;
+.xlsx-chart-notice {
+  margin-top: var(--space-3);
+  border: 1px solid #bfdbfe;
+  background: var(--color-primary-soft);
+  color: #1e3a8a;
 }
 
-.pptx-preview {
-  max-height: 600px;
-  overflow: auto;
-  padding: 1rem;
+/* ==========================================================================
+   12. CONVERSION RESULT AND DOWNLOAD
+   ========================================================================== */
+
+.download-section {
+  display: grid;
+  gap: var(--space-4);
 }
 
-.file-preview .pptx-slide-preview {
-  display: block;
-  width: auto;
-  max-width: none;
-  max-height: 600px;
-  margin: 0 auto 1.5rem;
+.download-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+}
+
+.download-section h2 {
+  margin: 0;
+}
+
+.download-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+.download-section > div[aria-label="Converted files"] {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+.download-section > div[aria-label="Converted files"] button,
+.download-actions > button:not(.download-btn) {
+  min-height: 2.5rem;
+  padding: var(--space-2) var(--space-3);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  background: var(--color-surface);
+  color: var(--color-text);
+  cursor: pointer;
+  font: inherit;
+  font-weight: 600;
+}
+
+.download-btn {
+  justify-self: auto;
+}
+
+/* ==========================================================================
+   13. KEYBOARD FOCUS
+   ========================================================================== */
+
+.file-input-label:focus-within,
+.convert-btn:focus-visible,
+.download-btn:focus-visible,
+.remove-file-btn:focus-visible,
+.option-card:focus-visible,
+.xlsx-sheet-button:focus-visible,
+.preview-expand-btn:focus-visible,
+.preview-close-btn:focus-visible,
+.supported-conversions summary:focus-visible,
+.download-section button:focus-visible {
+  outline: 2px solid var(--color-focus);
+  outline-offset: 2px;
+}
+
+/* ==========================================================================
+   14. RESPONSIVE LAYOUT
+   ========================================================================== */
+
+@media (max-width: 760px) {
+  .conversion-workspace {
+    grid-template-columns: 1fr;
+  }
+
+  .conversion-sidebar {
+    position: static;
+  }
+
+  .upload-section,
+  .source-preview-section,
+  .options-section,
+  .download-section {
+    padding: var(--space-4);
+  }
+
+  .pptx-slide-preview {
+    max-width: 100%;
+    height: auto;
+  }
+}
+
+@media (max-width: 700px) {
+  .preview-file-actions,
+  .download-header {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .remove-file-btn,
+  .download-actions {
+    width: 100%;
+  }
+
+  .download-actions > button {
+    flex: 1;
+  }
+
+  .csv-preview-table,
+  .xlsx-preview-table {
+    font-size: 0.75rem;
+  }
+
+  .csv-preview-table th,
+  .csv-preview-table td {
+    max-width: 8.75rem;
+    padding: var(--space-1) var(--space-2);
+  }
+
+  .preview-lightbox.is-open {
+    padding: var(--space-3);
+  }
+
+  .preview-lightbox.is-open .preview-lightbox-panel {
+    width: 100%;
+    height: 100%;
+    padding: var(--space-4);
+    border-radius: var(--radius-sm);
+  }
 }

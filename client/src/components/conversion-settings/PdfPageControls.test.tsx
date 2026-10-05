@@ -14,14 +14,8 @@ const setup = (disabled = false) => {
 };
 
 describe("PdfPageControls", () => {
-  it("reveals A4 portrait as the default page settings", async () => {
-    const { user } = setup();
-
-    await user.click(
-      screen.getByRole("button", {
-        name: "Customize output",
-      }),
-    );
+  it("shows A4 portrait as the default page settings", () => {
+    setup();
 
     expect(screen.getByRole("radio", { name: "A4" })).toBeChecked();
     expect(screen.getByRole("radio", { name: "A3" })).not.toBeChecked();
@@ -30,7 +24,7 @@ describe("PdfPageControls", () => {
     expect(screen.getByRole("radio", { name: "Landscape" })).not.toBeChecked();
   });
 
-  it("submits default page settings without opening settings", async () => {
+  it("submits default page settings", async () => {
     const { user, onConvert } = setup();
 
     await user.click(
@@ -47,12 +41,6 @@ describe("PdfPageControls", () => {
 
   it("submits A3 landscape settings", async () => {
     const { user, onConvert } = setup();
-
-    await user.click(
-      screen.getByRole("button", {
-        name: "Customize output",
-      }),
-    );
 
     await user.click(screen.getByRole("radio", { name: "A3" }));
     await user.click(

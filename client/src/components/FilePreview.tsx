@@ -5,6 +5,7 @@ import { WordPreview } from "./previews/WordPreview";
 import { CsvPreview } from "./previews/CsvPreview";
 import { XlsxPreview } from "./previews/XlsxPreview";
 import { PptxPreview } from "./previews/PptxPreview";
+import PreviewLightbox from "./PreviewLightbox";
 import type { PreviewData } from "../types/preview";
 
 type FilePreviewProps = {
@@ -33,37 +34,49 @@ export default function FilePreview({
   preview,
   onXlsxSheetChange,
 }: FilePreviewProps) {
+  let previewContent;
+
   switch (preview.kind) {
     case "image":
-      return <ImagePreview url={preview.url} />;
+      previewContent = <ImagePreview url={preview.url} />;
+      break;
 
     case "pdf":
-      return <PDFPreview url={preview.url} />;
+      previewContent = <PDFPreview url={preview.url} />;
+      break;
 
     case "text":
-      return <TextPreview file={preview.file} />;
+      previewContent = <TextPreview file={preview.file} />;
+      break;
 
     case "word":
-      return <WordPreview file={preview.file} />;
+      previewContent = <WordPreview file={preview.file} />;
+      break;
 
     case "csv":
-      return <CsvPreview file={preview.file} />;
+      previewContent = <CsvPreview file={preview.file} />;
+      break;
 
     case "xlsx":
-      return (
+      previewContent = (
         <XlsxPreview
           file={preview.file}
           onXlsxSheetChange={onXlsxSheetChange}
         />
       );
+      break;
 
     case "pptx":
-      return <PptxPreview file={preview.file} />;
+      previewContent = <PptxPreview file={preview.file} />;
+      break;
 
     case "unsupported":
-      return <UnsupportedPreview fileType={preview.fileType} />;
+      previewContent = <UnsupportedPreview fileType={preview.fileType} />;
+      break;
 
     default:
       return assertNever(preview);
   }
+
+  return <PreviewLightbox>{previewContent}</PreviewLightbox>;
 }

@@ -1,14 +1,13 @@
-import { useRef, useState } from "react";
+import { useState } from "react";
 import type { ChangeEvent, DragEvent } from "react";
 import {
+  conversions,
   supportedSourceFormats,
   isSupportedSourceFormat,
 } from "../config/conversions";
 
 interface FileUploadProps {
-  file: File | null;
   onFileSelect: (file: File) => void;
-  onFileRemove: () => void;
 }
 
 const SUPPORTED_FORMATS_LABEL = supportedSourceFormats
@@ -20,6 +19,13 @@ const MAX_FILE_SIZE_BYTES = MAX_FILE_SIZE_MB * 1024 * 1024;
 const ACCEPTED_FILE_EXTENSIONS = supportedSourceFormats
   .map((format) => `.${format}`)
   .join(",");
+
+const conversionGroups = supportedSourceFormats.map((sourceFormat) => ({
+  sourceFormat,
+  targetFormats: conversions
+    .filter((conversion) => conversion.sourceFormat === sourceFormat)
+    .map((conversion) => conversion.targetFormat),
+}));
 
 function validateFile(file: File): string | null {
   const lastDotIndex = file.name.lastIndexOf(".");
@@ -38,14 +44,9 @@ function validateFile(file: File): string | null {
   return null;
 }
 
-export default function FileUpload({
-  file,
-  onFileSelect,
-  onFileRemove,
-}: FileUploadProps) {
+export default function FileUpload({ onFileSelect }: FileUploadProps) {
   const [isDragging, setIsDragging] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleSelectedFile = (selectedFile: File) => {
     const validationError = validateFile(selectedFile);
@@ -75,14 +76,6 @@ export default function FileUpload({
     setIsDragging(false);
   };
 
-  const handleFileRemove = () => {
-    if (fileInputRef.current) {
-      fileInputRef.current.value = "";
-    }
-
-    onFileRemove();
-  };
-
   const handleDrop = (e: DragEvent<HTMLDivElement>) => {
     e.preventDefault();
     setIsDragging(false);
@@ -94,17 +87,15 @@ export default function FileUpload({
 
   return (
     <section
-      aria-labelledby="file-upload-heading"
+      aria-label="Upload File"
       className={`upload-section ${isDragging ? "dragging" : ""}`}
       onDragOver={handleDragOver}
       onDragLeave={handleDragLeave}
       onDrop={handleDrop}
     >
-      <h2 id="file-upload-heading">Upload File</h2>
       <label className="file-input-label">
         Choose File
         <input
-          ref={fileInputRef}
           type="file"
           className="file-input"
           onChange={handleFileChange}
@@ -113,24 +104,29 @@ export default function FileUpload({
       </label>
       <p className="drag-drop-hint">or drag & drop your file here</p>
       <p className="upload-requirements">
-        Supported formats: {SUPPORTED_FORMATS_LABEL}. Maximum size:{" "}
-        {MAX_FILE_SIZE_MB} MB.
+        Maximum file size: {MAX_FILE_SIZE_MB} MB.
       </p>
+
+      <details className="supported-conversions">
+        <summary>View supported conversions</summary>
+
+        <ul>
+          {conversionGroups.map(({ sourceFormat, targetFormats }) => (
+            <li key={sourceFormat}>
+              <strong>{sourceFormat.toUpperCase()}</strong>
+              <span>
+                →{" "}
+                {targetFormats.map((format) => format.toUpperCase()).join(", ")}
+              </span>
+            </li>
+          ))}
+        </ul>
+      </details>
 
       {error && (
         <p className="error-message" role="alert">
           {error}
         </p>
-      )}
-      <span className="file-name">{file?.name || "No file chosen"}</span>
-      {file && (
-        <button
-          type="button"
-          className="remove-file-btn"
-          onClick={handleFileRemove}
-        >
-          Remove file
-        </button>
       )}
     </section>
   );

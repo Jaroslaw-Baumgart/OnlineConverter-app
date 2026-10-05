@@ -1,4 +1,3 @@
-import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 
@@ -16,8 +15,6 @@ export default function PngToJpgControls({
   disabled,
   onConvert,
 }: PngToJpgControlsProps) {
-  const [isOpen, setIsOpen] = useState(false);
-
   const {
     register,
     handleSubmit,
@@ -29,33 +26,20 @@ export default function PngToJpgControls({
 
   return (
     <form onSubmit={handleSubmit(onConvert)}>
-      <button
-        type="button"
-        aria-expanded={isOpen}
-        onClick={() => setIsOpen((currentValue) => !currentValue)}
-      >
-        Customize output
-      </button>
-      {isOpen && (
-        <div>
-          <label htmlFor="png-to-jpg-quality">Quality</label>
-          <input
-            id="png-to-jpg-quality"
-            type="number"
-            {...register("quality")}
-          />
-          {errors.quality && <p role="alert">{errors.quality.message}</p>}
-          <label htmlFor="png-to-jpg-background-color">
-            Replace transparent areas with
-          </label>
-          <input
-            id="png-to-jpg-background-color"
-            type="color"
-            {...register("backgroundColor")}
-          />
-        </div>
-      )}
-      <button type="submit" disabled={disabled}>
+      <div>
+        <label htmlFor="png-to-jpg-quality">Quality</label>
+        <input id="png-to-jpg-quality" type="number" {...register("quality")} />
+        {errors.quality && <p role="alert">{errors.quality.message}</p>}
+        <label htmlFor="png-to-jpg-background-color">
+          Replace transparent areas with
+        </label>
+        <input
+          id="png-to-jpg-background-color"
+          type="color"
+          {...register("backgroundColor")}
+        />
+      </div>
+      <button type="submit" className="convert-btn" disabled={disabled}>
         Convert
       </button>
     </form>

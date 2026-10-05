@@ -22,7 +22,6 @@ afterEach(() => {
   vi.unstubAllGlobals();
   vi.restoreAllMocks();
 });
-
 describe("ConverterPage", () => {
   it("returns to the initial state after removing the selected file", async () => {
     const user = userEvent.setup();
@@ -41,7 +40,9 @@ describe("ConverterPage", () => {
 
     await user.click(screen.getByRole("button", { name: "Remove file" }));
 
-    expect(screen.getByText("No file chosen")).toBeInTheDocument();
+    expect(
+      screen.getByRole("region", { name: "Upload File" }),
+    ).toBeInTheDocument();
     expect(
       screen.queryByRole("button", { name: "Remove file" }),
     ).not.toBeInTheDocument();
@@ -49,11 +50,12 @@ describe("ConverterPage", () => {
       screen.queryByRole("img", { name: "Preview" }),
     ).not.toBeInTheDocument();
 
-    for (const button of screen.getAllByRole("button", { name: "Convert" })) {
-      expect(button).toBeDisabled();
-    }
+    expect(
+      screen.queryByRole("button", { name: "Convert" }),
+    ).not.toBeInTheDocument();
 
-    await user.upload(input, file);
+    const replacementInput = screen.getByLabelText("Choose File");
+    await user.upload(replacementInput, file);
 
     expect(screen.getByText("image.png")).toBeInTheDocument();
     expect(
@@ -136,7 +138,7 @@ describe("ConverterPage", () => {
 
     expect(
       await screen.findByRole("heading", {
-        name: "Download Converted File",
+        name: "Converted file",
       }),
     ).toBeInTheDocument();
 
@@ -144,7 +146,7 @@ describe("ConverterPage", () => {
 
     expect(
       screen.queryByRole("heading", {
-        name: "Download Converted File",
+        name: "Converted file",
       }),
     ).not.toBeInTheDocument();
   });

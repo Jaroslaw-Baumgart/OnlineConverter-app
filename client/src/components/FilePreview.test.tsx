@@ -59,6 +59,33 @@ describe("FilePreview", () => {
     );
   });
 
+  it("opens and closes the shared preview lightbox", async () => {
+    const user = userEvent.setup();
+
+    render(
+      <FilePreview
+        preview={{
+          kind: "image",
+          url: "https://example.com/converted.jpg",
+        }}
+      />,
+    );
+
+    await user.click(
+      screen.getByRole("button", { name: "Expand preview" }),
+    );
+
+    expect(
+      screen.getByRole("dialog", { name: "File preview" }),
+    ).toBeInTheDocument();
+
+    await user.keyboard("{Escape}");
+
+    expect(
+      screen.queryByRole("dialog", { name: "File preview" }),
+    ).not.toBeInTheDocument();
+  });
+
   it("renders a text preview", async () => {
     const file = new File(["text content"], "document.txt", {
       type: "text/plain",

@@ -6,6 +6,16 @@ import { server } from "./server";
 
 beforeAll(() => {
   server.listen({ onUnhandledRequest: "error" });
+
+  Object.defineProperty(HTMLElement.prototype, "scrollIntoView", {
+    configurable: true,
+    value: () => undefined,
+  });
+
+  Object.defineProperty(HTMLAnchorElement.prototype, "click", {
+    configurable: true,
+    value: () => undefined,
+  });
 });
 
 afterEach(() => {

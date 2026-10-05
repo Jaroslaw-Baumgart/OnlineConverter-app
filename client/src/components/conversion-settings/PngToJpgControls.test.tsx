@@ -5,18 +5,8 @@ import { describe, expect, it, vi } from "vitest";
 import PngToJpgControls from "./PngToJpgControls";
 
 describe("PngToJpgControls", () => {
-  it("reveals output settings with their default values", async () => {
-    const user = userEvent.setup();
-
+  it("shows output settings with their default values", () => {
     render(<PngToJpgControls disabled={false} onConvert={vi.fn()} />);
-
-    expect(screen.queryByLabelText("Quality")).not.toBeInTheDocument();
-
-    await user.click(
-      screen.getByRole("button", {
-        name: "Customize output",
-      }),
-    );
 
     expect(screen.getByLabelText("Quality")).toHaveValue(85);
 
@@ -25,7 +15,7 @@ describe("PngToJpgControls", () => {
     );
   });
 
-  it("submits the default settings without opening the panel", async () => {
+  it("submits the default settings", async () => {
     const user = userEvent.setup();
     const onConvert = vi.fn();
 
@@ -48,12 +38,6 @@ describe("PngToJpgControls", () => {
     const onConvert = vi.fn();
 
     render(<PngToJpgControls disabled={false} onConvert={onConvert} />);
-
-    await user.click(
-      screen.getByRole("button", {
-        name: "Customize output",
-      }),
-    );
 
     const qualityInput = screen.getByLabelText("Quality");
 
@@ -83,12 +67,6 @@ describe("PngToJpgControls", () => {
     const onConvert = vi.fn();
 
     render(<PngToJpgControls disabled={false} onConvert={onConvert} />);
-
-    await user.click(
-      screen.getByRole("button", {
-        name: "Customize output",
-      }),
-    );
 
     const qualityInput = screen.getByLabelText("Quality");
 

@@ -5,13 +5,7 @@ import { describe, expect, it, vi } from "vitest";
 import FileUpload from "./FileUpload";
 
 const renderFileUpload = (onFileSelect: (file: File) => void) => {
-  render(
-    <FileUpload
-      file={null}
-      onFileSelect={onFileSelect}
-      onFileRemove={vi.fn()}
-    />,
-  );
+  render(<FileUpload onFileSelect={onFileSelect} />);
 };
 
 describe("FileUpload", () => {
@@ -129,15 +123,17 @@ describe("FileUpload", () => {
     expect(onFileSelect).toHaveBeenCalledWith(supportedFile);
   });
 
-  it("shows supported formats and the maximum file size", () => {
+  it("shows the maximum file size and a conversion legend", () => {
     const onFileSelect = vi.fn();
 
     renderFileUpload(onFileSelect);
 
     expect(
-      screen.getByText(
-        "Supported formats: PDF, JPG, PNG, TXT, DOCX, CSV, XLSX, PPTX. Maximum size: 10 MB.",
-      ),
+      screen.getByText("Maximum file size: 10 MB."),
+    ).toBeInTheDocument();
+
+    expect(
+      screen.getByText("View supported conversions"),
     ).toBeInTheDocument();
   });
 

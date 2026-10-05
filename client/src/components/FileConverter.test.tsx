@@ -6,7 +6,7 @@ import {
   waitFor,
 } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { http, HttpResponse } from "msw";
 
 import { server } from "../test/server";
@@ -19,31 +19,25 @@ vi.mock("docx-preview", () => ({
 }));
 
 const getOptionCard = (text: string): HTMLElement => {
-  const optionText = screen.getByText((_, element) => {
-    return (
-      element?.classList.contains("option-text") === true &&
-      element.textContent === text
-    );
+  return screen.getByRole("button", {
+    name: (name) => name.replace(/\s/g, "") === text,
   });
-
-  const optionCard = optionText.closest(".option-card");
-
-  if (!(optionCard instanceof HTMLElement)) {
-    throw new Error(`Option card "${text}" was not found`);
-  }
-
-  return optionCard;
 };
 
-const getConvertButton = (optionText: string) =>
-  within(getOptionCard(optionText)).getByRole("button", {
-    name: "Convert",
-  });
+const getConvertButton = (optionText: string) => {
+  fireEvent.click(getOptionCard(optionText));
 
-afterEach(() => {
-  vi.unstubAllGlobals();
+  return screen.getByRole("button", { name: "Convert" });
+};
+
+beforeEach(() => {
+  vi.spyOn(console, "error").mockImplementation(() => {});
 });
 
+afterEach(() => {
+  vi.restoreAllMocks();
+  vi.unstubAllGlobals();
+});
 const createTestFile = {
   pdf: (name = "document.pdf") =>
     new File(["pdf content"], name, {
@@ -113,22 +107,17 @@ const setupFileConverter = () => {
 };
 
 describe("FileConverter", () => {
-  it("disables all conversion buttons when no file is selected", () => {
+  it("shows the upload prompt before a file is selected", () => {
     setupFileConverter();
 
-    const convertButtons = screen.getAllByRole("button", {
-      name: "Convert",
-    });
-
-    expect(convertButtons).toHaveLength(conversionOptions.length);
-
-    for (const button of convertButtons) {
-      expect(button).toBeDisabled();
-    }
+    expect(
+      screen.getByRole("region", { name: "Upload File" }),
+    ).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /→/ })).not.toBeInTheDocument();
   });
 
   it.each(["document.pdf", "document.PDF"])(
-    "enables only conversions allowed for PDF file %s",
+    "shows only conversions allowed for PDF file %s",
     async (fileName) => {
       const file = createTestFile.pdf(fileName);
 
@@ -138,25 +127,20 @@ describe("FileConverter", () => {
 
       expect(screen.getByTitle("PDF Preview")).toBeInTheDocument();
 
-      const pdfToJpgCard = getOptionCard("PDF→JPG");
-      const pdfToTxtCard = getOptionCard("PDF→TXT");
-      const jpgToPngCard = getOptionCard("JPG→PNG");
-
+      expect(getOptionCard("PDF→JPG")).toBeInTheDocument();
+      expect(getOptionCard("PDF→TXT")).toBeInTheDocument();
+      expect(getOptionCard("PDF→JPG")).toHaveAttribute(
+        "aria-pressed",
+        "true",
+      );
       expect(
-        within(pdfToJpgCard).getByRole("button", { name: "Convert" }),
-      ).toBeEnabled();
-
-      expect(
-        within(pdfToTxtCard).getByRole("button", { name: "Convert" }),
-      ).toBeEnabled();
-
-      expect(
-        within(jpgToPngCard).getByRole("button", { name: "Convert" }),
-      ).toBeDisabled();
+        screen.queryByRole("button", { name: "JPG→PNG" }),
+      ).not.toBeInTheDocument();
+      expect(getConvertButton("PDF→JPG")).toBeEnabled();
     },
   );
 
-  it("enables only conversions allowed for a PNG file", async () => {
+  it("shows only conversions allowed for a PNG file", async () => {
     const file = createTestFile.png();
     const { user, input } = setupFileConverter();
 
@@ -164,26 +148,14 @@ describe("FileConverter", () => {
 
     expect(screen.getByRole("img", { name: "Preview" })).toBeInTheDocument();
 
-    const pdfToJpgCard = getOptionCard("PDF→JPG");
-    const jpgToPngCard = getOptionCard("JPG→PNG");
-    const pdfToTxtCard = getOptionCard("PDF→TXT");
-    const pngToJpgCard = getOptionCard("PNG→JPG");
-
+    expect(getOptionCard("PNG→JPG")).toBeInTheDocument();
     expect(
-      within(pdfToJpgCard).getByRole("button", { name: "Convert" }),
-    ).toBeDisabled();
-
+      screen.queryByRole("button", { name: "PDF→JPG" }),
+    ).not.toBeInTheDocument();
     expect(
-      within(pdfToTxtCard).getByRole("button", { name: "Convert" }),
-    ).toBeDisabled();
-
-    expect(
-      within(jpgToPngCard).getByRole("button", { name: "Convert" }),
-    ).toBeDisabled();
-
-    expect(
-      within(pngToJpgCard).getByRole("button", { name: "Convert" }),
-    ).toBeEnabled();
+      screen.queryByRole("button", { name: "JPG→PNG" }),
+    ).not.toBeInTheDocument();
+    expect(getConvertButton("PNG→JPG")).toBeEnabled();
   });
 
   it("updates available conversions when the selected file changes", async () => {
@@ -194,13 +166,20 @@ describe("FileConverter", () => {
 
     await user.upload(input, pdfFile);
 
-    expect(getConvertButton("PDF→JPG")).toBeEnabled();
-    expect(getConvertButton("PNG→JPG")).toBeDisabled();
+    expect(getOptionCard("PDF→JPG")).toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: "PNG→JPG" }),
+    ).not.toBeInTheDocument();
 
-    await user.upload(input, pngFile);
+    await user.click(screen.getByRole("button", { name: "Remove file" }));
 
-    expect(getConvertButton("PDF→JPG")).toBeDisabled();
-    expect(getConvertButton("PNG→JPG")).toBeEnabled();
+    const replacementInput = screen.getByLabelText("Choose File");
+    await user.upload(replacementInput, pngFile);
+
+    expect(
+      screen.queryByRole("button", { name: "PDF→JPG" }),
+    ).not.toBeInTheDocument();
+    expect(getOptionCard("PNG→JPG")).toBeInTheDocument();
   });
 
   it("clears the previous conversion result when a new file is selected", async () => {
@@ -237,22 +216,25 @@ describe("FileConverter", () => {
 
     expect(
       await screen.findByRole("heading", {
-        name: "Download Converted File",
+        name: "Converted file",
       }),
     ).toBeInTheDocument();
 
     expect(
-      screen.getByRole("button", { name: "Download File" }),
+      screen.getByRole("button", { name: "Download file" }),
     ).toBeInTheDocument();
 
     expect(screen.queryByRole("status")).not.toBeInTheDocument();
     expect(getConvertButton("JPG→PNG")).toBeEnabled();
 
-    await user.upload(input, newFile);
+    await user.click(screen.getByRole("button", { name: "Remove file" }));
+
+    const replacementInput = screen.getByLabelText("Choose File");
+    await user.upload(replacementInput, newFile);
 
     expect(
       screen.queryByRole("heading", {
-        name: "Download Converted File",
+        name: "Converted file",
       }),
     ).not.toBeInTheDocument();
 
@@ -396,8 +378,6 @@ describe("FileConverter", () => {
       }),
     );
 
-    vi.spyOn(console, "error").mockImplementation(() => {});
-
     const { user, input } = setupFileConverter();
 
     await user.upload(input, createTestFile.jpg());
@@ -415,7 +395,7 @@ describe("FileConverter", () => {
 
     expect(
       screen.queryByRole("heading", {
-        name: "Download Converted File",
+        name: "Converted file",
       }),
     ).not.toBeInTheDocument();
   });
@@ -439,8 +419,6 @@ describe("FileConverter", () => {
       }),
     );
 
-    vi.spyOn(console, "error").mockImplementation(() => {});
-
     const { user, input } = setupFileConverter();
 
     await user.upload(input, createTestFile.jpg());
@@ -454,7 +432,7 @@ describe("FileConverter", () => {
 
     expect(
       screen.queryByRole("heading", {
-        name: "Download Converted File",
+        name: "Converted file",
       }),
     ).not.toBeInTheDocument();
   });
@@ -470,8 +448,6 @@ describe("FileConverter", () => {
         });
       }),
     );
-
-    vi.spyOn(console, "error").mockImplementation(() => {});
 
     const { user, input } = setupFileConverter();
 
@@ -523,8 +499,6 @@ describe("FileConverter", () => {
       }),
     );
 
-    vi.spyOn(console, "error").mockImplementation(() => {});
-
     const { user, input } = setupFileConverter();
 
     await user.upload(input, createTestFile.jpg());
@@ -542,7 +516,7 @@ describe("FileConverter", () => {
 
     expect(
       await screen.findByRole("heading", {
-        name: "Download Converted File",
+        name: "Converted file",
       }),
     ).toBeInTheDocument();
 
@@ -566,8 +540,6 @@ describe("FileConverter", () => {
         );
       }),
     );
-
-    vi.spyOn(console, "error").mockImplementation(() => {});
 
     const { user, input } = setupFileConverter();
 
@@ -608,15 +580,13 @@ describe("FileConverter", () => {
       }),
     );
 
-    vi.spyOn(console, "error").mockImplementation(() => {});
-
     const { user, input } = setupFileConverter();
 
     await user.upload(input, createTestFile.jpg());
     await user.click(getConvertButton("JPG→PNG"));
 
     const downloadButton = await screen.findByRole("button", {
-      name: "Download File",
+      name: "Download file",
     });
 
     vi.spyOn(URL, "createObjectURL").mockImplementationOnce(() => {
@@ -670,20 +640,15 @@ describe("FileConverter", () => {
     await user.upload(input, createTestFile.png());
 
     const pngToJpgCard = getOptionCard("PNG→JPG");
+    await user.click(pngToJpgCard);
 
-    await user.click(
-      within(pngToJpgCard).getByRole("button", {
-        name: "Customize output",
-      }),
-    );
-
-    const qualityInput = within(pngToJpgCard).getByLabelText("Quality");
+    const qualityInput = screen.getByLabelText("Quality");
 
     await user.clear(qualityInput);
     await user.type(qualityInput, "95");
 
     fireEvent.change(
-      within(pngToJpgCard).getByLabelText("Replace transparent areas with"),
+      screen.getByLabelText("Replace transparent areas with"),
       {
         target: {
           value: "#000000",
@@ -692,14 +657,14 @@ describe("FileConverter", () => {
     );
 
     await user.click(
-      within(pngToJpgCard).getByRole("button", {
+      screen.getByRole("button", {
         name: "Convert",
       }),
     );
 
     expect(
       await screen.findByRole("heading", {
-        name: "Download Converted File",
+        name: "Converted file",
       }),
     ).toBeInTheDocument();
   });
@@ -753,7 +718,7 @@ describe("FileConverter", () => {
 
     expect(
       await screen.findByRole("heading", {
-        name: "Download Converted File",
+        name: "Converted file",
       }),
     ).toBeInTheDocument();
 
@@ -789,33 +754,28 @@ describe("FileConverter", () => {
     await user.upload(input, createTestFile.csv());
 
     const csvToPdfCard = getOptionCard("CSV→PDF");
-
-    await user.click(
-      within(csvToPdfCard).getByRole("button", {
-        name: "Customize output",
-      }),
-    );
+    await user.click(csvToPdfCard);
 
     expect(
-      within(csvToPdfCard).getByRole("radio", {
+      screen.getByRole("radio", {
         name: "A4",
       }),
     ).toBeChecked();
 
     expect(
-      within(csvToPdfCard).getByRole("radio", {
+      screen.getByRole("radio", {
         name: "A3",
       }),
     ).toBeInTheDocument();
 
     expect(
-      within(csvToPdfCard).getByRole("radio", {
+      screen.getByRole("radio", {
         name: "Portrait",
       }),
     ).toBeChecked();
 
     expect(
-      within(csvToPdfCard).getByRole("radio", {
+      screen.getByRole("radio", {
         name: "Landscape",
       }),
     ).toBeInTheDocument();
@@ -854,27 +814,22 @@ describe("FileConverter", () => {
     await user.click(screen.getByRole("button", { name: "Warehouse" }));
 
     const xlsxToPdfCard = getOptionCard("XLSX→PDF");
+    await user.click(xlsxToPdfCard);
 
     await user.click(
-      within(xlsxToPdfCard).getByRole("button", {
-        name: "Customize output",
-      }),
-    );
-
-    await user.click(
-      within(xlsxToPdfCard).getByRole("radio", {
+      screen.getByRole("radio", {
         name: "A3",
       }),
     );
 
     await user.click(
-      within(xlsxToPdfCard).getByRole("radio", {
+      screen.getByRole("radio", {
         name: "Landscape",
       }),
     );
 
     await user.click(
-      within(xlsxToPdfCard).getByRole("button", {
+      screen.getByRole("button", {
         name: "Convert",
       }),
     );
@@ -908,7 +863,7 @@ describe("FileConverter", () => {
     await user.click(screen.getByRole("button", { name: "All sheets" }));
 
     await user.click(
-      within(xlsxToPdfCard).getByRole("button", {
+      screen.getByRole("button", {
         name: "Convert",
       }),
     );

@@ -182,7 +182,7 @@ describe("DownloadSection", () => {
 
     fireEvent.click(
       screen.getByRole("button", {
-        name: "Download File",
+        name: "Download file",
       }),
     );
 
