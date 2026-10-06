@@ -5,6 +5,10 @@ import {
   supportedSourceFormats,
   isSupportedSourceFormat,
 } from "../config/conversions";
+import styles from "./FileUpload.module.css";
+import stateStyles from "./PreviewState.module.css";
+import panelStyles from "./ConverterPanel.module.css";
+import primaryActionStyles from "./PrimaryAction.module.css";
 
 interface FileUploadProps {
   onFileSelect: (file: File) => void;
@@ -88,26 +92,28 @@ export default function FileUpload({ onFileSelect }: FileUploadProps) {
   return (
     <section
       aria-label="Upload File"
-      className={`upload-section ${isDragging ? "dragging" : ""}`}
+      className={`${panelStyles.panel} ${styles["upload-section"]} ${
+        isDragging ? styles.dragging : ""
+      }`}
       onDragOver={handleDragOver}
       onDragLeave={handleDragLeave}
       onDrop={handleDrop}
     >
-      <label className="file-input-label">
+      <label className={primaryActionStyles.button}>
         Choose File
         <input
           type="file"
-          className="file-input"
+          className={styles["file-input"]}
           onChange={handleFileChange}
           accept={ACCEPTED_FILE_EXTENSIONS}
         />
       </label>
-      <p className="drag-drop-hint">or drag & drop your file here</p>
-      <p className="upload-requirements">
+      <p className={styles["drag-drop-hint"]}>or drag & drop your file here</p>
+      <p className={styles["upload-requirements"]}>
         Maximum file size: {MAX_FILE_SIZE_MB} MB.
       </p>
 
-      <details className="supported-conversions">
+      <details className={styles["supported-conversions"]}>
         <summary>View supported conversions</summary>
 
         <ul>
@@ -124,7 +130,7 @@ export default function FileUpload({ onFileSelect }: FileUploadProps) {
       </details>
 
       {error && (
-        <p className="error-message" role="alert">
+        <p className={stateStyles["error-message"]} role="alert">
           {error}
         </p>
       )}

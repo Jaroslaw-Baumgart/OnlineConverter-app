@@ -1,38 +1,41 @@
 import { Link } from "react-router";
 import { conversions } from "../config/conversions";
+import styles from "./PageContent.module.css";
 
 export default function AboutPage() {
   return (
-    <article className="about-page">
-      <h1 className="app-title">About the application</h1>
+    <article className={styles["page-content"]}>
+      <header className={styles.hero}>
+        <p className={styles.eyebrow}>Online File Converter</p>
+        <h1>About the application</h1>
+        <p className={styles.lead}>
+          Convert common images, documents, spreadsheets, presentations, and
+          text files in a few clear, uncluttered steps.
+        </p>
+        <Link to="/" className={styles["primary-link"]}>
+          Open converter
+        </Link>
+      </header>
 
-      <p>
-        Online File Converter converts common images, documents, spreadsheets,
-        presentations, and text files. Upload a file, choose the conversion you
-        need, then download the result.
-      </p>
+      <section className={styles.card} aria-labelledby="about-how-it-works">
+        <h2 id="about-how-it-works">How it works</h2>
 
-      <section aria-labelledby="about-how-it-works">
-        <h2 id="about-how-it-works">How to use it</h2>
-
-        <ol>
+        <ol className={styles.steps}>
           <li>Upload one file, up to 10 MB.</li>
           <li>Choose one of the available conversion options.</li>
           <li>Set page or image options when they are available.</li>
           <li>Convert the file and download the result.</li>
         </ol>
-
-        <Link to="/">Open converter</Link>
       </section>
 
-      <section aria-labelledby="about-conversions">
+      <section className={styles.card} aria-labelledby="about-conversions">
         <h2 id="about-conversions">Supported conversions</h2>
 
-        <ul>
+        <ul className={styles["conversion-list"]}>
           {conversions.map((conversion) => (
             <li key={conversion.conversionType}>
               {conversion.sourceFormat.toUpperCase()}
-              {" to "}
+              <span aria-hidden="true">→</span>
               {conversion.targetFormat.toUpperCase()}
             </li>
           ))}
@@ -44,7 +47,7 @@ export default function AboutPage() {
         </p>
       </section>
 
-      <section aria-labelledby="about-previews">
+      <section className={styles.card} aria-labelledby="about-previews">
         <h2 id="about-previews">Previews</h2>
 
         <p>
@@ -54,7 +57,7 @@ export default function AboutPage() {
         </p>
       </section>
 
-      <section aria-labelledby="about-settings">
+      <section className={styles.card} aria-labelledby="about-settings">
         <h2 id="about-settings">Conversion settings</h2>
 
         <ul>
@@ -67,7 +70,7 @@ export default function AboutPage() {
         </ul>
       </section>
 
-      <section aria-labelledby="about-files">
+      <section className={styles.card} aria-labelledby="about-files">
         <h2 id="about-files">Files and results</h2>
 
         <p>

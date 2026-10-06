@@ -3,6 +3,11 @@ import PngToJpgControls from "./conversion-settings/PngToJpgControls";
 import type { ConversionSettings } from "../schemas/conversionSettings";
 import PdfPageControls from "./conversion-settings/PdfPageControls";
 import { useState } from "react";
+import styles from "./ConversionOptions.module.css";
+import panelStyles from "./ConverterPanel.module.css";
+import primaryActionStyles from "./PrimaryAction.module.css";
+import stateStyles from "./PreviewState.module.css";
+import { FileIcon } from "./UiIcons";
 
 interface ConversionOptionsProps {
   options: ConversionOption[];
@@ -28,16 +33,18 @@ export default function ConversionOptions({
       (option) => option.conversionType === selectedConversionType,
     ) ?? availableOptions[0];
   return (
-    <div className="options-section" aria-busy={isConverting}>
-      {isConverting && (
-        <div className="conversion-overlay" role="status" aria-live="polite">
-          <span>Converting</span>
-          <span className="loading-dots" aria-hidden="true" />
-        </div>
-      )}
-      <h2>2. Convert this file</h2>
-      <p className="conversion-section-description">Choose an output format.</p>
-      <div className="options-grid" aria-label="Available conversion formats">
+    <div
+      className={`${panelStyles.panel} ${styles["options-section"]}`}
+      aria-busy={isConverting}
+    >
+      {isConverting ? (
+        <p className={stateStyles["visually-hidden"]} role="status">
+          Converting
+        </p>
+      ) : null}
+      <h2 className={panelStyles.heading}>2. Convert this file</h2>
+      <p className={styles["conversion-section-description"]}>Choose an output format.</p>
+      <div className={styles["options-grid"]} aria-label="Available conversion formats">
         {availableOptions.length === 0 ? (
           <p>Upload a file to see available conversions.</p>
         ) : (
@@ -45,16 +52,17 @@ export default function ConversionOptions({
             <button
               key={option.conversionType}
               type="button"
-              className="option-card"
+              className={styles["option-card"]}
               aria-pressed={option.conversionType === selectedOption?.conversionType}
               onClick={() => setSelectedConversionType(option.conversionType)}
               disabled={isConverting}
             >
-              <span className="format">
+              <FileIcon className={styles["format-icon"]} />
+              <span className={styles.format}>
                 {option.sourceFormat.toUpperCase()}
               </span>
-              <span className="arrow">→</span>
-              <span className="format">
+              <span className={styles.arrow}>→</span>
+              <span className={styles.format}>
                 {option.targetFormat.toUpperCase()}
               </span>
             </button>
@@ -62,12 +70,13 @@ export default function ConversionOptions({
         )}
       </div>
       {selectedOption ? (
-        <div className="conversion-settings">
+        <div className={styles["conversion-settings"]}>
           <h3>Conversion settings</h3>
 
           {selectedOption.conversionType === "png-to-jpg" ? (
             <PngToJpgControls
               disabled={isConverting}
+              isConverting={isConverting}
               onConvert={(settings) => onConvert(selectedOption, settings)}
             />
           ) : selectedOption.conversionType === "jpg-to-pdf" ||
@@ -80,6 +89,7 @@ export default function ConversionOptions({
                 (selectedOption.conversionType === "xlsx-to-pdf" &&
                   selectedXlsxSheetName === null)
               }
+              isConverting={isConverting}
               onConvert={(settings) => {
                 if (selectedOption.conversionType !== "xlsx-to-pdf") {
                   onConvert(selectedOption, settings);
@@ -104,16 +114,23 @@ export default function ConversionOptions({
           ) : (
             <button
               type="button"
-              className="convert-btn"
+              className={`${primaryActionStyles.button} ${styles["convert-btn"]}`}
               onClick={() => onConvert(selectedOption)}
               disabled={isConverting}
             >
-              Convert
+              {isConverting ? (
+                <>
+                  <span className={primaryActionStyles.spinner} aria-hidden="true" />
+                  Converting
+                </>
+              ) : (
+                "Convert"
+              )}
             </button>
           )}
         </div>
       ) : (
-        <p className="conversion-choice-hint">
+        <p className={styles["conversion-choice-hint"]}>
           Choose an output format to configure conversion.
         </p>
       )}

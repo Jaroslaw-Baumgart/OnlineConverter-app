@@ -1,16 +1,19 @@
 import { Link } from "react-router";
+import styles from "./PageContent.module.css";
 
 export default function PrivacyPage() {
   return (
-    <article className="about-page">
-      <h1 className="app-title">Privacy</h1>
+    <article className={styles["page-content"]}>
+      <header className={styles.hero}>
+        <p className={styles.eyebrow}>Privacy</p>
+        <h1>Privacy</h1>
+        <p className={styles.lead}>
+          Files are used only for the conversion you request. The app does not
+          require an account or keep a personal conversion history.
+        </p>
+      </header>
 
-      <p>
-        Files are used only to perform the conversion you request. The app does
-        not require an account and does not keep a personal conversion history.
-      </p>
-
-      <section aria-labelledby="privacy-processing">
+      <section className={styles.card} aria-labelledby="privacy-processing">
         <h2 id="privacy-processing">What is processed</h2>
 
         <p>
@@ -21,7 +24,7 @@ export default function PrivacyPage() {
         </p>
       </section>
 
-      <section aria-labelledby="privacy-storage">
+      <section className={styles.card} aria-labelledby="privacy-storage">
         <h2 id="privacy-storage">How long files are kept</h2>
 
         <ul>
@@ -41,7 +44,10 @@ export default function PrivacyPage() {
         </ul>
       </section>
 
-      <section aria-labelledby="privacy-sensitive-files">
+      <section
+        className={`${styles.card} ${styles.notice}`}
+        aria-labelledby="privacy-sensitive-files"
+      >
         <h2 id="privacy-sensitive-files">Sensitive files</h2>
 
         <p>
@@ -50,7 +56,9 @@ export default function PrivacyPage() {
         </p>
       </section>
 
-      <Link to="/">Back to converter</Link>
+      <Link to="/" className={styles["secondary-link"]}>
+        Back to converter
+      </Link>
     </article>
   );
 }

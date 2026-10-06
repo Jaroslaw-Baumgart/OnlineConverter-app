@@ -1,5 +1,7 @@
 import { useEffect, useRef, useState } from "react";
-import "../styles/FileConverter.css";
+import styles from "./FileConverter.module.css";
+import stateStyles from "./PreviewState.module.css";
+import panelStyles from "./ConverterPanel.module.css";
 import type { ConversionOption, FileConverterProps } from "../types/converter";
 import FileUpload from "./FileUpload";
 import ConversionOptions from "./ConversionOptions";
@@ -103,35 +105,40 @@ export default function FileConverter({
   };
 
   return (
-    <div className="converter-container">
+    <div className={styles["converter-container"]}>
       {file && previewData ? (
-        <div className="conversion-workspace">
+        <div className={styles["conversion-workspace"]}>
           <section
-            className="source-preview-section"
+            className={`${panelStyles.panel} ${styles["source-preview-section"]}`}
             aria-labelledby="source-preview-heading"
           >
-            <h2 id="source-preview-heading">1. File preview</h2>
+            <h2
+              id="source-preview-heading"
+              className={panelStyles.heading}
+            >
+              1. File preview
+            </h2>
 
-            <div className="preview-file-actions">
-              <span className="preview-file-name">{file.name}</span>
+            <div className={styles["preview-file-actions"]}>
+              <span className={styles["preview-file-name"]}>{file.name}</span>
 
               <button
                 type="button"
-                className="remove-file-btn"
+                className={styles["remove-file-btn"]}
                 onClick={handleFileRemove}
               >
                 Remove file
               </button>
             </div>
 
-            <div className="file-preview">
+            <div className={styles["file-preview"]}>
               <FilePreview
                 preview={previewData}
                 onXlsxSheetChange={setSelectedXlsxSheetName}
               />
             </div>
           </section>
-          <aside className="conversion-sidebar">
+          <aside className={styles["conversion-sidebar"]}>
             <ConversionOptions
               options={availableOptions}
               onConvert={handleConvert}
@@ -141,7 +148,7 @@ export default function FileConverter({
           </aside>
         </div>
       ) : file ? (
-        <p className="loading-message" role="status">
+        <p className={stateStyles["loading-message"]} role="status">
           Preparing preview...
         </p>
       ) : (
@@ -149,7 +156,7 @@ export default function FileConverter({
       )}
 
       {error && (
-        <div className="error-message" role="alert">
+        <div className={stateStyles["error-message"]} role="alert">
           {error}
         </div>
       )}

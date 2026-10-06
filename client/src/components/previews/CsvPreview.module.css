@@ -1,0 +1,50 @@
+.csv-preview-container,
+.xlsx-table-scroll {
+  width: 100%;
+  max-height: 26rem;
+  overflow: auto;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  background: var(--color-surface);
+}
+
+.csv-preview-table,
+.xlsx-preview-table {
+  width: max-content;
+  min-width: 100%;
+  border-collapse: collapse;
+  font-size: 0.875rem;
+}
+
+.csv-preview-table th,
+.csv-preview-table td {
+  max-width: 13.75rem;
+  padding: 0.5rem 0.75rem;
+  overflow: hidden;
+  border: 1px solid var(--color-border);
+  text-align: left;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.csv-preview-table th {
+  background: var(--color-page);
+  color: var(--color-text);
+  font-weight: 700;
+}
+
+@media (max-width: 700px) {
+  .csv-preview-container {
+    max-height: 22rem;
+  }
+
+  .csv-preview-table {
+    font-size: 0.75rem;
+  }
+
+  .csv-preview-table th,
+  .csv-preview-table td {
+    max-width: 8.75rem;
+    padding: var(--space-1) var(--space-2);
+  }
+}

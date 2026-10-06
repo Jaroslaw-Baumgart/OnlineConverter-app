@@ -1,6 +1,8 @@
 import { useState, useEffect } from "react";
 import { getSlides, loadPresentation } from "@office-kit/pptx";
 import { renderSlideToSvg } from "@office-kit/pptx-preview";
+import styles from "./PptxPreview.module.css";
+import stateStyles from "../PreviewState.module.css";
 
 export function PptxPreview({ file }: { file: File }) {
   const [error, setError] = useState<string | null>(null);
@@ -59,18 +61,18 @@ export function PptxPreview({ file }: { file: File }) {
   }, [file]);
 
   return (
-    <div className="pptx-preview" aria-busy={isRendering}>
+    <div className={styles["pptx-preview"]} data-preview-kind="pptx" aria-busy={isRendering}>
       {isRendering ? <p>Loading PPTX content...</p> : null}
 
       {error ? (
-        <p className="error-message" role="alert">
+        <p className={stateStyles["error-message"]} role="alert">
           {error}
         </p>
       ) : null}
       {slideUrls.map((slideUrl, index) => (
         <img
           key={slideUrl}
-          className="pptx-slide-preview"
+          className={styles["pptx-slide-preview"]}
           src={slideUrl}
           alt={`PowerPoint slide ${index + 1}`}
         />

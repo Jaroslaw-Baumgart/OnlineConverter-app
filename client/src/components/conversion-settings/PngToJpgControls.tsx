@@ -5,14 +5,18 @@ import {
   pngToJpgSettingsSchema,
   type PngToJpgSettings,
 } from "../../schemas/conversionSettings";
+import styles from "../ConversionOptions.module.css";
+import primaryActionStyles from "../PrimaryAction.module.css";
 
 interface PngToJpgControlsProps {
   disabled: boolean;
+  isConverting?: boolean;
   onConvert: (settings: PngToJpgSettings) => void;
 }
 
 export default function PngToJpgControls({
   disabled,
+  isConverting = false,
   onConvert,
 }: PngToJpgControlsProps) {
   const {
@@ -39,8 +43,19 @@ export default function PngToJpgControls({
           {...register("backgroundColor")}
         />
       </div>
-      <button type="submit" className="convert-btn" disabled={disabled}>
-        Convert
+      <button
+        type="submit"
+        className={`${primaryActionStyles.button} ${styles["convert-btn"]}`}
+        disabled={disabled}
+      >
+        {isConverting ? (
+          <>
+            <span className={primaryActionStyles.spinner} aria-hidden="true" />
+            Converting
+          </>
+        ) : (
+          "Convert"
+        )}
       </button>
     </form>
   );

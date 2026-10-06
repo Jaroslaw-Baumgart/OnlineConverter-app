@@ -1,5 +1,5 @@
 import { NavLink, Outlet, useLocation } from "react-router";
-import "../App.css";
+import styles from "./AppLayout.module.css";
 import ErrorBoundary from "../components/ErrorBoundary";
 import { Suspense } from "react";
 import ConverterLogo from "../components/ConverterLogo";
@@ -8,18 +8,18 @@ export default function AppLayout() {
   const location = useLocation();
 
   return (
-    <div className="app-container">
-      <nav aria-label="Main navigation" className="app-nav">
-        <NavLink to="/" className="brand-link">
+    <div className={styles["app-container"]}>
+      <nav aria-label="Main navigation" className={styles["app-nav"]}>
+        <NavLink to="/" className={styles["brand-link"]}>
           <ConverterLogo />
           <span>Converter</span>
         </NavLink>
 
-        <div className="nav-links">
-          <NavLink to="/about" className="nav-link">
+        <div className={styles["nav-links"]}>
+          <NavLink to="/about" className={styles["nav-link"]}>
             About
           </NavLink>
-          <NavLink to="/privacy" className="nav-link">
+          <NavLink to="/privacy" className={styles["nav-link"]}>
             Privacy
           </NavLink>
         </div>

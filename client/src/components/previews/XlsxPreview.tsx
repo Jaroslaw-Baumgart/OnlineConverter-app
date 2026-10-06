@@ -1,5 +1,8 @@
 import { parseXlsxFile, type XlsxSheet } from "../../utils/xlsx";
 import { useState, useEffect } from "react";
+import styles from "./XlsxPreview.module.css";
+import csvStyles from "./CsvPreview.module.css";
+import stateStyles from "../PreviewState.module.css";
 
 function XlsxSheetPreview({
   sheet,
@@ -15,11 +18,11 @@ function XlsxSheetPreview({
     <section>
       {showName && <h3>{sheet.name}</h3>}
 
-      <div className="xlsx-table-scroll">
+      <div className={styles["xlsx-table-scroll"]} data-preview-kind="xlsx">
         {sheet.rows.length === 0 ? (
           <p>This sheet is empty.</p>
         ) : (
-          <table className="csv-preview-table xlsx-preview-table">
+          <table className={`${csvStyles["csv-preview-table"]} ${styles["xlsx-preview-table"]}`}>
             <thead>
               <tr>
                 {Array.from({ length: columnCount }, (_, columnIndex) => (
@@ -99,7 +102,7 @@ export function XlsxPreview({
   }
 
   if (error) {
-    return <p className="error-message">{error}</p>;
+    return <p className={stateStyles["error-message"]}>{error}</p>;
   }
 
   const selectedSheet = sheets.find(
@@ -113,15 +116,15 @@ export function XlsxPreview({
       : [];
 
   return (
-    <div className="xlsx-preview">
-      <div className="xlsx-sheet-picker">
-        <span className="xlsx-sheet-label">Sheet</span>
-        <div className="xlsx-sheet-buttons" role="group" aria-label="Sheets">
+    <div className={styles["xlsx-preview"]}>
+      <div className={styles["xlsx-sheet-picker"]}>
+        <span className={styles["xlsx-sheet-label"]}>Sheet</span>
+        <div className={styles["xlsx-sheet-buttons"]} role="group" aria-label="Sheets">
           {sheets.map((sheet) => (
             <button
               key={sheet.name}
               type="button"
-              className="xlsx-sheet-button"
+              className={styles["xlsx-sheet-button"]}
               value={sheet.name}
               aria-pressed={
                 !isAllSheetsSelected && sheet.name === selectedSheetName
@@ -137,7 +140,7 @@ export function XlsxPreview({
           ))}
           <button
             type="button"
-            className="xlsx-sheet-button xlsx-all-sheet-button"
+            className={`${styles["xlsx-sheet-button"]} ${styles["xlsx-all-sheet-button"]}`}
             aria-pressed={isAllSheetsSelected}
             onClick={() => {
               setIsAllSheetsSelected(true);
@@ -149,7 +152,7 @@ export function XlsxPreview({
         </div>
       </div>
       {!isAllSheetsSelected && (
-        <p className="xlsx-dependency-notice" role="note">
+        <p className={styles["xlsx-dependency-notice"]} role="note">
           If this sheet depends on formulas or charts from other sheets, choose
           All sheets.
         </p>
@@ -161,7 +164,7 @@ export function XlsxPreview({
           showName={isAllSheetsSelected}
         />
       ))}
-      <p className="xlsx-chart-notice" role="note">
+      <p className={styles["xlsx-chart-notice"]} role="note">
         Charts are not shown in this preview. To view them, convert the file to
         PDF using the charts option.
       </p>

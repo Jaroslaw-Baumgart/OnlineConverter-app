@@ -5,6 +5,10 @@ import type {
 } from "../types/conversionResult";
 import FilePreview from "./FilePreview";
 import { createPreviewData } from "../utils/previewMapper";
+import styles from "./DownloadSection.module.css";
+import panelStyles from "./ConverterPanel.module.css";
+import primaryActionStyles from "./PrimaryAction.module.css";
+import { CheckIcon, DownloadIcon, FileIcon } from "./UiIcons";
 
 interface DownloadSectionProps {
   convertedResults: ConvertedResults;
@@ -28,18 +32,28 @@ export default function DownloadSection({
     convertedResults[0];
 
   const previewData = createPreviewData(activeResult.file, activeResult.url);
+  const targetFormat = activeResult.file.name.split(".").pop()?.toUpperCase();
 
   return (
-    <div className="download-section">
-      <div className="download-header">
-        <h2>Converted file</h2>
+    <div className={`${panelStyles.panel} ${styles["download-section"]}`}>
+      <div className={styles["download-header"]}>
+        <div className={styles["download-title"]}>
+          <span className={styles["success-icon"]}>
+            <CheckIcon />
+          </span>
+          <div>
+            <h2 className={panelStyles.heading}>Converted file</h2>
+            <p className={styles["success-message"]}>Conversion complete</p>
+          </div>
+        </div>
 
-        <div className="download-actions">
+        <div className={styles["download-actions"]}>
           <button
             type="button"
-            className="download-btn"
+            className={`${primaryActionStyles.button} ${styles["download-btn"]}`}
             onClick={() => onDownload(activeResult)}
           >
+            <DownloadIcon className={primaryActionStyles.icon} />
             Download file
           </button>
 
@@ -53,6 +67,11 @@ export default function DownloadSection({
             </button>
           )}
         </div>
+      </div>
+      <div className={styles["result-details"]}>
+        <FileIcon className={styles["result-file-icon"]} />
+        <span className={styles["result-file-name"]}>{activeResult.file.name}</span>
+        {targetFormat ? <span className={styles["format-badge"]}>{targetFormat}</span> : null}
       </div>
       {convertedResults.length > 1 && (
         <div aria-label="Converted files">

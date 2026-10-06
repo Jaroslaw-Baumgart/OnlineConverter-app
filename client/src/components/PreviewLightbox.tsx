@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import type { ReactNode } from "react";
+import styles from "./PreviewLightbox.module.css";
 
 type PreviewLightboxProps = {
   children: ReactNode;
@@ -37,11 +38,11 @@ export default function PreviewLightbox({
   }, [isOpen]);
 
   return (
-    <div className={`preview-lightbox ${isOpen ? "is-open" : ""}`}>
+    <div className={`${styles["preview-lightbox"]} ${isOpen ? styles["is-open"] : ""}`}>
       <button
         ref={openButtonRef}
         type="button"
-        className="preview-expand-btn"
+        className={styles["preview-expand-btn"]}
         aria-haspopup="dialog"
         aria-expanded={isOpen}
         onClick={() => setIsOpen(true)}
@@ -51,14 +52,14 @@ export default function PreviewLightbox({
 
       {isOpen ? (
         <div
-          className="preview-lightbox-backdrop"
+          className={styles["preview-lightbox-backdrop"]}
           aria-hidden="true"
           onClick={closeLightbox}
         />
       ) : null}
 
       <section
-        className="preview-lightbox-panel"
+        className={styles["preview-lightbox-panel"]}
         role={isOpen ? "dialog" : undefined}
         aria-modal={isOpen || undefined}
         aria-label={isOpen ? "File preview" : undefined}
@@ -67,14 +68,14 @@ export default function PreviewLightbox({
           <button
             ref={closeButtonRef}
             type="button"
-            className="preview-close-btn"
+            className={styles["preview-close-btn"]}
             onClick={closeLightbox}
           >
             Close preview
           </button>
         ) : null}
 
-        <div className="preview-lightbox-content">{children}</div>
+        <div className={styles["preview-lightbox-content"]}>{children}</div>
       </section>
     </div>
   );

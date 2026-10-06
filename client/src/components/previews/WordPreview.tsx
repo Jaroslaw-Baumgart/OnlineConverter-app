@@ -1,5 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { renderAsync } from "docx-preview";
+import styles from "./WordPreview.module.css";
+import stateStyles from "../PreviewState.module.css";
 
 export function WordPreview({ file }: { file: File }) {
   const previewRef = useRef<HTMLDivElement>(null);
@@ -35,11 +37,11 @@ export function WordPreview({ file }: { file: File }) {
   }, [file]);
 
   return (
-    <div className="word-preview" aria-busy={isRendering}>
+    <div className={styles["word-preview"]} data-preview-kind="word" aria-busy={isRendering}>
       {isRendering ? <p>Loading DOCX content...</p> : null}
 
       {error ? (
-        <p className="error-message" role="alert">
+        <p className={stateStyles["error-message"]} role="alert">
           {error}
         </p>
       ) : null}

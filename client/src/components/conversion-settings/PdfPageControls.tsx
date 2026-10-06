@@ -7,14 +7,18 @@ import {
   pdfPageSettingsSchema,
   type PdfPageSettings,
 } from "../../schemas/conversionSettings";
+import styles from "../ConversionOptions.module.css";
+import primaryActionStyles from "../PrimaryAction.module.css";
 
 interface PdfPageControlsProps {
   disabled: boolean;
+  isConverting?: boolean;
   onConvert: (settings: PdfPageSettings) => void;
 }
 
 export default function PdfPageControls({
   disabled,
+  isConverting = false,
   onConvert,
 }: PdfPageControlsProps) {
   const { register, handleSubmit } = useForm<
@@ -30,7 +34,7 @@ export default function PdfPageControls({
     <form onSubmit={handleSubmit(onConvert)}>
       <div>
         <fieldset id="pdf-page-orientation">
-          <legend>Page Orientation</legend>
+          <legend>Orientation</legend>
           <input
             type="radio"
             id="pdf-page-orientation-portrait"
@@ -47,7 +51,7 @@ export default function PdfPageControls({
           <label htmlFor="pdf-page-orientation-landscape">Landscape</label>
         </fieldset>
         <fieldset id="pdf-page-size">
-          <legend>Page Size</legend>
+          <legend>Page size</legend>
           <input
             type="radio"
             id="pdf-page-size-a4"
@@ -64,8 +68,19 @@ export default function PdfPageControls({
           <label htmlFor="pdf-page-size-a3">A3</label>
         </fieldset>
       </div>
-      <button type="submit" className="convert-btn" disabled={disabled}>
-        Convert
+      <button
+        type="submit"
+        className={`${primaryActionStyles.button} ${styles["convert-btn"]}`}
+        disabled={disabled}
+      >
+        {isConverting ? (
+          <>
+            <span className={primaryActionStyles.spinner} aria-hidden="true" />
+            Converting
+          </>
+        ) : (
+          "Convert"
+        )}
       </button>
     </form>
   );
