@@ -3,9 +3,11 @@ import { getSlides, loadPresentation } from "@office-kit/pptx";
 import { renderSlideToSvg } from "@office-kit/pptx-preview";
 import styles from "./PptxPreview.module.css";
 import stateStyles from "../PreviewState.module.css";
+import { useTranslation } from "react-i18next";
 
 export function PptxPreview({ file }: { file: File }) {
-  const [error, setError] = useState<string | null>(null);
+  const { t } = useTranslation();
+  const [hasError, setHasError] = useState(false);
   const [isRendering, setIsRendering] = useState(false);
   const [slideUrls, setSlideUrls] = useState<string[]>([]);
 
@@ -15,7 +17,7 @@ export function PptxPreview({ file }: { file: File }) {
 
     const renderPreview = async () => {
       setIsRendering(true);
-      setError(null);
+      setHasError(false);
       setSlideUrls([]);
 
       try {
@@ -42,7 +44,7 @@ export function PptxPreview({ file }: { file: File }) {
         }
       } catch {
         if (active) {
-          setError("Failed to render PowerPoint presentation.");
+          setHasError(true);
         }
       } finally {
         if (active) {
@@ -62,11 +64,11 @@ export function PptxPreview({ file }: { file: File }) {
 
   return (
     <div className={styles["pptx-preview"]} data-preview-kind="pptx" aria-busy={isRendering}>
-      {isRendering ? <p>Loading PPTX content...</p> : null}
+      {isRendering ? <p>{t("preview.pptxLoading")}</p> : null}
 
-      {error ? (
+      {hasError ? (
         <p className={stateStyles["error-message"]} role="alert">
-          {error}
+          {t("preview.pptxError")}
         </p>
       ) : null}
       {slideUrls.map((slideUrl, index) => (
@@ -74,7 +76,7 @@ export function PptxPreview({ file }: { file: File }) {
           key={slideUrl}
           className={styles["pptx-slide-preview"]}
           src={slideUrl}
-          alt={`PowerPoint slide ${index + 1}`}
+          alt={t("preview.slideAlt", { index: index + 1 })}
         />
       ))}
     </div>

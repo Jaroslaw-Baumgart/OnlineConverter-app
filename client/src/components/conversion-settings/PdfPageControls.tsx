@@ -9,6 +9,7 @@ import {
 } from "../../schemas/conversionSettings";
 import styles from "../ConversionOptions.module.css";
 import primaryActionStyles from "../PrimaryAction.module.css";
+import { useTranslation } from "react-i18next";
 
 interface PdfPageControlsProps {
   disabled: boolean;
@@ -21,6 +22,7 @@ export default function PdfPageControls({
   isConverting = false,
   onConvert,
 }: PdfPageControlsProps) {
+  const { t } = useTranslation();
   const { register, handleSubmit } = useForm<
     z.input<typeof pdfPageSettingsSchema>,
     unknown,
@@ -34,24 +36,24 @@ export default function PdfPageControls({
     <form onSubmit={handleSubmit(onConvert)}>
       <div>
         <fieldset id="pdf-page-orientation">
-          <legend>Orientation</legend>
+          <legend>{t("options.orientation")}</legend>
           <input
             type="radio"
             id="pdf-page-orientation-portrait"
             value="portrait"
             {...register("pageOrientation")}
           />
-          <label htmlFor="pdf-page-orientation-portrait">Portrait</label>
+          <label htmlFor="pdf-page-orientation-portrait">{t("options.portrait")}</label>
           <input
             type="radio"
             id="pdf-page-orientation-landscape"
             value="landscape"
             {...register("pageOrientation")}
           />
-          <label htmlFor="pdf-page-orientation-landscape">Landscape</label>
+          <label htmlFor="pdf-page-orientation-landscape">{t("options.landscape")}</label>
         </fieldset>
         <fieldset id="pdf-page-size">
-          <legend>Page size</legend>
+          <legend>{t("options.pageSize")}</legend>
           <input
             type="radio"
             id="pdf-page-size-a4"
@@ -76,10 +78,10 @@ export default function PdfPageControls({
         {isConverting ? (
           <>
             <span className={primaryActionStyles.spinner} aria-hidden="true" />
-            Converting
+            {t("common.converting")}
           </>
         ) : (
-          "Convert"
+          t("common.convert")
         )}
       </button>
     </form>

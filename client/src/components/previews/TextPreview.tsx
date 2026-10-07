@@ -2,16 +2,18 @@ import { useState, useEffect } from "react";
 import { readFileAsText } from "../../utils/fileUtils";
 import styles from "./TextPreview.module.css";
 import stateStyles from "../PreviewState.module.css";
+import { useTranslation } from "react-i18next";
 
 export function TextPreview({ file }: { file: File }) {
+  const { t } = useTranslation();
   const [text, setText] = useState("");
-  const [error, setError] = useState<string | null>(null);
+  const [hasError, setHasError] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
 
   useEffect(() => {
     let active = true;
     setIsLoading(true);
-    setError(null);
+    setHasError(false);
     setText("");
 
     readFileAsText(file)
@@ -22,7 +24,7 @@ export function TextPreview({ file }: { file: File }) {
       })
       .catch(() => {
         if (active) {
-          setError("Failed to load file content");
+          setHasError(true);
         }
       })
       .finally(() => {
@@ -37,8 +39,8 @@ export function TextPreview({ file }: { file: File }) {
   }, [file]);
 
   if (isLoading)
-    return <p className={stateStyles["loading-message"]}>Loading text content...</p>;
+    return <p className={stateStyles["loading-message"]}>{t("preview.textLoading")}</p>;
 
-  if (error) return <p className={stateStyles["error-message"]}>{error}</p>;
+  if (hasError) return <p className={stateStyles["error-message"]}>{t("preview.textError")}</p>;
   return <textarea readOnly value={text} className={styles["text-preview"]} data-preview-kind="text" />;
 }

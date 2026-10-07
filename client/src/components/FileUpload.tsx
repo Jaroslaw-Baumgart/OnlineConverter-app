@@ -9,6 +9,7 @@ import styles from "./FileUpload.module.css";
 import stateStyles from "./PreviewState.module.css";
 import panelStyles from "./ConverterPanel.module.css";
 import primaryActionStyles from "./PrimaryAction.module.css";
+import { useTranslation } from "react-i18next";
 
 interface FileUploadProps {
   onFileSelect: (file: File) => void;
@@ -31,26 +32,29 @@ const conversionGroups = supportedSourceFormats.map((sourceFormat) => ({
     .map((conversion) => conversion.targetFormat),
 }));
 
-function validateFile(file: File): string | null {
+type UploadValidationError = "unsupported" | "tooLarge";
+
+function validateFile(file: File): UploadValidationError | null {
   const lastDotIndex = file.name.lastIndexOf(".");
 
   const extension =
     lastDotIndex === -1 ? "" : file.name.slice(lastDotIndex + 1).toLowerCase();
 
   if (!isSupportedSourceFormat(extension)) {
-    return `Unsupported file format. Supported formats: ${SUPPORTED_FORMATS_LABEL}.`;
+    return "unsupported";
   }
 
   if (file.size > MAX_FILE_SIZE_BYTES) {
-    return `File is too large. Maximum size is ${MAX_FILE_SIZE_MB} MB.`;
+    return "tooLarge";
   }
 
   return null;
 }
 
 export default function FileUpload({ onFileSelect }: FileUploadProps) {
+  const { t } = useTranslation();
   const [isDragging, setIsDragging] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState<UploadValidationError | null>(null);
 
   const handleSelectedFile = (selectedFile: File) => {
     const validationError = validateFile(selectedFile);
@@ -91,7 +95,7 @@ export default function FileUpload({ onFileSelect }: FileUploadProps) {
 
   return (
     <section
-      aria-label="Upload File"
+      aria-label={t("upload.label")}
       className={`${panelStyles.panel} ${styles["upload-section"]} ${
         isDragging ? styles.dragging : ""
       }`}
@@ -100,7 +104,7 @@ export default function FileUpload({ onFileSelect }: FileUploadProps) {
       onDrop={handleDrop}
     >
       <label className={primaryActionStyles.button}>
-        Choose File
+        {t("upload.choose")}
         <input
           type="file"
           className={styles["file-input"]}
@@ -108,13 +112,13 @@ export default function FileUpload({ onFileSelect }: FileUploadProps) {
           accept={ACCEPTED_FILE_EXTENSIONS}
         />
       </label>
-      <p className={styles["drag-drop-hint"]}>or drag & drop your file here</p>
+      <p className={styles["drag-drop-hint"]}>{t("upload.dragHint")}</p>
       <p className={styles["upload-requirements"]}>
-        Maximum file size: {MAX_FILE_SIZE_MB} MB.
+        {t("upload.maxSize", { size: MAX_FILE_SIZE_MB })}
       </p>
 
       <details className={styles["supported-conversions"]}>
-        <summary>View supported conversions</summary>
+        <summary>{t("upload.viewConversions")}</summary>
 
         <ul>
           {conversionGroups.map(({ sourceFormat, targetFormats }) => (
@@ -131,7 +135,9 @@ export default function FileUpload({ onFileSelect }: FileUploadProps) {
 
       {error && (
         <p className={stateStyles["error-message"]} role="alert">
-          {error}
+          {error === "unsupported"
+            ? t("upload.unsupported", { formats: SUPPORTED_FORMATS_LABEL })
+            : t("upload.tooLarge", { size: MAX_FILE_SIZE_MB })}
         </p>
       )}
     </section>

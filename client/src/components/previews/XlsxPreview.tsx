@@ -3,6 +3,7 @@ import { useState, useEffect } from "react";
 import styles from "./XlsxPreview.module.css";
 import csvStyles from "./CsvPreview.module.css";
 import stateStyles from "../PreviewState.module.css";
+import { useTranslation } from "react-i18next";
 
 function XlsxSheetPreview({
   sheet,
@@ -11,6 +12,7 @@ function XlsxSheetPreview({
   sheet: XlsxSheet;
   showName: boolean;
 }) {
+  const { t } = useTranslation();
   const previewRows = sheet.rows.slice(0, 100);
   const columnCount = sheet.rows[0]?.length ?? 0;
 
@@ -20,7 +22,7 @@ function XlsxSheetPreview({
 
       <div className={styles["xlsx-table-scroll"]} data-preview-kind="xlsx">
         {sheet.rows.length === 0 ? (
-          <p>This sheet is empty.</p>
+          <p>{t("preview.sheetEmpty")}</p>
         ) : (
           <table className={`${csvStyles["csv-preview-table"]} ${styles["xlsx-preview-table"]}`}>
             <thead>
@@ -47,7 +49,7 @@ function XlsxSheetPreview({
 
       {sheet.rows.length > previewRows.length && (
         <p>
-          Showing first {previewRows.length} of {sheet.rows.length} rows.
+          {t("preview.showingRows", { shown: previewRows.length, total: sheet.rows.length })}
         </p>
       )}
     </section>
@@ -61,8 +63,9 @@ export function XlsxPreview({
   file: File;
   onXlsxSheetChange?: (sheetName: string | undefined) => void;
 }) {
+  const { t } = useTranslation();
   const [sheets, setSheets] = useState<XlsxSheet[]>([]);
-  const [error, setError] = useState<string | null>(null);
+  const [hasError, setHasError] = useState(false);
   const [isParsing, setIsParsing] = useState(true);
   const [selectedSheetName, setSelectedSheetName] = useState("");
   const [isAllSheetsSelected, setIsAllSheetsSelected] = useState(false);
@@ -71,7 +74,7 @@ export function XlsxPreview({
     let active = true;
 
     setIsParsing(true);
-    setError(null);
+    setHasError(false);
 
     parseXlsxFile(file)
       .then((parsedSheets) => {
@@ -85,7 +88,7 @@ export function XlsxPreview({
       })
       .catch(() => {
         if (!active) return;
-        setError("Failed to load XLSX content");
+        setHasError(true);
       })
       .finally(() => {
         if (!active) return;
@@ -98,11 +101,11 @@ export function XlsxPreview({
   }, [file, onXlsxSheetChange]);
 
   if (isParsing) {
-    return <p>Loading XLSX content...</p>;
+    return <p>{t("preview.xlsxLoading")}</p>;
   }
 
-  if (error) {
-    return <p className={stateStyles["error-message"]}>{error}</p>;
+  if (hasError) {
+    return <p className={stateStyles["error-message"]}>{t("preview.xlsxError")}</p>;
   }
 
   const selectedSheet = sheets.find(
@@ -118,8 +121,8 @@ export function XlsxPreview({
   return (
     <div className={styles["xlsx-preview"]}>
       <div className={styles["xlsx-sheet-picker"]}>
-        <span className={styles["xlsx-sheet-label"]}>Sheet</span>
-        <div className={styles["xlsx-sheet-buttons"]} role="group" aria-label="Sheets">
+        <span className={styles["xlsx-sheet-label"]}>{t("preview.sheet")}</span>
+        <div className={styles["xlsx-sheet-buttons"]} role="group" aria-label={t("preview.sheets")}>
           {sheets.map((sheet) => (
             <button
               key={sheet.name}
@@ -147,14 +150,13 @@ export function XlsxPreview({
               onXlsxSheetChange?.(undefined);
             }}
           >
-            All sheets
+            {t("preview.allSheets")}
           </button>
         </div>
       </div>
       {!isAllSheetsSelected && (
         <p className={styles["xlsx-dependency-notice"]} role="note">
-          If this sheet depends on formulas or charts from other sheets, choose
-          All sheets.
+          {t("preview.dependency")}
         </p>
       )}
       {previewSheets.map((sheet) => (
@@ -165,8 +167,7 @@ export function XlsxPreview({
         />
       ))}
       <p className={styles["xlsx-chart-notice"]} role="note">
-        Charts are not shown in this preview. To view them, convert the file to
-        PDF using the charts option.
+        {t("preview.charts")}
       </p>
     </div>
   );

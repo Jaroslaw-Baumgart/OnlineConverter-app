@@ -9,6 +9,7 @@ import styles from "./DownloadSection.module.css";
 import panelStyles from "./ConverterPanel.module.css";
 import primaryActionStyles from "./PrimaryAction.module.css";
 import { CheckIcon, DownloadIcon, FileIcon } from "./UiIcons";
+import { useTranslation } from "react-i18next";
 
 interface DownloadSectionProps {
   convertedResults: ConvertedResults;
@@ -23,6 +24,7 @@ export default function DownloadSection({
   onDownloadAll,
   isPreparingArchive,
 }: DownloadSectionProps) {
+  const { t } = useTranslation();
   const [activeResultUrl, setActiveResultUrl] = useState(
     convertedResults[0].url,
   );
@@ -42,8 +44,8 @@ export default function DownloadSection({
             <CheckIcon />
           </span>
           <div>
-            <h2 className={panelStyles.heading}>Converted file</h2>
-            <p className={styles["success-message"]}>Conversion complete</p>
+            <h2 className={panelStyles.heading}>{t("download.title")}</h2>
+            <p className={styles["success-message"]}>{t("download.complete")}</p>
           </div>
         </div>
 
@@ -54,7 +56,7 @@ export default function DownloadSection({
             onClick={() => onDownload(activeResult)}
           >
             <DownloadIcon className={primaryActionStyles.icon} />
-            Download file
+            {t("download.file")}
           </button>
 
           {convertedResults.length > 1 && (
@@ -63,7 +65,7 @@ export default function DownloadSection({
               onClick={onDownloadAll}
               disabled={isPreparingArchive}
             >
-              {isPreparingArchive ? "Preparing archive..." : "Download all"}
+              {isPreparingArchive ? t("download.preparing") : t("download.all")}
             </button>
           )}
         </div>
@@ -74,7 +76,7 @@ export default function DownloadSection({
         {targetFormat ? <span className={styles["format-badge"]}>{targetFormat}</span> : null}
       </div>
       {convertedResults.length > 1 && (
-        <div aria-label="Converted files">
+        <div aria-label={t("download.files")}>
           {convertedResults.map((result, index) => (
             <button
               key={result.url}
@@ -82,7 +84,7 @@ export default function DownloadSection({
               aria-pressed={result.url === activeResult.url}
               onClick={() => setActiveResultUrl(result.url)}
             >
-              Page {index + 1}
+              {t("download.page", { index: index + 1 })}
             </button>
           ))}
         </div>

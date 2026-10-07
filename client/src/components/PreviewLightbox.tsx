@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import type { ReactNode } from "react";
 import styles from "./PreviewLightbox.module.css";
+import { useTranslation } from "react-i18next";
 
 type PreviewLightboxProps = {
   children: ReactNode;
@@ -9,6 +10,7 @@ type PreviewLightboxProps = {
 export default function PreviewLightbox({
   children,
 }: PreviewLightboxProps) {
+  const { t } = useTranslation();
   const [isOpen, setIsOpen] = useState(false);
   const openButtonRef = useRef<HTMLButtonElement>(null);
   const closeButtonRef = useRef<HTMLButtonElement>(null);
@@ -47,7 +49,7 @@ export default function PreviewLightbox({
         aria-expanded={isOpen}
         onClick={() => setIsOpen(true)}
       >
-        Expand preview
+        {t("preview.expand")}
       </button>
 
       {isOpen ? (
@@ -62,7 +64,7 @@ export default function PreviewLightbox({
         className={styles["preview-lightbox-panel"]}
         role={isOpen ? "dialog" : undefined}
         aria-modal={isOpen || undefined}
-        aria-label={isOpen ? "File preview" : undefined}
+        aria-label={isOpen ? t("preview.label") : undefined}
       >
         {isOpen ? (
           <button
@@ -71,7 +73,7 @@ export default function PreviewLightbox({
             className={styles["preview-close-btn"]}
             onClick={closeLightbox}
           >
-            Close preview
+            {t("preview.close")}
           </button>
         ) : null}
 

@@ -9,6 +9,7 @@ import { PptxPreview } from "./previews/PptxPreview";
 import PreviewLightbox from "./PreviewLightbox";
 import type { PreviewData } from "../types/preview";
 import { FileIcon } from "./UiIcons";
+import { useTranslation } from "react-i18next";
 
 type FilePreviewProps = {
   preview: PreviewData;
@@ -16,10 +17,12 @@ type FilePreviewProps = {
 };
 
 function PDFPreview({ url }: { url: string }) {
-  return <iframe src={url} title="PDF Preview" className={styles["pdf-preview"]} data-preview-kind="pdf" />;
+  const { t } = useTranslation();
+  return <iframe src={url} title={t("preview.pdf")} className={styles["pdf-preview"]} data-preview-kind="pdf" />;
 }
 
 function UnsupportedPreview({ fileType }: { fileType: string }) {
+  const { t } = useTranslation();
   return (
     <div className={`${stateStyles["unsupported-preview"]} ${styles["unsupported-card"]}`}>
       <span className={styles["unsupported-icon"]}>
@@ -27,12 +30,12 @@ function UnsupportedPreview({ fileType }: { fileType: string }) {
       </span>
       <div>
         <p className={styles["unsupported-title"]}>
-          Preview not available for this file type
+          {t("preview.unavailable")}
         </p>
         <p className={styles["unsupported-description"]}>
-          This format can still be converted when an option is available.
+          {t("preview.unavailableDescription")}
         </p>
-        <p className={styles["unsupported-type"]}>Type: {fileType || "unknown"}</p>
+        <p className={styles["unsupported-type"]}>{t("preview.type", { type: fileType || t("common.unknown") })}</p>
       </div>
     </div>
   );

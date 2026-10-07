@@ -1,9 +1,18 @@
-export type ConversionErrorCode =
-  | "network"
-  | "conversion-failed"
-  | "invalid-response"
-  | "download-failed"
-  | "tool-unavailable";
+export const conversionErrorCodes = [
+  "network",
+  "conversion-failed",
+  "invalid-response",
+  "download-failed",
+  "tool-unavailable",
+] as const;
+
+export type ConversionErrorCode = (typeof conversionErrorCodes)[number];
+
+export function isConversionErrorCode(
+  value: string,
+): value is ConversionErrorCode {
+  return conversionErrorCodes.includes(value as ConversionErrorCode);
+}
 
 const ERROR_MESSAGES = {
   network:

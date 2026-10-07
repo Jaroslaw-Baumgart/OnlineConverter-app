@@ -8,6 +8,7 @@ import panelStyles from "./ConverterPanel.module.css";
 import primaryActionStyles from "./PrimaryAction.module.css";
 import stateStyles from "./PreviewState.module.css";
 import { FileIcon } from "./UiIcons";
+import { useTranslation } from "react-i18next";
 
 interface ConversionOptionsProps {
   options: ConversionOption[];
@@ -22,6 +23,7 @@ export default function ConversionOptions({
   isConverting,
   selectedXlsxSheetName,
 }: ConversionOptionsProps) {
+  const { t } = useTranslation();
   const [selectedConversionType, setSelectedConversionType] = useState<
     string | null
   >(null);
@@ -39,14 +41,14 @@ export default function ConversionOptions({
     >
       {isConverting ? (
         <p className={stateStyles["visually-hidden"]} role="status">
-          Converting
+          {t("common.converting")}
         </p>
       ) : null}
-      <h2 className={panelStyles.heading}>2. Convert this file</h2>
-      <p className={styles["conversion-section-description"]}>Choose an output format.</p>
-      <div className={styles["options-grid"]} aria-label="Available conversion formats">
+      <h2 className={panelStyles.heading}>{t("options.title")}</h2>
+      <p className={styles["conversion-section-description"]}>{t("options.description")}</p>
+      <div className={styles["options-grid"]} aria-label={t("options.available")}>
         {availableOptions.length === 0 ? (
-          <p>Upload a file to see available conversions.</p>
+          <p>{t("options.noOptions")}</p>
         ) : (
           availableOptions.map((option) => (
             <button
@@ -71,7 +73,7 @@ export default function ConversionOptions({
       </div>
       {selectedOption ? (
         <div className={styles["conversion-settings"]}>
-          <h3>Conversion settings</h3>
+          <h3>{t("options.settings")}</h3>
 
           {selectedOption.conversionType === "png-to-jpg" ? (
             <PngToJpgControls
@@ -121,17 +123,17 @@ export default function ConversionOptions({
               {isConverting ? (
                 <>
                   <span className={primaryActionStyles.spinner} aria-hidden="true" />
-                  Converting
+                  {t("common.converting")}
                 </>
               ) : (
-                "Convert"
+                t("common.convert")
               )}
             </button>
           )}
         </div>
       ) : (
         <p className={styles["conversion-choice-hint"]}>
-          Choose an output format to configure conversion.
+          {t("options.choose")}
         </p>
       )}
     </div>

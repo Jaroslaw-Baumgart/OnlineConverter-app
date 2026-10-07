@@ -2,10 +2,12 @@ import { useEffect, useRef, useState } from "react";
 import { renderAsync } from "docx-preview";
 import styles from "./WordPreview.module.css";
 import stateStyles from "../PreviewState.module.css";
+import { useTranslation } from "react-i18next";
 
 export function WordPreview({ file }: { file: File }) {
+  const { t } = useTranslation();
   const previewRef = useRef<HTMLDivElement>(null);
-  const [error, setError] = useState<string | null>(null);
+  const [hasError, setHasError] = useState(false);
   const [isRendering, setIsRendering] = useState(false);
 
   useEffect(() => {
@@ -17,12 +19,12 @@ export function WordPreview({ file }: { file: File }) {
     let active = true;
 
     setIsRendering(true);
-    setError(null);
+    setHasError(false);
 
     renderAsync(file, container)
       .catch(() => {
         if (active) {
-          setError("Failed to render DOCX content");
+          setHasError(true);
         }
       })
       .finally(() => {
@@ -38,11 +40,11 @@ export function WordPreview({ file }: { file: File }) {
 
   return (
     <div className={styles["word-preview"]} data-preview-kind="word" aria-busy={isRendering}>
-      {isRendering ? <p>Loading DOCX content...</p> : null}
+      {isRendering ? <p>{t("preview.wordLoading")}</p> : null}
 
-      {error ? (
+      {hasError ? (
         <p className={stateStyles["error-message"]} role="alert">
-          {error}
+          {t("preview.wordError")}
         </p>
       ) : null}
 

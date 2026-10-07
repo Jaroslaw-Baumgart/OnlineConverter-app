@@ -1,5 +1,6 @@
 import { Component } from "react";
 import type { ReactNode } from "react";
+import ErrorBoundaryMessage from "./ErrorBoundaryMessage";
 
 type ErrorBoundaryProps = {
   children: ReactNode;
@@ -23,12 +24,7 @@ export default class ErrorBoundary extends Component<
 
   render() {
     if (this.state.hasError) {
-      return (
-        <p role="alert">
-          Something went wrong. Use the navigation to open another page, or
-          reload this page to try again.
-        </p>
-      );
+      return <ErrorBoundaryMessage />;
     }
     return this.props.children;
   }

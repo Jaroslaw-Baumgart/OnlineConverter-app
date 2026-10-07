@@ -13,6 +13,7 @@ import { useObjectUrl } from "../hooks/useObjectUrl";
 import { useConversion } from "../hooks/useConversion";
 import type { ConversionSettings } from "../schemas/conversionSettings";
 import type { ConvertedResult } from "../types/conversionResult";
+import { useTranslation } from "react-i18next";
 
 function getAvailableOptions(
   file: File | null,
@@ -36,6 +37,7 @@ function getAvailableOptions(
 export default function FileConverter({
   conversionOptions,
 }: FileConverterProps) {
+  const { t } = useTranslation();
   const {
     file,
     convertedResults,
@@ -49,8 +51,8 @@ export default function FileConverter({
     downloadAllConvertedFiles,
   } = useConversion();
 
-  const [formError, setFormError] = useState<string | null>(null);
-  const error = conversionError ?? formError;
+  const [hasFormError, setHasFormError] = useState(false);
+  const error = conversionError ?? (hasFormError ? t("converter.uploadFirst") : null);
 
   const previewUrl = useObjectUrl(file);
   const availableOptions = getAvailableOptions(file, conversionOptions);
@@ -75,13 +77,13 @@ export default function FileConverter({
   }, [convertedResults]);
 
   const handleFileSelect = (selectedFile: File) => {
-    setFormError(null);
+    setHasFormError(false);
     selectFile(selectedFile);
     setSelectedXlsxSheetName(null);
   };
 
   const handleFileRemove = () => {
-    setFormError(null);
+    setHasFormError(false);
     removeFile();
     setSelectedXlsxSheetName(null);
   };
@@ -91,16 +93,16 @@ export default function FileConverter({
     settings?: ConversionSettings,
   ) => {
     if (!file) {
-      setFormError("Please upload a file first.");
+      setHasFormError(true);
       return;
     }
 
-    setFormError(null);
+    setHasFormError(false);
     await convert(option, settings);
   };
 
   const handleDownloadBlob = (result: ConvertedResult) => {
-    setFormError(null);
+    setHasFormError(false);
     downloadConvertedFile(result);
   };
 
@@ -116,7 +118,7 @@ export default function FileConverter({
               id="source-preview-heading"
               className={panelStyles.heading}
             >
-              1. File preview
+              {t("converter.preview")}
             </h2>
 
             <div className={styles["preview-file-actions"]}>
@@ -127,7 +129,7 @@ export default function FileConverter({
                 className={styles["remove-file-btn"]}
                 onClick={handleFileRemove}
               >
-                Remove file
+                {t("converter.remove")}
               </button>
             </div>
 
@@ -149,7 +151,7 @@ export default function FileConverter({
         </div>
       ) : file ? (
         <p className={stateStyles["loading-message"]} role="status">
-          Preparing preview...
+          {t("converter.preparing")}
         </p>
       ) : (
         <FileUpload onFileSelect={handleFileSelect} />

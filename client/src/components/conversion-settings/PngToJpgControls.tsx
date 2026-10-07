@@ -7,6 +7,7 @@ import {
 } from "../../schemas/conversionSettings";
 import styles from "../ConversionOptions.module.css";
 import primaryActionStyles from "../PrimaryAction.module.css";
+import { useTranslation } from "react-i18next";
 
 interface PngToJpgControlsProps {
   disabled: boolean;
@@ -19,6 +20,7 @@ export default function PngToJpgControls({
   isConverting = false,
   onConvert,
 }: PngToJpgControlsProps) {
+  const { t } = useTranslation();
   const {
     register,
     handleSubmit,
@@ -31,11 +33,11 @@ export default function PngToJpgControls({
   return (
     <form onSubmit={handleSubmit(onConvert)}>
       <div>
-        <label htmlFor="png-to-jpg-quality">Quality</label>
+        <label htmlFor="png-to-jpg-quality">{t("options.quality")}</label>
         <input id="png-to-jpg-quality" type="number" {...register("quality")} />
-        {errors.quality && <p role="alert">{errors.quality.message}</p>}
+        {errors.quality && <p role="alert">{t("validation.quality")}</p>}
         <label htmlFor="png-to-jpg-background-color">
-          Replace transparent areas with
+          {t("options.transparent")}
         </label>
         <input
           id="png-to-jpg-background-color"
@@ -51,10 +53,10 @@ export default function PngToJpgControls({
         {isConverting ? (
           <>
             <span className={primaryActionStyles.spinner} aria-hidden="true" />
-            Converting
+            {t("common.converting")}
           </>
         ) : (
-          "Convert"
+          t("common.convert")
         )}
       </button>
     </form>

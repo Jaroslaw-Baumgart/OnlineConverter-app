@@ -1,10 +1,14 @@
 import { useReducer, useRef, useState } from "react";
+import { useTranslation } from "react-i18next";
 import {
   conversionReducer,
   initialConversionState,
 } from "../reducers/conversionReducer";
 import type { ConversionOption } from "../types/converter";
-import { ConversionError } from "../api/conversionError";
+import {
+  ConversionError,
+  isConversionErrorCode,
+} from "../api/conversionError";
 import { downloadFile } from "../utils/downloadFile";
 import { convertFile } from "../api/conversionClient";
 import type { ConversionSettings } from "../schemas/conversionSettings";
@@ -32,6 +36,7 @@ type UseConversionResult = {
 };
 
 export function useConversion(): UseConversionResult {
+  const { t } = useTranslation();
   const [conversionState, dispatch] = useReducer(
     conversionReducer,
     initialConversionState,
@@ -54,7 +59,9 @@ export function useConversion(): UseConversionResult {
   const conversionError =
     conversionState.kind === "downloadError" ||
     conversionState.kind === "conversionError"
-      ? conversionState.error
+      ? isConversionErrorCode(conversionState.error)
+        ? t(`errors.${conversionState.error}`)
+        : conversionState.error
       : null;
 
   const selectFile = (selectedFile: File) => {
@@ -100,14 +107,12 @@ export function useConversion(): UseConversionResult {
     } catch (err: unknown) {
       console.error(err);
 
-      const errorMessage =
-        err instanceof ConversionError
-          ? err.message
-          : "The file could not be converted. Please try again.";
+      const errorCode =
+        err instanceof ConversionError ? err.code : "conversion-failed";
 
       dispatch({
         type: "conversionFailed",
-        error: errorMessage,
+        error: errorCode,
         requestId,
       });
     }
@@ -123,7 +128,7 @@ export function useConversion(): UseConversionResult {
       console.error(downloadError);
       dispatch({
         type: "downloadFailed",
-        error: downloadError.message,
+        error: downloadError.code,
       });
     }
   };
@@ -146,7 +151,7 @@ export function useConversion(): UseConversionResult {
       console.error(downloadError);
       dispatch({
         type: "downloadFailed",
-        error: downloadError.message,
+        error: downloadError.code,
       });
     } finally {
       setIsPreparingArchive(false);

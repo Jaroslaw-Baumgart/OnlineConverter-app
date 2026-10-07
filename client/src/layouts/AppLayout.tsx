@@ -3,30 +3,36 @@ import styles from "./AppLayout.module.css";
 import ErrorBoundary from "../components/ErrorBoundary";
 import { Suspense } from "react";
 import ConverterLogo from "../components/ConverterLogo";
+import LanguageSwitcher from "../components/LanguageSwitcher";
+import { useTranslation } from "react-i18next";
 
 export default function AppLayout() {
   const location = useLocation();
+  const { t } = useTranslation();
 
   return (
     <div className={styles["app-container"]}>
-      <nav aria-label="Main navigation" className={styles["app-nav"]}>
+      <nav aria-label={t("navigation.label")} className={styles["app-nav"]}>
         <NavLink to="/" className={styles["brand-link"]}>
           <ConverterLogo />
-          <span>Converter</span>
+          <span>{t("navigation.converter")}</span>
         </NavLink>
 
-        <div className={styles["nav-links"]}>
-          <NavLink to="/about" className={styles["nav-link"]}>
-            About
-          </NavLink>
-          <NavLink to="/privacy" className={styles["nav-link"]}>
-            Privacy
-          </NavLink>
+        <div className={styles["nav-tools"]}>
+          <div className={styles["nav-links"]}>
+            <NavLink to="/about" className={styles["nav-link"]}>
+              {t("navigation.about")}
+            </NavLink>
+            <NavLink to="/privacy" className={styles["nav-link"]}>
+              {t("navigation.privacy")}
+            </NavLink>
+          </div>
+          <LanguageSwitcher />
         </div>
       </nav>
       <main>
         <ErrorBoundary key={location.pathname}>
-          <Suspense fallback={<p role="status">Loading page...</p>}>
+          <Suspense fallback={<p role="status">{t("common.loadingPage")}</p>}>
             <Outlet />
           </Suspense>
         </ErrorBoundary>

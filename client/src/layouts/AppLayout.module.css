@@ -18,6 +18,8 @@
   gap: var(--space-2);
 }
 
+.nav-tools { display: flex; align-items: center; gap: var(--space-3); }
+
 .brand-link {
   display: inline-flex;
   align-items: center;
@@ -95,6 +97,8 @@
   .nav-links {
     width: 100%;
   }
+
+  .nav-tools { width: 100%; align-items: flex-start; flex-direction: column; }
 }
 
 @media (prefers-reduced-motion: reduce) {

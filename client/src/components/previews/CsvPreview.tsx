@@ -2,16 +2,18 @@ import { useState, useEffect } from "react";
 import { parseCsvFile, type CsvRow } from "../../utils/csv";
 import styles from "./CsvPreview.module.css";
 import stateStyles from "../PreviewState.module.css";
+import { useTranslation } from "react-i18next";
 
 export function CsvPreview({ file }: { file: File }) {
+  const { t } = useTranslation();
   const [rows, setRows] = useState<CsvRow[]>([]);
-  const [error, setError] = useState<string | null>(null);
+  const [hasError, setHasError] = useState(false);
   const [isParsing, setIsParsing] = useState(true);
 
   useEffect(() => {
     let active = true;
     setIsParsing(true);
-    setError(null);
+    setHasError(false);
     setRows([]);
 
     parseCsvFile(file)
@@ -22,7 +24,7 @@ export function CsvPreview({ file }: { file: File }) {
       })
       .catch(() => {
         if (active) {
-          setError("Failed to load CSV content");
+          setHasError(true);
         }
       })
       .finally(() => {
@@ -39,18 +41,18 @@ export function CsvPreview({ file }: { file: File }) {
   if (isParsing) {
     return (
       <p className={stateStyles["loading-message"]} role="status" aria-live="polite">
-        Loading CSV content
+        {t("preview.csvLoading")}
         <span className={stateStyles["loading-dots"]} aria-hidden="true" />
       </p>
     );
   }
 
-  if (error) {
-    return <p className={stateStyles["error-message"]}>{error}</p>;
+  if (hasError) {
+    return <p className={stateStyles["error-message"]}>{t("preview.csvError")}</p>;
   }
 
   if (rows.length === 0) {
-    return <p className={stateStyles["error-message"]}>CSV file is empty</p>;
+    return <p className={stateStyles["error-message"]}>{t("preview.csvEmpty")}</p>;
   }
 
   const previewRows = rows.slice(0, 100);
@@ -80,7 +82,7 @@ export function CsvPreview({ file }: { file: File }) {
       </table>
       {rows.length > previewRows.length && (
         <p>
-          Showing first {previewRows.length} of {rows.length} rows.
+          {t("preview.showingRows", { shown: previewRows.length, total: rows.length })}
         </p>
       )}
     </div>
