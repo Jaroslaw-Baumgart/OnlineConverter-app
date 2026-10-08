@@ -134,3 +134,13 @@
     border-radius: var(--radius-sm);
   }
 }
+
+@media (max-width: 420px) {
+  .preview-lightbox.is-open {
+    padding: var(--space-2);
+  }
+
+  .preview-lightbox.is-open .preview-lightbox-panel {
+    padding: var(--space-3);
+  }
+}

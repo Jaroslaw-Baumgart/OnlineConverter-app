@@ -7,6 +7,9 @@ type PreviewLightboxProps = {
   children: ReactNode;
 };
 
+const focusableSelector =
+  'button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), iframe, [tabindex]:not([tabindex="-1"])';
+
 export default function PreviewLightbox({
   children,
 }: PreviewLightboxProps) {
@@ -14,6 +17,7 @@ export default function PreviewLightbox({
   const [isOpen, setIsOpen] = useState(false);
   const openButtonRef = useRef<HTMLButtonElement>(null);
   const closeButtonRef = useRef<HTMLButtonElement>(null);
+  const panelRef = useRef<HTMLElement>(null);
 
   const closeLightbox = () => {
     setIsOpen(false);
@@ -28,6 +32,29 @@ export default function PreviewLightbox({
     const handleKeyDown = (event: KeyboardEvent) => {
       if (event.key === "Escape") {
         closeLightbox();
+        return;
+      }
+
+      if (event.key !== "Tab" || !panelRef.current) {
+        return;
+      }
+
+      const focusableElements = panelRef.current.querySelectorAll<HTMLElement>(
+        focusableSelector,
+      );
+      const firstElement = focusableElements[0];
+      const lastElement = focusableElements[focusableElements.length - 1];
+
+      if (!firstElement || !lastElement) {
+        return;
+      }
+
+      if (event.shiftKey && document.activeElement === firstElement) {
+        event.preventDefault();
+        lastElement.focus();
+      } else if (!event.shiftKey && document.activeElement === lastElement) {
+        event.preventDefault();
+        firstElement.focus();
       }
     };
 
@@ -61,6 +88,7 @@ export default function PreviewLightbox({
       ) : null}
 
       <section
+        ref={panelRef}
         className={styles["preview-lightbox-panel"]}
         role={isOpen ? "dialog" : undefined}
         aria-modal={isOpen || undefined}

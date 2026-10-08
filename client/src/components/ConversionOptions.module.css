@@ -181,6 +181,21 @@
   }
 }
 
+@media (max-width: 420px) {
+  .options-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .conversion-settings fieldset {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .conversion-settings fieldset label {
+    margin-right: 0;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .option-card,
   .conversion-settings {

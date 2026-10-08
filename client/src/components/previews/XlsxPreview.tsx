@@ -1,7 +1,7 @@
 import { parseXlsxFile, type XlsxSheet } from "../../utils/xlsx";
 import { useState, useEffect } from "react";
 import styles from "./XlsxPreview.module.css";
-import csvStyles from "./CsvPreview.module.css";
+import tableStyles from "./DataTable.module.css";
 import stateStyles from "../PreviewState.module.css";
 import { useTranslation } from "react-i18next";
 
@@ -17,14 +17,17 @@ function XlsxSheetPreview({
   const columnCount = sheet.rows[0]?.length ?? 0;
 
   return (
-    <section>
+    <section className={styles["xlsx-sheet-preview"]}>
       {showName && <h3>{sheet.name}</h3>}
 
-      <div className={styles["xlsx-table-scroll"]} data-preview-kind="xlsx">
+      <div
+        className={tableStyles["scroll-container"]}
+        data-preview-kind="xlsx"
+      >
         {sheet.rows.length === 0 ? (
           <p>{t("preview.sheetEmpty")}</p>
         ) : (
-          <table className={`${csvStyles["csv-preview-table"]} ${styles["xlsx-preview-table"]}`}>
+          <table className={tableStyles.table}>
             <thead>
               <tr>
                 {Array.from({ length: columnCount }, (_, columnIndex) => (
@@ -101,11 +104,15 @@ export function XlsxPreview({
   }, [file, onXlsxSheetChange]);
 
   if (isParsing) {
-    return <p>{t("preview.xlsxLoading")}</p>;
+    return <p role="status">{t("preview.xlsxLoading")}</p>;
   }
 
   if (hasError) {
-    return <p className={stateStyles["error-message"]}>{t("preview.xlsxError")}</p>;
+    return (
+      <p className={stateStyles["error-message"]} role="alert">
+        {t("preview.xlsxError")}
+      </p>
+    );
   }
 
   const selectedSheet = sheets.find(

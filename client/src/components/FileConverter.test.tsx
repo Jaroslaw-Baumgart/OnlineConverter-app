@@ -158,6 +158,17 @@ describe("FileConverter", () => {
     expect(getConvertButton("PNG→JPG")).toBeEnabled();
   });
 
+  it("moves focus to settings after choosing a conversion format", async () => {
+    const { user, input } = setupFileConverter();
+
+    await user.upload(input, createTestFile.pdf());
+    await user.click(getOptionCard("PDF→TXT"));
+
+    expect(
+      screen.getByRole("heading", { name: "Conversion settings" }),
+    ).toHaveFocus();
+  });
+
   it("updates available conversions when the selected file changes", async () => {
     const pdfFile = createTestFile.pdf();
     const pngFile = createTestFile.png();
@@ -222,7 +233,7 @@ describe("FileConverter", () => {
 
     expect(
       screen.getByRole("button", { name: "Download file" }),
-    ).toBeInTheDocument();
+    ).toHaveFocus();
 
     expect(screen.queryByRole("status")).not.toBeInTheDocument();
     expect(getConvertButton("JPG→PNG")).toBeEnabled();
@@ -278,11 +289,12 @@ describe("FileConverter", () => {
     await user.upload(input, createTestFile.jpg());
     await user.click(getConvertButton("JPG→PNG"));
 
-    expect(
-      await screen.findByText(
-        "The file could not be converted. Please try again.",
-      ),
-    ).toBeInTheDocument();
+    const errorAlert = await screen.findByRole("alert");
+
+    expect(errorAlert).toHaveTextContent(
+      "The file could not be converted. Please try again.",
+    );
+    expect(errorAlert).toHaveFocus();
   });
 
   it("show a loading state while conversion is in progress", async () => {

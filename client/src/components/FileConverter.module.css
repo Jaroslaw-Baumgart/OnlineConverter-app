@@ -89,6 +89,10 @@
 }
 
 @media (max-width: 700px) {
+  .converter-container {
+    gap: var(--space-4);
+  }
+
   .preview-file-actions {
     align-items: flex-start;
     flex-direction: column;
@@ -96,5 +100,11 @@
 
   .remove-file-btn {
     width: 100%;
+  }
+}
+
+@media (max-width: 420px) {
+  .conversion-workspace {
+    gap: var(--space-3);
   }
 }

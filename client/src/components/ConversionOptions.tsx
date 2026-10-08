@@ -2,7 +2,7 @@ import type { ConversionOption } from "../types/converter";
 import PngToJpgControls from "./conversion-settings/PngToJpgControls";
 import type { ConversionSettings } from "../schemas/conversionSettings";
 import PdfPageControls from "./conversion-settings/PdfPageControls";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import styles from "./ConversionOptions.module.css";
 import panelStyles from "./ConverterPanel.module.css";
 import primaryActionStyles from "./PrimaryAction.module.css";
@@ -27,6 +27,8 @@ export default function ConversionOptions({
   const [selectedConversionType, setSelectedConversionType] = useState<
     string | null
   >(null);
+  const [shouldFocusSettings, setShouldFocusSettings] = useState(false);
+  const settingsHeadingRef = useRef<HTMLHeadingElement>(null);
 
   const availableOptions = options.filter((option) => !option.disabled);
 
@@ -34,6 +36,21 @@ export default function ConversionOptions({
     availableOptions.find(
       (option) => option.conversionType === selectedConversionType,
     ) ?? availableOptions[0];
+
+  useEffect(() => {
+    if (!shouldFocusSettings || !selectedOption) {
+      return;
+    }
+
+    settingsHeadingRef.current?.focus();
+    setShouldFocusSettings(false);
+  }, [selectedOption, shouldFocusSettings]);
+
+  const selectConversionOption = (conversionType: string) => {
+    setSelectedConversionType(conversionType);
+    setShouldFocusSettings(true);
+  };
+
   return (
     <div
       className={`${panelStyles.panel} ${styles["options-section"]}`}
@@ -56,7 +73,7 @@ export default function ConversionOptions({
               type="button"
               className={styles["option-card"]}
               aria-pressed={option.conversionType === selectedOption?.conversionType}
-              onClick={() => setSelectedConversionType(option.conversionType)}
+              onClick={() => selectConversionOption(option.conversionType)}
               disabled={isConverting}
             >
               <FileIcon className={styles["format-icon"]} />
@@ -73,7 +90,9 @@ export default function ConversionOptions({
       </div>
       {selectedOption ? (
         <div className={styles["conversion-settings"]}>
-          <h3>{t("options.settings")}</h3>
+          <h3 ref={settingsHeadingRef} tabIndex={-1}>
+            {t("options.settings")}
+          </h3>
 
           {selectedOption.conversionType === "png-to-jpg" ? (
             <PngToJpgControls

@@ -79,11 +79,20 @@ describe("FilePreview", () => {
       screen.getByRole("dialog", { name: "File preview" }),
     ).toBeInTheDocument();
 
+    const closeButton = screen.getByRole("button", {
+      name: "Close preview",
+    });
+    expect(closeButton).toHaveFocus();
+
+    await user.keyboard("{Tab}");
+    expect(closeButton).toHaveFocus();
+
     await user.keyboard("{Escape}");
 
     expect(
       screen.queryByRole("dialog", { name: "File preview" }),
     ).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Expand preview" })).toHaveFocus();
   });
 
   it("renders a text preview", async () => {
@@ -142,9 +151,9 @@ describe("FilePreview", () => {
       />,
     );
 
-    expect(
-      await screen.findByText("Loading DOCX content..."),
-    ).toBeInTheDocument();
+    expect(await screen.findByRole("status")).toHaveTextContent(
+      "Loading DOCX content...",
+    );
 
     await act(async () => {
       finishRendering();

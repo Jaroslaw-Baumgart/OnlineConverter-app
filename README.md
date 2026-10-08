@@ -10,10 +10,16 @@ server, and creates downloadable results.
 - File validation based on the extension, detected MIME type, and supported
   conversion type.
 - Source previews for images, PDF, TXT, CSV, DOCX, XLSX, and PPTX files.
-- XLSX preview with sheet selection, including an All sheets option.
+- XLSX preview with sheet selection, including an All sheets option and
+  independently scrollable tables.
 - Settings for PNG to JPG quality and background color.
 - PDF page settings for JPG, TXT, CSV, and XLSX conversions.
 - ZIP download when a conversion produces more than one file.
+- Responsive preview and conversion workspace with an expandable preview.
+- Converted-file state with a preview, per-file download, and archive download.
+- English and Polish interface with the selected language saved locally.
+- Keyboard-accessible workflow, including focus feedback after conversion and a
+  focus-trapped preview dialog.
 - Temporary upload cleanup after every request.
 - Output cleanup: files older than 30 minutes are removed when a new upload is
   received. Temporary folders are also cleared when the server starts and
@@ -37,7 +43,8 @@ prepared before conversion so the chosen sheet and page settings can be used.
 
 ## Tech stack
 
-- Client: React, Vite, TypeScript, React Router, React Hook Form, Zod
+- Client: React, Vite, TypeScript, React Router, React Hook Form, Zod,
+  i18next, CSS Modules
 - Server: Express, TypeScript, Multer, Zod
 - File processing: Sharp, PDFKit, Papa Parse, SheetJS, docx-preview,
   Office Kit, LibreOffice, Poppler
@@ -84,10 +91,13 @@ npm run dev
 ```bash
 npm.cmd run test:run --prefix client
 npm.cmd run typecheck --prefix client
+npm.cmd run lint --prefix client
 
 npm.cmd run test:run --prefix server
 npm.cmd run typecheck --prefix server
 ```
+
+The server does not currently define a lint script.
 
 ## File handling
 

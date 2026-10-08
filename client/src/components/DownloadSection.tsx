@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import type {
   ConvertedResult,
   ConvertedResults,
@@ -25,9 +25,14 @@ export default function DownloadSection({
   isPreparingArchive,
 }: DownloadSectionProps) {
   const { t } = useTranslation();
+  const downloadButtonRef = useRef<HTMLButtonElement>(null);
   const [activeResultUrl, setActiveResultUrl] = useState(
     convertedResults[0].url,
   );
+
+  useEffect(() => {
+    downloadButtonRef.current?.focus();
+  }, []);
 
   const activeResult =
     convertedResults.find((result) => result.url === activeResultUrl) ??
@@ -51,6 +56,7 @@ export default function DownloadSection({
 
         <div className={styles["download-actions"]}>
           <button
+            ref={downloadButtonRef}
             type="button"
             className={`${primaryActionStyles.button} ${styles["download-btn"]}`}
             onClick={() => onDownload(activeResult)}
@@ -76,7 +82,10 @@ export default function DownloadSection({
         {targetFormat ? <span className={styles["format-badge"]}>{targetFormat}</span> : null}
       </div>
       {convertedResults.length > 1 && (
-        <div aria-label={t("download.files")}>
+        <div
+          className={styles["result-picker"]}
+          aria-label={t("download.files")}
+        >
           {convertedResults.map((result, index) => (
             <button
               key={result.url}

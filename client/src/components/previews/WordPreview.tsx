@@ -40,7 +40,7 @@ export function WordPreview({ file }: { file: File }) {
 
   return (
     <div className={styles["word-preview"]} data-preview-kind="word" aria-busy={isRendering}>
-      {isRendering ? <p>{t("preview.wordLoading")}</p> : null}
+      {isRendering ? <p role="status">{t("preview.wordLoading")}</p> : null}
 
       {hasError ? (
         <p className={stateStyles["error-message"]} role="alert">

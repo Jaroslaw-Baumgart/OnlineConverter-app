@@ -64,6 +64,8 @@ export default function FileConverter({
   >(null);
 
   const convertedResultRef = useRef<HTMLDivElement>(null);
+  const errorRef = useRef<HTMLDivElement>(null);
+  const previousErrorRef = useRef<string | null>(null);
 
   useEffect(() => {
     if (!convertedResults) {
@@ -75,6 +77,16 @@ export default function FileConverter({
       block: "start",
     });
   }, [convertedResults]);
+
+  useEffect(() => {
+    const isNewError = error !== null && previousErrorRef.current === null;
+
+    previousErrorRef.current = error;
+
+    if (isNewError) {
+      errorRef.current?.focus();
+    }
+  }, [error]);
 
   const handleFileSelect = (selectedFile: File) => {
     setHasFormError(false);
@@ -158,7 +170,12 @@ export default function FileConverter({
       )}
 
       {error && (
-        <div className={stateStyles["error-message"]} role="alert">
+        <div
+          ref={errorRef}
+          className={stateStyles["error-message"]}
+          role="alert"
+          tabIndex={-1}
+        >
           {error}
         </div>
       )}

@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { parseCsvFile, type CsvRow } from "../../utils/csv";
-import styles from "./CsvPreview.module.css";
+import tableStyles from "./DataTable.module.css";
 import stateStyles from "../PreviewState.module.css";
 import { useTranslation } from "react-i18next";
 
@@ -48,18 +48,29 @@ export function CsvPreview({ file }: { file: File }) {
   }
 
   if (hasError) {
-    return <p className={stateStyles["error-message"]}>{t("preview.csvError")}</p>;
+    return (
+      <p className={stateStyles["error-message"]} role="alert">
+        {t("preview.csvError")}
+      </p>
+    );
   }
 
   if (rows.length === 0) {
-    return <p className={stateStyles["error-message"]}>{t("preview.csvEmpty")}</p>;
+    return (
+      <p className={stateStyles["error-message"]} role="status">
+        {t("preview.csvEmpty")}
+      </p>
+    );
   }
 
   const previewRows = rows.slice(0, 100);
   const headers = Object.keys(rows[0]);
   return (
-    <div className={styles["csv-preview-container"]} data-preview-kind="csv">
-      <table className={styles["csv-preview-table"]}>
+    <div
+      className={tableStyles["scroll-container"]}
+      data-preview-kind="csv"
+    >
+      <table className={tableStyles.table}>
         <thead>
           <tr>
             {headers.map((header) => (

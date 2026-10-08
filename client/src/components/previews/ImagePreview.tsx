@@ -8,7 +8,11 @@ export function ImagePreview({ url }: { url: string }) {
   const [hasError, setHasError] = useState(false);
 
   if (hasError) {
-    return <p className={stateStyles["error-message"]}>{t("preview.imageError")}</p>;
+    return (
+      <p className={stateStyles["error-message"]} role="alert">
+        {t("preview.imageError")}
+      </p>
+    );
   }
 
   return (

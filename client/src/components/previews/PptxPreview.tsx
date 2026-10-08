@@ -64,7 +64,7 @@ export function PptxPreview({ file }: { file: File }) {
 
   return (
     <div className={styles["pptx-preview"]} data-preview-kind="pptx" aria-busy={isRendering}>
-      {isRendering ? <p>{t("preview.pptxLoading")}</p> : null}
+      {isRendering ? <p role="status">{t("preview.pptxLoading")}</p> : null}
 
       {hasError ? (
         <p className={stateStyles["error-message"]} role="alert">

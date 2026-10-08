@@ -38,9 +38,29 @@ export function TextPreview({ file }: { file: File }) {
     };
   }, [file]);
 
-  if (isLoading)
-    return <p className={stateStyles["loading-message"]}>{t("preview.textLoading")}</p>;
+  if (isLoading) {
+    return (
+      <p className={stateStyles["loading-message"]} role="status">
+        {t("preview.textLoading")}
+      </p>
+    );
+  }
 
-  if (hasError) return <p className={stateStyles["error-message"]}>{t("preview.textError")}</p>;
-  return <textarea readOnly value={text} className={styles["text-preview"]} data-preview-kind="text" />;
+  if (hasError) {
+    return (
+      <p className={stateStyles["error-message"]} role="alert">
+        {t("preview.textError")}
+      </p>
+    );
+  }
+
+  return (
+    <textarea
+      readOnly
+      aria-label={t("preview.label")}
+      value={text}
+      className={styles["text-preview"]}
+      data-preview-kind="text"
+    />
+  );
 }
