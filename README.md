@@ -48,7 +48,7 @@ prepared before conversion so the chosen sheet and page settings can be used.
 - Server: Express, TypeScript, Multer, Zod
 - File processing: Sharp, PDFKit, Papa Parse, SheetJS, docx-preview,
   Office Kit, LibreOffice, Poppler
-- Tests: Vitest, Testing Library, MSW, Supertest
+- Tests: Vitest, Testing Library, MSW, Supertest, Playwright
 
 ## Local setup
 
@@ -75,6 +75,7 @@ is available to the server process.
 npm install
 npm install --prefix client
 npm install --prefix server
+npx playwright install chromium
 ```
 
 ### Run the application
@@ -92,6 +93,7 @@ npm run dev
 npm.cmd run test:run --prefix client
 npm.cmd run typecheck --prefix client
 npm.cmd run lint --prefix client
+npm.cmd run test:e2e
 
 npm.cmd run test:run --prefix server
 npm.cmd run typecheck --prefix server
