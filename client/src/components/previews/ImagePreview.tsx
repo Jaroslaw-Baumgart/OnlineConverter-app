@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import styles from "./ImagePreview.module.css";
 import stateStyles from "../PreviewState.module.css";
 import { useTranslation } from "react-i18next";
@@ -6,6 +6,10 @@ import { useTranslation } from "react-i18next";
 export function ImagePreview({ url }: { url: string }) {
   const { t } = useTranslation();
   const [hasError, setHasError] = useState(false);
+
+  useEffect(() => {
+    setHasError(false);
+  }, [url]);
 
   if (hasError) {
     return (

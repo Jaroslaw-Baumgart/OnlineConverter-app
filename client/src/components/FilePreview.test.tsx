@@ -112,7 +112,7 @@ describe("FilePreview", () => {
     expect(await screen.findByDisplayValue("text content")).toBeInTheDocument();
   });
 
-  it("renders a DOCX preview container", () => {
+  it("renders a DOCX preview container", async () => {
     const file = new File([], "document.docx", {
       type: "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
     });
@@ -126,7 +126,7 @@ describe("FilePreview", () => {
       />,
     );
 
-    expect(screen.getByTestId("docx-preview")).toBeInTheDocument();
+    expect(await screen.findByTestId("docx-preview")).toBeInTheDocument();
   });
 
   it("shows loading while DOCX is rendering", async () => {
@@ -252,10 +252,8 @@ describe("FilePreview", () => {
       .fn()
       .mockReturnValueOnce("blob:pptx-slide-1")
       .mockReturnValueOnce("blob:pptx-slide-2");
-    vi.stubGlobal("URL", {
-      createObjectURL: createObjectUrl,
-      revokeObjectURL: vi.fn(),
-    });
+    vi.spyOn(URL, "createObjectURL").mockImplementation(createObjectUrl);
+    vi.spyOn(URL, "revokeObjectURL").mockImplementation(() => undefined);
     vi.mocked(loadPresentation).mockResolvedValue({} as never);
     vi.mocked(getSlides).mockReturnValue([{}, {}] as never);
     vi.mocked(renderSlideToSvg)
@@ -576,7 +574,7 @@ describe("FilePreview", () => {
     ).not.toBeInTheDocument();
     expect(
       screen.getByText(
-        "Charts are not shown in this preview. To view them, convert the file to PDF using the charts option.",
+        "Charts are not shown in this preview. To view them, convert the file to PDF.",
       ),
     ).toBeInTheDocument();
     expect(screen.getByRole("columnheader", { name: "A" })).toBeInTheDocument();

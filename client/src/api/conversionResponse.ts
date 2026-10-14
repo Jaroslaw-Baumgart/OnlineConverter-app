@@ -1,26 +1,16 @@
-export type FileItem = {
-  url: string;
-  name: string;
-};
+import {
+  isBackendConversionErrorCode,
+  type ConversionResponse,
+  type FileItem,
+} from "../../../shared/conversionContract";
 
-export type ConversionSuccessResponse = {
-  success: true;
-  files: [FileItem, ...FileItem[]];
-};
-
-export type BackendConversionErrorCode =
-  | "conversion-failed"
-  | "tool-unavailable";
-
-export type ConversionErrorResponse = {
-  success: false;
-  error: string;
-  code: BackendConversionErrorCode;
-};
-
-export type ConversionResponse =
-  | ConversionSuccessResponse
-  | ConversionErrorResponse;
+export type {
+  BackendConversionErrorCode,
+  ConversionErrorResponse,
+  ConversionResponse,
+  ConversionSuccessResponse,
+  FileItem,
+} from "../../../shared/conversionContract";
 
 function isFileItem(value: unknown): value is FileItem {
   return (
@@ -31,12 +21,6 @@ function isFileItem(value: unknown): value is FileItem {
     "url" in value &&
     typeof value.url === "string"
   );
-}
-
-function isBackendConversionErrorCode(
-  value: unknown,
-): value is BackendConversionErrorCode {
-  return value === "conversion-failed" || value === "tool-unavailable";
 }
 
 export function parseConversionResponse(

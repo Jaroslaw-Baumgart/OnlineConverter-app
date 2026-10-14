@@ -44,7 +44,7 @@ export const xlsxToPdf = async (req: Request, res: Response) => {
 
     const inputBytes = await fs.readFile(file.path);
 
-    const preparedBytes = applyXlsxPageSetup(
+    const preparedBytes = await applyXlsxPageSetup(
       inputBytes,
       sheetName,
       pageSettings,
@@ -52,7 +52,12 @@ export const xlsxToPdf = async (req: Request, res: Response) => {
 
     await fs.writeFile(preparedPath, preparedBytes);
 
-    await convertLibreOfficeToPdf(preparedPath, outputPath);
+    const signal = res.locals?.conversionAbortSignal as AbortSignal | undefined;
+    if (signal) {
+      await convertLibreOfficeToPdf(preparedPath, outputPath, signal);
+    } else {
+      await convertLibreOfficeToPdf(preparedPath, outputPath);
+    }
 
     return sendSuccessResponse(res, [createOutputFileItem(outputName)]);
   } catch (err: unknown) {

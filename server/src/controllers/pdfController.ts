@@ -3,9 +3,7 @@ import fsSync from "fs";
 import PDFDocument from "pdfkit";
 import fs from "fs/promises";
 import path from "path";
-import pdfPoppler from "pdf-poppler";
-import pdfParse from "pdf-parse";
-import { exec } from "child_process";
+import { pdfToImages, runPoppler, validatePdfPageCount } from "../utils/poppler";
 import { OUTPUT_DIR } from "../utils/constants";
 import {
   createOutputFileItem,
@@ -13,6 +11,7 @@ import {
   sendSuccessResponse,
 } from "../utils/response";
 import { pdfPageSettingsSchema } from "../schemas/conversionSettings";
+import { limitPdfPages } from "../utils/pdfLimits";
 
 const getBaseFileName = (file: Express.Multer.File) => {
   return path.parse(file.filename).name;
@@ -28,20 +27,20 @@ export const pdfToJpg = async (req: Request, res: Response) => {
   const baseName = getBaseFileName(file);
   const pdfPath = file.path;
   const outputSubdir = path.join(OUTPUT_DIR, baseName);
+  const signal = res.locals?.conversionAbortSignal as AbortSignal | undefined;
 
   try {
     await fs.mkdir(outputSubdir, { recursive: true });
 
-    await pdfPoppler.convert(pdfPath, {
-      format: "jpeg",
-      out_dir: outputSubdir,
-      out_prefix: "page",
-      page: null,
-    });
+    if (signal) {
+      await pdfToImages(pdfPath, outputSubdir, signal);
+    } else {
+      await pdfToImages(pdfPath, outputSubdir);
+    }
 
     const jpgFiles = (await fs.readdir(outputSubdir)).filter((f) =>
       f.endsWith(".jpg"),
-    );
+    ).sort((a, b) => a.localeCompare(b, undefined, { numeric: true }));
 
     const files = jpgFiles.map((name) => ({
       url: `/output/${baseName}/${name}`,
@@ -76,17 +75,15 @@ export const pdfToTxt = async (req: Request, res: Response) => {
   const file = req.file;
   const outputName = `${getBaseFileName(file)}.txt`;
   const outputPath = path.join(OUTPUT_DIR, outputName);
+  const signal = res.locals?.conversionAbortSignal as AbortSignal | undefined;
 
   try {
-    try {
-      const data = await pdfParse(await fs.readFile(file.path));
-      await fs.writeFile(outputPath, data.text);
-    } catch {
-      await new Promise((resolve, reject) => {
-        exec(`pdftotext "${file.path}" "${outputPath}"`, (err) =>
-          err ? reject(err) : resolve(null),
-        );
-      });
+    if (signal) {
+      await validatePdfPageCount(file.path, signal);
+      await runPoppler("pdftotext", [file.path, outputPath], signal);
+    } else {
+      await validatePdfPageCount(file.path);
+      await runPoppler("pdftotext", [file.path, outputPath]);
     }
 
     return sendSuccessResponse(res, [createOutputFileItem(outputName)]);
@@ -126,17 +123,15 @@ export const txtToPdf = async (req: Request, res: Response) => {
       size: settings.pageSize,
       layout: settings.pageOrientation,
     });
-    const stream = doc.pipe(fsSync.createWriteStream(outputPath));
-
-    const streamFinished = new Promise<void>((resolve, reject) => {
+    limitPdfPages(doc);
+    doc.font(path.join(__dirname, "../assets/fonts/NotoSans-Regular.ttf"));
+    doc.fontSize(12).text(text, { align: "left" });
+    await new Promise<void>((resolve, reject) => {
+      const stream = doc.pipe(fsSync.createWriteStream(outputPath));
       stream.on("finish", resolve);
       stream.on("error", reject);
+      doc.end();
     });
-
-    doc.fontSize(12).text(text, { align: "left" });
-    doc.end();
-
-    await streamFinished;
 
     return sendSuccessResponse(res, [createOutputFileItem(outputName)]);
   } catch (err: unknown) {

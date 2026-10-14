@@ -25,6 +25,8 @@ export const pl = {
     "invalid-response": "Serwer zwrócił nieoczekiwaną odpowiedź. Spróbuj ponownie.",
     "download-failed": "Nie udało się pobrać przekonwertowanego pliku. Spróbuj ponownie.",
     "tool-unavailable": "Ta konwersja jest obecnie niedostępna. Spróbuj ponownie później.",
+    "invalid-settings": "Wybrane ustawienia nie mieszczą się na stronie. Wybierz A3 w orientacji poziomej.",
+    "service-busy": "Usługa konwersji jest zajęta. Spróbuj ponownie za chwilę.",
     unexpected: "Coś poszło nie tak. Użyj nawigacji, aby otworzyć inną stronę, lub odśwież stronę i spróbuj ponownie.",
   },
   upload: {
@@ -90,7 +92,7 @@ export const pl = {
     sheetEmpty: "Ten arkusz jest pusty.",
     showingRows: "Wyświetlono pierwsze {{shown}} z {{total}} wierszy.",
     dependency: "Jeśli ten arkusz zależy od formuł lub wykresów z innych arkuszy, wybierz Wszystkie arkusze.",
-    charts: "Wykresy nie są pokazywane w tym podglądzie. Aby je zobaczyć, przekonwertuj plik do PDF z opcją wykresów.",
+    charts: "Wykresy nie są pokazywane w tym podglądzie. Aby je zobaczyć, przekonwertuj plik do PDF",
     pptxLoading: "Wczytywanie treści PPTX...",
     pptxError: "Nie udało się wyrenderować prezentacji PowerPoint.",
     slideAlt: "Slajd PowerPoint {{index}}",

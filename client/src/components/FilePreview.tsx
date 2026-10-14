@@ -2,14 +2,16 @@ import styles from "./FilePreview.module.css";
 import stateStyles from "./PreviewState.module.css";
 import { ImagePreview } from "./previews/ImagePreview";
 import { TextPreview } from "./previews/TextPreview";
-import { WordPreview } from "./previews/WordPreview";
 import { CsvPreview } from "./previews/CsvPreview";
-import { XlsxPreview } from "./previews/XlsxPreview";
-import { PptxPreview } from "./previews/PptxPreview";
+import { lazy, Suspense } from "react";
 import PreviewLightbox from "./PreviewLightbox";
 import type { PreviewData } from "../types/preview";
 import { FileIcon } from "./UiIcons";
 import { useTranslation } from "react-i18next";
+
+const WordPreview = lazy(() => import("./previews/WordPreview").then((module) => ({ default: module.WordPreview })));
+const XlsxPreview = lazy(() => import("./previews/XlsxPreview").then((module) => ({ default: module.XlsxPreview })));
+const PptxPreview = lazy(() => import("./previews/PptxPreview").then((module) => ({ default: module.PptxPreview })));
 
 type FilePreviewProps = {
   preview: PreviewData;
@@ -49,6 +51,7 @@ export default function FilePreview({
   preview,
   onXlsxSheetChange,
 }: FilePreviewProps) {
+  const { t } = useTranslation();
   let previewContent;
 
   switch (preview.kind) {
@@ -93,5 +96,7 @@ export default function FilePreview({
       return assertNever(preview);
   }
 
-  return <PreviewLightbox>{previewContent}</PreviewLightbox>;
+  return <PreviewLightbox><Suspense fallback={<p role="status">{t("converter.preparing")}</p>}>
+    {previewContent}
+  </Suspense></PreviewLightbox>;
 }

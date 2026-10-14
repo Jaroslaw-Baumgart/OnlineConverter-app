@@ -4,6 +4,8 @@ export const conversionErrorCodes = [
   "invalid-response",
   "download-failed",
   "tool-unavailable",
+  "invalid-settings",
+  "service-busy",
 ] as const;
 
 export type ConversionErrorCode = (typeof conversionErrorCodes)[number];
@@ -24,6 +26,9 @@ const ERROR_MESSAGES = {
     "The converted file could not be downloaded. Please try again.",
   "tool-unavailable":
     "This conversion is currently unavailable. Please try again later.",
+  "invalid-settings":
+    "These settings cannot fit the file on the selected page. Try A3 landscape.",
+  "service-busy": "The conversion service is busy. Please try again shortly.",
 } satisfies Record<ConversionErrorCode, string>;
 
 export function getConversionErrorMessage(code: ConversionErrorCode): string {

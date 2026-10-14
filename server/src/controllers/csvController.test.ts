@@ -35,7 +35,7 @@ const mocks = vi.hoisted(() => {
     (value: string) => value.length * currentFontSize * 0.5,
   );
 
-  const heightOfString = vi.fn(() => 12);
+  const heightOfString = vi.fn((_value?: string) => 12);
 
   const fontSize = vi.fn((size: number) => {
     currentFontSize = size;
@@ -218,6 +218,27 @@ describe("csvToPdf", () => {
 
     expect(renderedValues.filter((value) => value === "ID")).toHaveLength(2);
     expect(renderedValues.filter((value) => value === "Name")).toHaveLength(2);
+    expect(status).toHaveBeenCalledWith(200);
+  });
+
+  it("continues a tall row on following pages without losing its content", async () => {
+    const longDescription = "A".repeat(1_000);
+    mocks.heightOfString.mockImplementation(
+      (value?: string) => value?.length ?? 0,
+    );
+    mocks.parseCsv.mockReturnValue([{ Description: longDescription }]);
+
+    const { response, status } = createResponse();
+
+    await csvToPdf(createRequest({}), response);
+
+    const renderedDescription = mocks.text.mock.calls
+      .map(([value]) => value)
+      .filter((value) => typeof value === "string" && /^A+$/.test(value))
+      .join("");
+
+    expect(mocks.addPage).toHaveBeenCalled();
+    expect(renderedDescription).toBe(longDescription);
     expect(status).toHaveBeenCalledWith(200);
   });
 

@@ -1,166 +1,133 @@
-import { strFromU8, strToU8, unzipSync, zipSync } from "fflate";
+import path from "node:path";
+import { strFromU8, strToU8, zip } from "fflate";
+import { DOMParser, XMLSerializer } from "@xmldom/xmldom";
+import { unzipOfficeArchive } from "./officeArchive";
 
 export type XlsxPageSettings = {
   pageSize: "A4" | "A3";
   pageOrientation: "portrait" | "landscape";
 };
 
-const readXmlAttribute = (element: string, attributeName: string) => {
-  const match = element.match(new RegExp(`\\b${attributeName}="([^"]*)"`));
-
-  return match?.[1];
-};
-
-const getXmlTagPrefix = (xml: string, tagName: string) => {
-  const match = xml.match(new RegExp(`<([\\w.-]+:)?${tagName}\\b`));
-
-  return match?.[1] ?? "";
-};
-
-const removeSheetState = (element: string) => {
-  return element.replace(/\s+state="[^"]*"/, "");
-};
-
-const enableFitToPage = (worksheetXml: string, worksheetPrefix: string) => {
-  const sheetPrTagName = `${worksheetPrefix}sheetPr`;
-  const pageSetUpPrTagName = `${worksheetPrefix}pageSetUpPr`;
-  const fitToPage = `<${pageSetUpPrTagName} fitToPage="1" />`;
-
-  const existingSheetPr = worksheetXml.match(
-    new RegExp(
-      `<${sheetPrTagName}\\b[^>]*(?:/>|>[\\s\\S]*?</${sheetPrTagName}>)`,
-    ),
-  )?.[0];
-
-  if (!existingSheetPr) {
-    return worksheetXml.replace(
-      new RegExp(`(<${worksheetPrefix}worksheet\\b[^>]*>)`),
-      (openingTag) =>
-        `${openingTag}<${sheetPrTagName}>${fitToPage}</${sheetPrTagName}>`,
-    );
+function parseXml(bytes: Uint8Array | undefined) {
+  if (!bytes) {
+    throw new Error("Missing Office XML file.");
+  }
+  const xml = strFromU8(bytes);
+  if (/<!DOCTYPE/i.test(xml)) {
+    throw new Error("Office XML must not contain a DOCTYPE.");
   }
 
-  const existingPageSetUpPr = existingSheetPr.match(
-    new RegExp(`<${pageSetUpPrTagName}\\b[^>]*/>`),
-  )?.[0];
+  return new DOMParser({
+    onError: (level, message) => {
+      if (level !== "warning") {
+        throw new Error(`Invalid Office XML: ${message}`);
+      }
+    },
+  }).parseFromString(xml, "application/xml");
+}
 
-  const updatedSheetPr = existingPageSetUpPr
-    ? existingSheetPr.replace(
-        existingPageSetUpPr,
-        existingPageSetUpPr
-          .replace(/\s+fitToPage="[^"]*"/, "")
-          .replace("/>", ' fitToPage="1" />'),
-      )
-    : existingSheetPr.endsWith("/>")
-      ? existingSheetPr.replace("/>", `>${fitToPage}</${sheetPrTagName}>`)
-      : existingSheetPr.replace(
-          `</${sheetPrTagName}>`,
-          `${fitToPage}</${sheetPrTagName}>`,
-        );
-
-  return worksheetXml.replace(existingSheetPr, updatedSheetPr);
-};
-
-export function applyXlsxPageSetup(
+export async function applyXlsxPageSetup(
   archive: Uint8Array,
   sheetName: string | undefined,
   settings: XlsxPageSettings,
-): Uint8Array {
-  const files = unzipSync(archive);
-  const workbookXml = strFromU8(files["xl/workbook.xml"]);
-  const relationshipXml = strFromU8(files["xl/_rels/workbook.xml.rels"]);
-
-  const sheetPrefix = getXmlTagPrefix(workbookXml, "sheet");
-
-  const sheetElements =
-    workbookXml.match(new RegExp(`<${sheetPrefix}sheet\\b[^>]*>`, "g")) ?? [];
-
+): Promise<Uint8Array> {
+  const files = await unzipOfficeArchive(archive);
+  const workbook = parseXml(files["xl/workbook.xml"]);
+  const relationships = parseXml(files["xl/_rels/workbook.xml.rels"]);
+  const sheets = Array.from(workbook.getElementsByTagNameNS("*", "sheet"));
+  const serializer = new XMLSerializer();
   if (sheetName !== undefined) {
-    const selectedSheetElement = sheetElements.find(
-      (element) => readXmlAttribute(element, "name") === sheetName,
+    const selected = sheets.find(
+      (sheet) => sheet.getAttribute("name") === sheetName,
     );
-
-    if (!selectedSheetElement) {
+    if (!selected) {
       throw new Error(`Sheet not found: ${sheetName}`);
     }
-
-    let updatedWorkbookXml = workbookXml;
-
-    for (const element of sheetElements) {
-      const updatedElement =
-        element === selectedSheetElement ? removeSheetState(element) : "";
-
-      updatedWorkbookXml = updatedWorkbookXml.replace(element, updatedElement);
+    for (const sheet of sheets) {
+      if (sheet === selected) sheet.removeAttribute("state");
+      else sheet.parentNode?.removeChild(sheet);
     }
-
-    files["xl/workbook.xml"] = strToU8(updatedWorkbookXml);
+    files["xl/workbook.xml"] = strToU8(serializer.serializeToString(workbook));
   }
-
-  const relationshipElements =
-    relationshipXml.match(/<Relationship\b[^>]*>/g) ?? [];
-
-  for (const sheetElement of sheetElements) {
-    const currentSheetName = readXmlAttribute(sheetElement, "name") ?? "";
-    const relationshipId = readXmlAttribute(sheetElement, "r:id");
-
-    const relationshipElement = relationshipElements.find(
-      (element) => readXmlAttribute(element, "Id") === relationshipId,
-    );
-
-    const worksheetTarget = relationshipElement
-      ? readXmlAttribute(relationshipElement, "Target")
-      : undefined;
-
-    if (!worksheetTarget) {
-      throw new Error(`Worksheet file not found: ${currentSheetName}`);
+  for (const sheet of sheets) {
+    const relationshipId = sheet.getAttributeNS(
+      "http://schemas.openxmlformats.org/officeDocument/2006/relationships", "id",
+    ) || sheet.getAttribute("r:id");
+    const relationship = Array.from(
+      relationships.getElementsByTagNameNS("*", "Relationship"),
+    ).find((item) => item.getAttribute("Id") === relationshipId);
+    const target = relationship?.getAttribute("Target");
+    if (!target || relationship?.getAttribute("TargetMode") === "External") {
+      throw new Error(`Worksheet file not found: ${sheet.getAttribute("name")}`);
     }
-
-    const worksheetPath = worksheetTarget.startsWith("/")
-      ? worksheetTarget.slice(1)
-      : `xl/${worksheetTarget}`;
-
-    const worksheetFile = files[worksheetPath];
-
-    if (!worksheetFile) {
-      throw new Error(`Worksheet file not found: ${currentSheetName}`);
-    }
-
-    const worksheetXml = strFromU8(worksheetFile);
-    const worksheetPrefix = getXmlTagPrefix(worksheetXml, "worksheet");
-    const pageSetupTagName = `${worksheetPrefix}pageSetup`;
-    const paperSize = settings.pageSize === "A3" ? "8" : "9";
-
-    const existingPageSetup = worksheetXml.match(
-      new RegExp(`<${pageSetupTagName}\\b[^>]*\\/>`),
-    )?.[0];
-
-    const pageSetup = existingPageSetup
-      ? existingPageSetup
-          .replace(/\s+paperSize="[^"]*"/, "")
-          .replace(/\s+orientation="[^"]*"/, "")
-          .replace(/\s+fitToWidth="[^"]*"/, "")
-          .replace(/\s+fitToHeight="[^"]*"/, "")
-          .replace(/\s+scale="[^"]*"/, "")
-          .replace(
-            "/>",
-            ` paperSize="${paperSize}" orientation="${settings.pageOrientation}" fitToWidth="1" fitToHeight="1" />`,
-          )
-      : `<${pageSetupTagName} paperSize="${paperSize}" orientation="${settings.pageOrientation}" fitToWidth="1" fitToHeight="1" />`;
-
-    const worksheetWithPageSetup = existingPageSetup
-      ? worksheetXml.replace(existingPageSetup, pageSetup)
-      : worksheetXml.replace(
-          `</${worksheetPrefix}worksheet>`,
-          `${pageSetup}</${worksheetPrefix}worksheet>`,
-        );
-
-    const updatedWorksheetXml = enableFitToPage(
-      worksheetWithPageSetup,
-      worksheetPrefix,
+    const worksheetPath = path.posix.normalize(
+      target.startsWith("/") ? target.slice(1) : `xl/${target}`,
     );
-
-    files[worksheetPath] = strToU8(updatedWorksheetXml);
+    if (!worksheetPath.startsWith("xl/")) {
+      throw new Error("Invalid worksheet path.");
+    }
+    const worksheet = parseXml(files[worksheetPath]);
+    const root = worksheet.documentElement;
+    if (!root || root.localName !== "worksheet") {
+      throw new Error("Invalid worksheet XML.");
+    }
+    const createElement = (name: string) =>
+      worksheet.createElementNS(
+        root.namespaceURI,
+        root.prefix ? `${root.prefix}:${name}` : name,
+      );
+    let sheetPr = worksheet.getElementsByTagNameNS("*", "sheetPr").item(0);
+    if (!sheetPr) {
+      sheetPr = createElement("sheetPr");
+      root.insertBefore(sheetPr, root.firstChild);
+    }
+    let setupPr = sheetPr.getElementsByTagNameNS("*", "pageSetUpPr").item(0);
+    if (!setupPr) {
+      setupPr = createElement("pageSetUpPr");
+      sheetPr.appendChild(setupPr);
+    }
+    setupPr.setAttribute("fitToPage", "1");
+    let setup = worksheet.getElementsByTagNameNS("*", "pageSetup").item(0);
+    if (!setup) {
+      setup = createElement("pageSetup");
+      const following = new Set([
+        "headerFooter",
+        "rowBreaks",
+        "colBreaks",
+        "customProperties",
+        "cellWatches",
+        "ignoredErrors",
+        "smartTags",
+        "drawing",
+        "legacyDrawing",
+        "legacyDrawingHF",
+        "picture",
+        "oleObjects",
+        "controls",
+        "webPublishItems",
+        "tableParts",
+        "extLst",
+      ]);
+      const next = Array.from(root.childNodes).find(
+        (node) => node.nodeType === 1 && following.has(node.localName ?? ""),
+      );
+      root.insertBefore(setup, next ?? null);
+    }
+    setup.removeAttribute("scale");
+    setup.setAttribute("paperSize", settings.pageSize === "A3" ? "8" : "9");
+    setup.setAttribute("orientation", settings.pageOrientation);
+    setup.setAttribute("fitToWidth", "1");
+    setup.setAttribute("fitToHeight", "1");
+    files[worksheetPath] = strToU8(serializer.serializeToString(worksheet));
   }
+  return new Promise((resolve, reject) => {
+    zip(files, (error, bytes) => {
+      if (error) {
+        reject(error);
+        return;
+      }
 
-  return zipSync(files);
+      resolve(bytes);
+    });
+  });
 }

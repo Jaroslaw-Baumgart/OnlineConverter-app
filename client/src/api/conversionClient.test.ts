@@ -5,6 +5,17 @@ import { server } from "../test/server";
 import { convertFile } from "./conversionClient";
 
 describe("convertFile", () => {
+  it("rejects oversized downloads before collecting their bodies", async () => {
+    server.use(
+      http.post("http://localhost:5000/convert", () => HttpResponse.json({
+        success: true, files: [{ url: "/output/large.png", name: "large.png" }],
+      })),
+      http.get("http://localhost:5000/output/large.png", () => new HttpResponse("small body", {
+        headers: { "Content-Length": String(101 * 1024 * 1024) },
+      })),
+    );
+    await expect(convertFile(new FormData())).rejects.toMatchObject({ code: "download-failed" });
+  });
   it("posts form data and returns downloaded converted files", async () => {
     const formData = new FormData();
     formData.append("conversionType", "jpg-to-png");

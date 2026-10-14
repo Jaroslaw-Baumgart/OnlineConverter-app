@@ -1,4 +1,4 @@
-import { useReducer, useRef, useState } from "react";
+import { useEffect, useReducer, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import {
   conversionReducer,
@@ -43,6 +43,21 @@ export function useConversion(): UseConversionResult {
   );
 
   const requestIdRef = useRef(0);
+  const archiveIdRef = useRef(0);
+  const isMountedRef = useRef(true);
+  const abortControllerRef = useRef<AbortController | null>(null);
+  useEffect(
+    () => {
+      isMountedRef.current = true;
+
+      return () => {
+        isMountedRef.current = false;
+        archiveIdRef.current += 1;
+        abortControllerRef.current?.abort();
+      };
+    },
+    [],
+  );
 
   const [isPreparingArchive, setIsPreparingArchive] = useState(false);
 
@@ -65,6 +80,10 @@ export function useConversion(): UseConversionResult {
       : null;
 
   const selectFile = (selectedFile: File) => {
+    requestIdRef.current += 1;
+    archiveIdRef.current += 1;
+    abortControllerRef.current?.abort();
+    setIsPreparingArchive(false);
     dispatch({
       type: "fileSelected",
       file: selectedFile,
@@ -72,6 +91,10 @@ export function useConversion(): UseConversionResult {
   };
 
   const removeFile = () => {
+    requestIdRef.current += 1;
+    archiveIdRef.current += 1;
+    abortControllerRef.current?.abort();
+    setIsPreparingArchive(false);
     dispatch({
       type: "fileRemoved",
     });
@@ -85,19 +108,23 @@ export function useConversion(): UseConversionResult {
       return;
     }
 
-    if (conversionState.kind === "loading") {
+    if (conversionState.kind === "loading" || (abortControllerRef.current && !abortControllerRef.current.signal.aborted)) {
       return;
     }
 
     requestIdRef.current += 1;
+    archiveIdRef.current += 1;
+    setIsPreparingArchive(false);
     const requestId = requestIdRef.current;
+    const controller = new AbortController();
+    abortControllerRef.current = controller;
 
     dispatch({ type: "conversionStarted", requestId });
 
     const formData = createConversionFormData(file, option, settings);
 
     try {
-      const convertedResults = await convertFile(formData);
+      const convertedResults = await convertFile(formData, controller.signal);
 
       dispatch({
         type: "conversionSucceeded",
@@ -105,6 +132,7 @@ export function useConversion(): UseConversionResult {
         requestId,
       });
     } catch (err: unknown) {
+      if (controller.signal.aborted) return;
       console.error(err);
 
       const errorCode =
@@ -115,6 +143,8 @@ export function useConversion(): UseConversionResult {
         error: errorCode,
         requestId,
       });
+    } finally {
+      if (abortControllerRef.current === controller) abortControllerRef.current = null;
     }
   };
 
@@ -138,14 +168,19 @@ export function useConversion(): UseConversionResult {
       return;
     }
 
+    const archiveId = archiveIdRef.current + 1;
+    archiveIdRef.current = archiveId;
+    const resultsToArchive = convertedResults;
     setIsPreparingArchive(true);
 
     try {
-      const filesToZip = convertedResults.map((result) => result.file);
+      const filesToZip = resultsToArchive.map((result) => result.file);
       const zipFile = await createZipFile(filesToZip);
+      if (archiveIdRef.current !== archiveId || !isMountedRef.current) return;
       downloadFile(zipFile);
       dispatch({ type: "downloadSucceeded" });
     } catch (cause: unknown) {
+      if (archiveIdRef.current !== archiveId || !isMountedRef.current) return;
       const downloadError = new ConversionError("download-failed", cause);
 
       console.error(downloadError);
@@ -154,7 +189,9 @@ export function useConversion(): UseConversionResult {
         error: downloadError.code,
       });
     } finally {
-      setIsPreparingArchive(false);
+      if (archiveIdRef.current === archiveId && isMountedRef.current) {
+        setIsPreparingArchive(false);
+      }
     }
   };
 

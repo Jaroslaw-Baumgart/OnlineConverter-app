@@ -1,6 +1,7 @@
 import path from "path";
 import fs from "fs/promises";
-import { fromBuffer } from "file-type";
+import { conversionDefinitions } from "../config/conversions";
+import { unzipOfficeArchive } from "./officeArchive";
 
 export async function validateFileSecure(
   filePath: string,
@@ -23,15 +24,10 @@ export async function validateFileSecure(
     );
   }
 
-  const parts = originalName.split(".");
-  if (parts.length > 2) {
-    throw new Error(
-      "Suspicious file name. Multiple extensions are not allowed.",
-    );
-  }
-
   const buffer = await fs.readFile(filePath);
-  const type = await fromBuffer(buffer);
+  if ([".docx", ".xlsx", ".pptx"].includes(ext)) await unzipOfficeArchive(buffer);
+  const { fileTypeFromBuffer } = await import("file-type");
+  const type = await fileTypeFromBuffer(buffer);
 
   // Special handling for TXT files
   if (ext === ".txt" || ext === ".csv") {
@@ -41,14 +37,20 @@ export async function validateFileSecure(
       mime === "application/octet-stream" ||
       mime.startsWith("text/")
     ) {
-      return; // allowed
+      // Reject binary data even when it has no recognised magic signature.
+      new TextDecoder("utf-8", { fatal: true }).decode(buffer);
+      if (buffer.includes(0)) throw new Error("Invalid text file content.");
+      return;
     }
     throw new Error(`Invalid MIME type for TXT. Detected: ${mime}`);
   }
 
   // Normal check for other files
   const mime = type?.mime as string | undefined;
-  if (!mime || !allowedMime.includes(mime)) {
+  const expectedMime = conversionDefinitions.find(
+    (definition) => `.${definition.sourceExtension}` === ext,
+  )?.mimeType;
+  if (!mime || !allowedMime.includes(mime) || mime !== expectedMime) {
     throw new Error(`Invalid MIME type. Detected: ${mime || "unknown"}`);
   }
 }

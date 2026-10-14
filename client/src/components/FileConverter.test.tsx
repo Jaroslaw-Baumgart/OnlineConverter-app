@@ -196,6 +196,11 @@ describe("FileConverter", () => {
   it("clears the previous conversion result when a new file is selected", async () => {
     const initialFile = createTestFile.jpg();
     const newFile = createTestFile.pdf();
+    vi.spyOn(HTMLElement.prototype, "scrollIntoView").mockImplementation(
+      function (this: HTMLElement) {
+        this.dataset.scrolledIntoView = "true";
+      },
+    );
 
     server.use(
       http.post("http://localhost:5000/convert", () => {
@@ -234,6 +239,12 @@ describe("FileConverter", () => {
     expect(
       screen.getByRole("button", { name: "Download file" }),
     ).toHaveFocus();
+    await waitFor(() => {
+      expect(screen.getByTestId("converted-file-preview")).toHaveAttribute(
+        "data-scrolled-into-view",
+        "true",
+      );
+    });
 
     expect(screen.queryByRole("status")).not.toBeInTheDocument();
     expect(getConvertButton("JPG→PNG")).toBeEnabled();
@@ -751,13 +762,21 @@ describe("FileConverter", () => {
 
     expect(secondPageButton).toHaveAttribute("aria-pressed", "false");
 
+    const firstPreviewUrl = screen
+      .getByRole("img", { name: "Preview" })
+      .getAttribute("src");
+
     await user.click(secondPageButton);
 
     expect(secondPageButton).toHaveAttribute("aria-pressed", "true");
-    expect(screen.getByRole("img", { name: "Preview" })).toHaveAttribute(
-      "src",
-      "http://localhost:5000/output/page-2.jpg",
-    );
+    await waitFor(() => {
+      const secondPreviewUrl = screen
+        .getByRole("img", { name: "Preview" })
+        .getAttribute("src");
+
+      expect(secondPreviewUrl).toMatch(/^blob:/);
+      expect(secondPreviewUrl).not.toBe(firstPreviewUrl);
+    });
   });
 
   it("shows PDF page settings for CSV to PDF", async () => {

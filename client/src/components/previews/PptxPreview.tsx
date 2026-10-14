@@ -29,13 +29,12 @@ export function PptxPreview({ file }: { file: File }) {
           throw new Error("Presentation has no slides");
         }
 
-        objectUrls = slides.map((slide) => {
+        for (const slide of slides) {
           const svg = renderSlideToSvg(presentation, slide);
-
-          return URL.createObjectURL(
+          objectUrls.push(URL.createObjectURL(
             new Blob([svg], { type: "image/svg+xml" }),
-          );
-        });
+          ));
+        }
 
         if (active) {
           setSlideUrls(objectUrls);
@@ -43,6 +42,8 @@ export function PptxPreview({ file }: { file: File }) {
           objectUrls.forEach((url) => URL.revokeObjectURL(url));
         }
       } catch {
+        objectUrls.forEach((url) => URL.revokeObjectURL(url));
+        objectUrls = [];
         if (active) {
           setHasError(true);
         }

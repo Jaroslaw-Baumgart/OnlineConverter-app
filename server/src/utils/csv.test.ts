@@ -1,7 +1,7 @@
 import { readFile } from "node:fs/promises";
 import path from "node:path";
 import { describe, expect, it } from "vitest";
-import { parseCsv } from "./csv";
+import { CsvLimitError, parseCsv } from "./csv";
 
 describe("parseCsv", () => {
   it("parses headers, quoted separators and Polish characters", async () => {
@@ -32,6 +32,21 @@ describe("parseCsv", () => {
   it("rejects malformed CSV", () => {
     expect(() => parseCsv("Imię,Nazwa\nŁukasz")).toThrow(
       "Invalid CSV data.",
+    );
+  });
+
+  it("stops parsing when the CSV exceeds the row limit", () => {
+    const rows = Array.from({ length: 10_001 }, (_, index) => `${index}`);
+
+    expect(() => parseCsv(`ID\n${rows.join("\n")}`)).toThrow(CsvLimitError);
+  });
+
+  it("stops parsing when the CSV exceeds the column limit", () => {
+    const headers = Array.from({ length: 51 }, (_, index) => `Column ${index}`);
+    const values = Array.from({ length: 51 }, () => "value");
+
+    expect(() => parseCsv(`${headers.join(",")}\n${values.join(",")}`)).toThrow(
+      CsvLimitError,
     );
   });
 });

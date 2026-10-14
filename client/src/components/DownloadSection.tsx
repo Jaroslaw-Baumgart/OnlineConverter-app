@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, type Ref } from "react";
 import type {
   ConvertedResult,
   ConvertedResults,
@@ -10,12 +10,15 @@ import panelStyles from "./ConverterPanel.module.css";
 import primaryActionStyles from "./PrimaryAction.module.css";
 import { CheckIcon, DownloadIcon, FileIcon } from "./UiIcons";
 import { useTranslation } from "react-i18next";
+import { useObjectUrl } from "../hooks/useObjectUrl";
 
 interface DownloadSectionProps {
   convertedResults: ConvertedResults;
   onDownload: (result: ConvertedResult) => void;
   onDownloadAll: () => void;
   isPreparingArchive: boolean;
+  previewRef?: Ref<HTMLDivElement>;
+  onPreviewReady?: () => void;
 }
 
 export default function DownloadSection({
@@ -23,6 +26,8 @@ export default function DownloadSection({
   onDownload,
   onDownloadAll,
   isPreparingArchive,
+  previewRef,
+  onPreviewReady,
 }: DownloadSectionProps) {
   const { t } = useTranslation();
   const downloadButtonRef = useRef<HTMLButtonElement>(null);
@@ -38,8 +43,17 @@ export default function DownloadSection({
     convertedResults.find((result) => result.url === activeResultUrl) ??
     convertedResults[0];
 
-  const previewData = createPreviewData(activeResult.file, activeResult.url);
+  const previewUrl = useObjectUrl(activeResult.file);
+  const previewData = previewUrl
+    ? createPreviewData(activeResult.file, previewUrl)
+    : null;
   const targetFormat = activeResult.file.name.split(".").pop()?.toUpperCase();
+
+  useEffect(() => {
+    if (previewUrl) {
+      onPreviewReady?.();
+    }
+  }, [onPreviewReady, previewUrl]);
 
   return (
     <div className={`${panelStyles.panel} ${styles["download-section"]}`}>
@@ -98,7 +112,11 @@ export default function DownloadSection({
           ))}
         </div>
       )}
-      {previewData && <FilePreview preview={previewData} />}
+      {previewData && (
+        <div ref={previewRef} data-testid="converted-file-preview">
+          <FilePreview preview={previewData} />
+        </div>
+      )}
     </div>
   );
 }

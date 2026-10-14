@@ -1,5 +1,6 @@
 import fs from "fs/promises";
 import path from "path";
+import { OUTPUT_DIR } from "./constants";
 
 export const OUTPUT_RETENTION_MS = 30 * 60 * 1000;
 
@@ -20,8 +21,25 @@ export async function clearAllTemp() {
 }
 
 export const safeUnlink = async (filePath: string) => {
-  await fs.unlink(filePath).catch(() => {});
+  try {
+    await fs.unlink(filePath);
+  } catch (error) {
+    if (isMissingFile(error)) return;
+    console.error(`Could not remove temporary file ${filePath}:`, error);
+  }
 };
+
+export async function cleanupConversionOutputs(uploadFilename: string) {
+  const base = path.parse(path.basename(uploadFilename)).name;
+  if (!base || base === "." || base === "..") {
+    return;
+  }
+  await Promise.all([
+    ...["pdf", "png", "jpg", "txt", "xlsx"].map((extension) =>
+      safeUnlink(path.join(OUTPUT_DIR, `${base}.${extension}`))),
+    fs.rm(path.join(OUTPUT_DIR, base), { recursive: true, force: true }),
+  ]);
+}
 
 export async function cleanupExpiredOutputs(
   outputDirectory: string,
@@ -48,7 +66,12 @@ export async function cleanupExpiredOutputs(
 
   for (const entry of entries) {
     const entryPath = path.join(outputDirectory, entry.name);
-    const metadata = await fs.stat(entryPath);
+    let metadata;
+    try { metadata = await fs.stat(entryPath); }
+    catch (error) {
+      if (isMissingFile(error)) continue;
+      throw error;
+    }
     const age = now - metadata.mtimeMs;
 
     if (age > OUTPUT_RETENTION_MS) {
@@ -58,4 +81,8 @@ export async function cleanupExpiredOutputs(
       });
     }
   }
+}
+
+function isMissingFile(error: unknown) {
+  return typeof error === "object" && error !== null && "code" in error && error.code === "ENOENT";
 }

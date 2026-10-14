@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import styles from "./FileConverter.module.css";
 import stateStyles from "./PreviewState.module.css";
 import panelStyles from "./ConverterPanel.module.css";
@@ -63,20 +63,16 @@ export default function FileConverter({
     string | undefined | null
   >(null);
 
-  const convertedResultRef = useRef<HTMLDivElement>(null);
+  const convertedPreviewRef = useRef<HTMLDivElement>(null);
   const errorRef = useRef<HTMLDivElement>(null);
   const previousErrorRef = useRef<string | null>(null);
 
-  useEffect(() => {
-    if (!convertedResults) {
-      return;
-    }
-
-    convertedResultRef.current?.scrollIntoView({
+  const scrollToConvertedPreview = useCallback(() => {
+    convertedPreviewRef.current?.scrollIntoView({
       behavior: "smooth",
       block: "start",
     });
-  }, [convertedResults]);
+  }, []);
 
   useEffect(() => {
     const isNewError = error !== null && previousErrorRef.current === null;
@@ -181,14 +177,14 @@ export default function FileConverter({
       )}
 
       {convertedResults && (
-        <div ref={convertedResultRef}>
-          <DownloadSection
-            convertedResults={convertedResults}
-            onDownload={handleDownloadBlob}
-            isPreparingArchive={isPreparingArchive}
-            onDownloadAll={downloadAllConvertedFiles}
-          />
-        </div>
+        <DownloadSection
+          convertedResults={convertedResults}
+          onDownload={handleDownloadBlob}
+          isPreparingArchive={isPreparingArchive}
+          onDownloadAll={downloadAllConvertedFiles}
+          previewRef={convertedPreviewRef}
+          onPreviewReady={scrollToConvertedPreview}
+        />
       )}
     </div>
   );

@@ -50,8 +50,18 @@ const readXml = (archive: Uint8Array, filePath: string) => {
 };
 
 describe("applyXlsxPageSetup", () => {
-  it("applies page settings to every worksheet", () => {
-    const prepared = applyXlsxPageSetup(createWorkbookArchive(), "Overview", {
+  it("selects sheet names containing XML entities and preserves worksheet element order", async () => {
+    const files = unzipSync(createWorkbookArchive());
+    files["xl/workbook.xml"] = strToU8(strFromU8(files["xl/workbook.xml"]).replace('name="Overview"', "name='Sales &amp; Costs'"));
+    files["xl/worksheets/sheet2.xml"] = strToU8('<worksheet><sheetData/><drawing r:id="rId2" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"/></worksheet>');
+    const prepared = await applyXlsxPageSetup(zipSync(files), "Sales & Costs", { pageSize: "A4", pageOrientation: "portrait" });
+    expect(readXml(prepared, "xl/workbook.xml")).toContain('name="Sales &amp; Costs"');
+    expect(readXml(prepared, "xl/workbook.xml")).not.toContain('name="Details"');
+    const worksheet = readXml(prepared, "xl/worksheets/sheet2.xml");
+    expect(worksheet.indexOf("<pageSetup")).toBeLessThan(worksheet.indexOf("<drawing"));
+  });
+  it("applies page settings to every worksheet", async () => {
+    const prepared = await applyXlsxPageSetup(createWorkbookArchive(), "Overview", {
       pageSize: "A3",
       pageOrientation: "landscape",
     });
@@ -63,18 +73,18 @@ describe("applyXlsxPageSetup", () => {
     expect(overview).toContain('orientation="landscape"');
     expect(overview).toContain('fitToWidth="1"');
     expect(overview).toContain('fitToHeight="1"');
-    expect(overview).toContain('<pageSetUpPr fitToPage="1" />');
+    expect(overview).toContain('<pageSetUpPr fitToPage="1"/>');
 
     expect(details).toContain("<pageSetup");
     expect(details).toContain('paperSize="8"');
     expect(details).toContain('orientation="landscape"');
     expect(details).toContain('fitToWidth="1"');
     expect(details).toContain('fitToHeight="1"');
-    expect(details).toContain('<pageSetUpPr fitToPage="1" />');
+    expect(details).toContain('<pageSetUpPr fitToPage="1"/>');
   });
 
-  it("adds page settings when the selected sheet has none", () => {
-    const prepared = applyXlsxPageSetup(createWorkbookArchive(), "Details", {
+  it("adds page settings when the selected sheet has none", async () => {
+    const prepared = await applyXlsxPageSetup(createWorkbookArchive(), "Details", {
       pageSize: "A4",
       pageOrientation: "portrait",
     });
@@ -90,8 +100,8 @@ describe("applyXlsxPageSetup", () => {
     expect(details).toContain('orientation="portrait"');
   });
 
-  it("preserves chart files while preparing the workbook", () => {
-    const prepared = applyXlsxPageSetup(createWorkbookArchive(), "Overview", {
+  it("preserves chart files while preparing the workbook", async () => {
+    const prepared = await applyXlsxPageSetup(createWorkbookArchive(), "Overview", {
       pageSize: "A3",
       pageOrientation: "landscape",
     });
@@ -101,16 +111,16 @@ describe("applyXlsxPageSetup", () => {
     );
   });
 
-  it("rejects a sheet name that does not exist", () => {
-    expect(() =>
+  it("rejects a sheet name that does not exist", async () => {
+    await expect(
       applyXlsxPageSetup(createWorkbookArchive(), "Missing sheet", {
         pageSize: "A4",
         pageOrientation: "portrait",
       }),
-    ).toThrow("Sheet not found: Missing sheet");
+    ).rejects.toThrow("Sheet not found: Missing sheet");
   });
 
-  it("handles namespaced workbook XML and absolute worksheet targets", () => {
+  it("handles namespaced workbook XML and absolute worksheet targets", async () => {
     const namespacedArchive = zipSync({
       "xl/workbook.xml": strToU8(`
       <x:workbook xmlns:x="http://schemas.openxmlformats.org/spreadsheetml/2006/main">
@@ -132,7 +142,7 @@ describe("applyXlsxPageSetup", () => {
     `),
     });
 
-    const prepared = applyXlsxPageSetup(namespacedArchive, "Kategorie", {
+    const prepared = await applyXlsxPageSetup(namespacedArchive, "Kategorie", {
       pageSize: "A3",
       pageOrientation: "landscape",
     });
@@ -144,10 +154,10 @@ describe("applyXlsxPageSetup", () => {
     expect(worksheet).toContain('orientation="landscape"');
     expect(worksheet).toContain('fitToWidth="1"');
     expect(worksheet).toContain('fitToHeight="1"');
-    expect(worksheet).toContain('<x:pageSetUpPr fitToPage="1" />');
+    expect(worksheet).toContain('<x:pageSetUpPr fitToPage="1"/>');
   });
 
-  it("keeps only the selected sheet in the workbook for PDF export", () => {
+  it("keeps only the selected sheet in the workbook for PDF export", async () => {
     const archive = unzipSync(createWorkbookArchive());
 
     const workbookXml = strFromU8(archive["xl/workbook.xml"]).replace(
@@ -157,7 +167,7 @@ describe("applyXlsxPageSetup", () => {
 
     archive["xl/workbook.xml"] = strToU8(workbookXml);
 
-    const prepared = applyXlsxPageSetup(zipSync(archive), "Details", {
+    const prepared = await applyXlsxPageSetup(zipSync(archive), "Details", {
       pageSize: "A4",
       pageOrientation: "portrait",
     });
@@ -176,8 +186,8 @@ describe("applyXlsxPageSetup", () => {
     expect(preparedWorkbookXml).toContain('name="Details"');
   });
 
-  it("keeps every sheet when no sheet is selected", () => {
-    const prepared = applyXlsxPageSetup(createWorkbookArchive(), undefined, {
+  it("keeps every sheet when no sheet is selected", async () => {
+    const prepared = await applyXlsxPageSetup(createWorkbookArchive(), undefined, {
       pageSize: "A3",
       pageOrientation: "landscape",
     });

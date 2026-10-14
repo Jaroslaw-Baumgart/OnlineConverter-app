@@ -40,6 +40,8 @@ describe("sendResponse", () => {
     [400, "No file uploaded", "conversion-failed"],
     [500, "Conversion failed", "conversion-failed"],
     [500, "Required tool is unavailable", "tool-unavailable"],
+    [400, "Choose A3 landscape", "invalid-settings"],
+    [429, "Service is busy", "service-busy"],
   ] as const)(
     "sends status %i with error: %s and code: %s",
     (status, error, code) => {

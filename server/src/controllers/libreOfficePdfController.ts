@@ -32,7 +32,12 @@ export function createLibreOfficePdfController(
     const outputPath = path.join(OUTPUT_DIR, outputName);
 
     try {
-      await convertLibreOfficeToPdf(file.path, outputPath);
+      const signal = res.locals?.conversionAbortSignal as AbortSignal | undefined;
+      if (signal) {
+        await convertLibreOfficeToPdf(file.path, outputPath, signal);
+      } else {
+        await convertLibreOfficeToPdf(file.path, outputPath);
+      }
 
       return sendSuccessResponse(res, [createOutputFileItem(outputName)]);
     } catch (err: unknown) {

@@ -1,22 +1,11 @@
-interface FileItem {
-  url: string;
-  name: string;
-}
+import type {
+  BackendConversionErrorCode,
+  ConversionErrorResponse,
+  ConversionSuccessResponse,
+  FileItem,
+} from "../../../shared/conversionContract";
 
-type ConversionSuccessResponse = {
-  success: true;
-  files: [FileItem, ...FileItem[]];
-};
-
-export type BackendConversionErrorCode =
-  | "conversion-failed"
-  | "tool-unavailable";
-
-type ConversionErrorResponse = {
-  success: false;
-  error: string;
-  code: BackendConversionErrorCode;
-};
+export type { BackendConversionErrorCode } from "../../../shared/conversionContract";
 
 type SendResponseOptions =
   | {
@@ -24,7 +13,7 @@ type SendResponseOptions =
       body: ConversionSuccessResponse;
     }
   | {
-      status: 400 | 500;
+      status: 400 | 403 | 429 | 500;
       body: ConversionErrorResponse;
     };
 
@@ -52,7 +41,7 @@ export const sendSuccessResponse = (
 
 export const sendErrorResponse = (
   res: ResponseWriter,
-  status: 400 | 500,
+  status: 400 | 403 | 429 | 500,
   error: string,
   code: BackendConversionErrorCode = "conversion-failed",
 ) => {

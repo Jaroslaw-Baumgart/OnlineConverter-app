@@ -18,16 +18,22 @@ export default function PreviewLightbox({
   const openButtonRef = useRef<HTMLButtonElement>(null);
   const closeButtonRef = useRef<HTMLButtonElement>(null);
   const panelRef = useRef<HTMLElement>(null);
+  const wasOpenRef = useRef(false);
 
   const closeLightbox = () => {
     setIsOpen(false);
-    openButtonRef.current?.focus();
   };
 
   useEffect(() => {
     if (!isOpen) {
+      if (wasOpenRef.current) {
+        openButtonRef.current?.focus();
+      }
+      wasOpenRef.current = false;
       return;
     }
+
+    wasOpenRef.current = true;
 
     const handleKeyDown = (event: KeyboardEvent) => {
       if (event.key === "Escape") {

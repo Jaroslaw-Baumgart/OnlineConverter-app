@@ -5,10 +5,14 @@ const sharpMocks = vi.hoisted(() => {
   const toFile = vi.fn().mockResolvedValue(undefined);
   const jpeg = vi.fn(() => ({ toFile }));
   const flatten = vi.fn(() => ({ jpeg }));
-  const sharp = vi.fn(() => ({ flatten }));
+  const png = vi.fn(() => ({ toFile }));
+  const metadata = vi.fn().mockResolvedValue({ width: 100, height: 100 });
+  const sharp = vi.fn(() => ({ flatten, png, metadata }));
 
   return {
     sharp,
+    png,
+    metadata,
     flatten,
     jpeg,
     toFile,
@@ -70,7 +74,8 @@ vi.mock("fs", () => ({
   },
 }));
 
-import { jpgToPdf, pngToJpg } from "./imageController";
+import { jpgToPdf, jpgToPng, pngToJpg } from "./imageController";
+import { MAX_IMAGE_PIXELS } from "../utils/constants";
 
 const createRequest = (body: unknown): Request =>
   ({
@@ -95,6 +100,27 @@ const createResponse = () => {
   };
 };
 
+describe("image pixel budget", () => {
+  beforeEach(() => { vi.clearAllMocks(); });
+
+  it.each([jpgToPng, pngToJpg, jpgToPdf])("rejects oversized dimensions before conversion", async (convert) => {
+    sharpMocks.metadata.mockResolvedValueOnce({ width: 10_000, height: 10_000 });
+    const { response, status } = createResponse();
+    await convert(createRequest({}), response);
+    expect(status).toHaveBeenCalledWith(400);
+    expect(sharpMocks.toFile).not.toHaveBeenCalled();
+    expect(pdfMocks.PDFDocument).not.toHaveBeenCalled();
+  });
+
+  it("allows an image exactly at the pixel limit", async () => {
+    sharpMocks.metadata.mockResolvedValueOnce({ width: 8_000, height: 5_000 });
+    const { response, status } = createResponse();
+    await jpgToPng(createRequest({}), response);
+    expect(status).toHaveBeenCalledWith(200);
+    expect(sharpMocks.sharp).toHaveBeenCalledWith("uploads/image.png", { limitInputPixels: MAX_IMAGE_PIXELS });
+  });
+});
+
 describe("pngToJpg", () => {
   beforeEach(() => {
     vi.clearAllMocks();
@@ -109,7 +135,7 @@ describe("pngToJpg", () => {
 
     await pngToJpg(request, response);
 
-    expect(sharpMocks.sharp).toHaveBeenCalledWith("uploads/image.png");
+    expect(sharpMocks.sharp).toHaveBeenCalledWith("uploads/image.png", { limitInputPixels: MAX_IMAGE_PIXELS });
     expect(sharpMocks.flatten).toHaveBeenCalledWith({
       background: "#000000",
     });

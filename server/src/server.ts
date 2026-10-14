@@ -11,15 +11,14 @@ app.get("/", (_req, res) => {
 async function startServer() {
   await clearAllTemp();
 
-  const server = app.listen(PORT, () => {
+  const server = app.listen(Number(PORT), "127.0.0.1", () => {
     console.log(`Server is running on http://localhost:${PORT}`);
   });
 
 
   const shutdown = async () => {
     console.log("Stopping server, start cleaning");
-    await clearAllTemp();
-    server.close(() => process.exit(0));
+    server.close(() => { void clearAllTemp().then(() => process.exit(0)); });
   };
 
   

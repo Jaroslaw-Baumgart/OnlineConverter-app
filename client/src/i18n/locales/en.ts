@@ -25,6 +25,8 @@ export const en = {
     "invalid-response": "The server returned an unexpected response. Please try again.",
     "download-failed": "The converted file could not be downloaded. Please try again.",
     "tool-unavailable": "This conversion is currently unavailable. Please try again later.",
+    "invalid-settings": "These settings cannot fit the file on the selected page. Try A3 landscape.",
+    "service-busy": "The conversion service is busy. Please try again shortly.",
     unexpected: "Something went wrong. Use the navigation to open another page, or reload this page to try again.",
   },
   upload: {
@@ -90,7 +92,7 @@ export const en = {
     sheetEmpty: "This sheet is empty.",
     showingRows: "Showing first {{shown}} of {{total}} rows.",
     dependency: "If this sheet depends on formulas or charts from other sheets, choose All sheets.",
-    charts: "Charts are not shown in this preview. To view them, convert the file to PDF using the charts option.",
+    charts: "Charts are not shown in this preview. To view them, convert the file to PDF.",
     pptxLoading: "Loading PPTX content...",
     pptxError: "Failed to render PowerPoint presentation.",
     slideAlt: "PowerPoint slide {{index}}",

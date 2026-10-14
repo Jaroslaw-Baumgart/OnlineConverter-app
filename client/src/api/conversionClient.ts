@@ -6,24 +6,64 @@ import type {
   ConvertedResults,
 } from "../types/conversionResult";
 
-const requestConversion = (formData: FormData): Promise<Response> => {
+const requestConversion = (
+  formData: FormData,
+  signal?: AbortSignal,
+): Promise<Response> => {
   return fetch(buildApiUrl("/convert"), {
     method: "POST",
     body: formData,
+    signal,
   });
 };
 
-const fetchConvertedFile = (maybeRelativeUrl: string): Promise<Response> => {
-  return fetch(buildApiUrl(maybeRelativeUrl));
+const fetchConvertedFile = (
+  maybeRelativeUrl: string,
+  signal?: AbortSignal,
+): Promise<Response> => {
+  return fetch(buildApiUrl(maybeRelativeUrl), { signal });
 };
+
+async function readConvertedBlob(
+  response: Response,
+  maxBytes: number,
+): Promise<Blob> {
+  const declaredSize = Number(response.headers.get("Content-Length"));
+  if (declaredSize > maxBytes) {
+    void response.body?.cancel().catch(() => {});
+    throw new Error("Converted results exceed the download limit.");
+  }
+  const reader = response.body?.getReader();
+  if (!reader) {
+    return response.blob();
+  }
+  const chunks: BlobPart[] = [];
+  let size = 0;
+  try {
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      size += value.byteLength;
+      if (size > maxBytes) {
+        void reader.cancel().catch(() => {});
+        throw new Error("Converted results exceed the download limit.");
+      }
+      chunks.push(Uint8Array.from(value));
+    }
+  } finally {
+    reader.releaseLock();
+  }
+  return new Blob(chunks, { type: response.headers.get("Content-Type") ?? "" });
+}
 
 export async function convertFile(
   formData: FormData,
+  signal?: AbortSignal,
 ): Promise<ConvertedResults> {
   let res: Response;
 
   try {
-    res = await requestConversion(formData);
+    res = await requestConversion(formData, signal);
   } catch (cause: unknown) {
     throw new ConversionError("network", cause);
   }
@@ -59,27 +99,35 @@ export async function convertFile(
   let downloadedResults: ConvertedResult[];
 
   try {
-    downloadedResults = await Promise.all(
-      conversionResponse.files.map(async (convertedFileInfo) => {
-        const convertedFileUrl = buildApiUrl(convertedFileInfo.url);
+    downloadedResults = [];
+    let totalBytes = 0;
+    for (const convertedFileInfo of conversionResponse.files) {
+      const convertedFileUrl = buildApiUrl(convertedFileInfo.url);
 
-        const fileRes = await fetchConvertedFile(convertedFileInfo.url);
+      signal?.throwIfAborted();
+      const fileRes = await fetchConvertedFile(convertedFileInfo.url, signal);
 
-        if (!fileRes.ok) {
-          throw new Error(`Download failed with status ${fileRes.status}`);
-        }
+      if (!fileRes.ok) {
+        throw new Error(`Download failed with status ${fileRes.status}`);
+      }
 
-        const blob = await fileRes.blob();
+      const blob = await readConvertedBlob(
+        fileRes,
+        100 * 1024 * 1024 - totalBytes,
+      );
+      totalBytes += blob.size;
+      if (totalBytes > 100 * 1024 * 1024) {
+        throw new Error("Converted results exceed the download limit.");
+      }
 
-        const downloadedFile = new File([blob], convertedFileInfo.name, {
-          type: blob.type,
-        });
-        return {
-          url: convertedFileUrl,
-          file: downloadedFile,
-        };
-      }),
-    );
+      const downloadedFile = new File([blob], convertedFileInfo.name, {
+        type: blob.type,
+      });
+      downloadedResults.push({
+        url: convertedFileUrl,
+        file: downloadedFile,
+      });
+    }
   } catch (cause: unknown) {
     throw new ConversionError("download-failed", cause);
   }

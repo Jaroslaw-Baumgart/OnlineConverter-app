@@ -1,4 +1,4 @@
-import { fireEvent, render, screen } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 
 import DownloadSection from "./DownloadSection";
@@ -40,6 +40,43 @@ const renderDownloadSection = (file: File, url: string) => {
 };
 
 describe("DownloadSection", () => {
+  it("requests scrolling only when the preview URL changes", async () => {
+    const onPreviewReady = vi.fn();
+    const result: ConvertedResults = [
+      {
+        url: "https://example.com/converted.png",
+        file: new File(["image content"], "converted.png", {
+          type: "image/png",
+        }),
+      },
+    ];
+    const { rerender } = render(
+      <DownloadSection
+        convertedResults={result}
+        onDownload={vi.fn()}
+        onDownloadAll={vi.fn()}
+        isPreparingArchive={false}
+        onPreviewReady={onPreviewReady}
+      />,
+    );
+
+    await waitFor(() => {
+      expect(onPreviewReady).toHaveBeenCalledTimes(1);
+    });
+
+    rerender(
+      <DownloadSection
+        convertedResults={result}
+        onDownload={vi.fn()}
+        onDownloadAll={vi.fn()}
+        isPreparingArchive
+        onPreviewReady={onPreviewReady}
+      />,
+    );
+
+    expect(onPreviewReady).toHaveBeenCalledTimes(1);
+  });
+
   it.each([
     ["converted.png", "image/png", "https://example.com/converted.png"],
     ["converted.jpg", "image/jpeg", "https://example.com/converted.jpg"],
@@ -51,8 +88,7 @@ describe("DownloadSection", () => {
     renderDownloadSection(file, url);
 
     expect(screen.getByRole("img", { name: "Preview" })).toHaveAttribute(
-      "src",
-      url,
+      "src", expect.stringMatching(/^blob:/),
     );
   });
 
@@ -64,8 +100,7 @@ describe("DownloadSection", () => {
     renderDownloadSection(file, "https://example.com/converted.pdf");
 
     expect(screen.getByTitle("PDF Preview")).toHaveAttribute(
-      "src",
-      "https://example.com/converted.pdf",
+      "src", expect.stringMatching(/^blob:/),
     );
   });
 
@@ -81,14 +116,14 @@ describe("DownloadSection", () => {
     ).toBeInTheDocument();
   });
 
-  it("renders guidance for a DOCX result", () => {
+  it("renders guidance for a DOCX result", async () => {
     const file = new File(["docx content"], "converted.docx", {
       type: "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
     });
 
     renderDownloadSection(file, "https://example.com/converted.docx");
 
-    expect(screen.getByTestId("docx-preview")).toBeInTheDocument();
+    expect(await screen.findByTestId("docx-preview")).toBeInTheDocument();
   });
 
   it("renders an unsupported preview with the MIME type", () => {
@@ -167,8 +202,7 @@ describe("DownloadSection", () => {
     expect(firstPageButton).toHaveAttribute("aria-pressed", "true");
     expect(secondPageButton).toHaveAttribute("aria-pressed", "false");
     expect(screen.getByRole("img", { name: "Preview" })).toHaveAttribute(
-      "src",
-      firstResult.url,
+      "src", expect.stringMatching(/^blob:/),
     );
 
     fireEvent.click(secondPageButton);
@@ -176,8 +210,7 @@ describe("DownloadSection", () => {
     expect(firstPageButton).toHaveAttribute("aria-pressed", "false");
     expect(secondPageButton).toHaveAttribute("aria-pressed", "true");
     expect(screen.getByRole("img", { name: "Preview" })).toHaveAttribute(
-      "src",
-      secondResult.url,
+      "src", expect.stringMatching(/^blob:/),
     );
 
     fireEvent.click(

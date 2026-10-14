@@ -17,6 +17,7 @@ const mocks = vi.hoisted(() => {
   const createWriteStream = vi.fn(() => stream);
   const text = vi.fn();
   const fontSize = vi.fn(() => ({ text }));
+  const font = vi.fn();
   const pipe = vi.fn(() => stream);
   const end = vi.fn();
 
@@ -24,6 +25,7 @@ const mocks = vi.hoisted(() => {
     return {
       pipe,
       fontSize,
+      font,
       end,
     };
   });
@@ -33,6 +35,7 @@ const mocks = vi.hoisted(() => {
     createWriteStream,
     text,
     fontSize,
+    font,
     pipe,
     end,
     PDFDocument,
@@ -53,10 +56,6 @@ vi.mock("fs", () => ({
 
 vi.mock("pdfkit", () => ({
   default: mocks.PDFDocument,
-}));
-
-vi.mock("pdf-parse", () => ({
-  default: vi.fn(),
 }));
 
 import { txtToPdf } from "./pdfController";

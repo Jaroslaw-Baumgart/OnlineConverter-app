@@ -1,9 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
 
-vi.mock("pdf-parse", () => ({
-  default: vi.fn(),
-}));
-
 import {
   allowedExtensions,
   allowedMimeTypes,

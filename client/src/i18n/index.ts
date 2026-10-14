@@ -23,11 +23,19 @@ function getStoredLanguage() {
   }
 }
 
+function updateDocumentLanguage(language: string) {
+  if (typeof document !== "undefined" && isSupportedLanguage(language)) {
+    document.documentElement.lang = language;
+  }
+}
+
 void i18n.use(initReactI18next).init({
   resources: { en: { translation: en }, pl: { translation: pl } },
   lng: getStoredLanguage(),
   fallbackLng: "en",
   interpolation: { escapeValue: false },
-});
+}).then(() => updateDocumentLanguage(i18n.resolvedLanguage ?? "en"));
+
+i18n.on("languageChanged", updateDocumentLanguage);
 
 export default i18n;

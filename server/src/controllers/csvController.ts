@@ -10,8 +10,10 @@ import {
   sendErrorResponse,
   sendSuccessResponse,
 } from "../utils/response";
-import { parseCsv } from "../utils/csv";
+import { CsvLimitError, parseCsv, type CsvRow } from "../utils/csv";
 import { pdfPageSettingsSchema } from "../schemas/conversionSettings";
+import { limitPdfPages } from "../utils/pdfLimits";
+import { CsvPdfTableError, renderCsvTable } from "../utils/csvPdfTable";
 
 const getBaseFileName = (file: Express.Multer.File) => {
   return path.parse(file.filename).name;
@@ -26,6 +28,9 @@ export const csvToPdf = async (req: Request, res: Response) => {
   const baseName = getBaseFileName(file);
   const outputName = `${baseName}.pdf`;
   const outputPath = path.join(OUTPUT_DIR, outputName);
+  let outputStream: fsSync.WriteStream | undefined;
+  let document: PDFKit.PDFDocument | undefined;
+  let documentEnded = false;
 
   try {
     const settingsResult = pdfPageSettingsSchema.safeParse(req.body);
@@ -38,25 +43,38 @@ export const csvToPdf = async (req: Request, res: Response) => {
     await fs.mkdir(OUTPUT_DIR, { recursive: true });
 
     const csvText = await fs.readFile(file.path, "utf-8");
-    const rows = parseCsv(csvText);
+    let rows: CsvRow[];
+    try {
+      rows = parseCsv(csvText);
+    } catch (error) {
+      return sendErrorResponse(
+        res,
+        400,
+        error instanceof CsvLimitError ? error.message : "Invalid CSV data.",
+      );
+    }
 
     if (rows.length === 0) {
       return sendErrorResponse(res, 400, "CSV file is empty.");
     }
 
     const headers = Object.keys(rows[0] ?? {});
-
     const doc = new PDFDocument({
       size: settings.pageSize,
       layout: settings.pageOrientation,
     });
+    document = doc;
+    limitPdfPages(doc);
 
     const stream = doc.pipe(fsSync.createWriteStream(outputPath));
+    outputStream = stream;
 
     const streamFinished = new Promise<void>((resolve, reject) => {
       stream.on("finish", resolve);
       stream.on("error", reject);
     });
+    // Keep early write failures handled while the table is being rendered.
+    void streamFinished.catch(() => {});
 
     const regularFontPath = path.join(
       __dirname,
@@ -68,120 +86,37 @@ export const csvToPdf = async (req: Request, res: Response) => {
       "../assets/fonts/NotoSans-Bold.ttf",
     );
 
-    const margin = 36;
-    const cellPadding = 6;
-    const rowHeight = 24;
-    const tableWidth = doc.page.width - margin * 2;
-    const minFontSize = 5;
-    const maxFontSize = 10;
-
-    let fontSize = minFontSize;
-
-    for (
-      let candidateSize = maxFontSize;
-      candidateSize >= minFontSize;
-      candidateSize -= 1
-    ) {
-      doc.font(regularFontPath).fontSize(candidateSize);
-
-      const requiredTableWidth = headers.reduce((totalWidth, header) => {
-        const widestValue = Math.max(
-          doc.widthOfString(header),
-          ...rows.map((row) => doc.widthOfString(row[header] ?? "")),
-        );
-
-        return totalWidth + widestValue + cellPadding * 2;
-      }, 0);
-
-      if (requiredTableWidth <= tableWidth) {
-        fontSize = candidateSize;
-        break;
-      }
-    }
-
-    const columnWidth = tableWidth / headers.length;
-
-    const getRowHeight = (values: string[]) => {
-      const contentWidth = columnWidth - cellPadding * 2;
-
-      const tallestContent = Math.max(
-        ...values.map((value) =>
-          doc.heightOfString(value, { width: contentWidth }),
-        ),
-      );
-
-      return Math.max(rowHeight, tallestContent + cellPadding * 2);
-    };
-
-    const drawCell = (
-      value: string,
-      x: number,
-      y: number,
-      height: number,
-      isHeader = false,
-    ) => {
-      if (isHeader) {
-        doc.rect(x, y, columnWidth, height).fill("#e8eef7");
-      }
-
-      doc
-        .rect(x, y, columnWidth, height)
-        .lineWidth(0.5)
-        .strokeColor("#94a3b8")
-        .stroke();
-
-      doc.fillColor("#111827").text(value, x + cellPadding, y + cellPadding, {
-        width: columnWidth - cellPadding * 2,
-        height: height - cellPadding * 2,
-      });
-    };
-
-    let y = margin;
-
-    const drawHeaders = () => {
-      doc.font(boldFontPath).fontSize(fontSize);
-
-      const headerHeight = getRowHeight(headers);
-
-      headers.forEach((header, columnIndex) => {
-        const x = margin + columnIndex * columnWidth;
-
-        drawCell(header, x, y, headerHeight, true);
-      });
-
-      y += headerHeight;
-      doc.font(regularFontPath).fontSize(fontSize).fillColor("#111827");
-    };
-
-    drawHeaders();
-
-    for (const row of rows) {
-      const values = headers.map((header) => row[header] ?? "");
-      const currentRowHeight = getRowHeight(values);
-
-      if (y + currentRowHeight > doc.page.height - margin) {
-        doc.addPage();
-        y = margin;
-        drawHeaders();
-      }
-
-      values.forEach((value, columnIndex) => {
-        const x = margin + columnIndex * columnWidth;
-
-        drawCell(value, x, y, currentRowHeight);
-      });
-
-      y += currentRowHeight;
-    }
+    await renderCsvTable({
+      doc,
+      headers,
+      rows,
+      regularFontPath,
+      boldFontPath,
+    });
 
     doc.end();
+    documentEnded = true;
 
     await streamFinished;
     return sendSuccessResponse(res, [createOutputFileItem(outputName)]);
   } catch (err: unknown) {
+    document?.unpipe?.(outputStream);
+    if (!documentEnded) document?.end();
+    if (outputStream && !outputStream.closed) {
+      const closed = new Promise<void>((resolve) =>
+        outputStream!.once("close", resolve),
+      );
+      outputStream.destroy();
+      await closed;
+    }
     const errorMessage =
       err instanceof Error ? err.message : "Failed to convert CSV to PDF.";
 
-    return sendErrorResponse(res, 500, errorMessage);
+    return sendErrorResponse(
+      res,
+      err instanceof CsvPdfTableError ? 400 : 500,
+      errorMessage,
+      err instanceof CsvPdfTableError ? "invalid-settings" : "conversion-failed",
+    );
   }
 };

@@ -1,4 +1,4 @@
-import type { BackendConversionErrorCode } from "./response";
+import type { BackendConversionErrorCode } from "../../../shared/conversionContract";
 
 export function getConversionFailureCode(
   error: unknown,

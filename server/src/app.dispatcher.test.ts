@@ -113,6 +113,23 @@ afterEach(async () => {
 });
 
 describe("POST /convert with the real dispatcher", () => {
+  it("rejects repeated conversionType fields without an unhandled exception", async () => {
+    const response = await request(app).post("/convert")
+      .field("conversionType", "txt-to-pdf").field("conversionType", "jpg-to-pdf")
+      .attach("file", Buffer.from("Example text"), { filename: "document.txt", contentType: "text/plain" });
+    expect(response.status).toBe(400);
+    expect(response.body.error).toBe("Invalid conversion type.");
+    expect(await readdir(uploadDirectory)).toEqual([]);
+  });
+
+  it("accepts valid text sent with a generic multipart MIME", async () => {
+    vi.mocked(txtToPdf).mockImplementationOnce(async (_req, res) => { res.status(200).json({ success: true }); });
+    await request(app).post("/convert").field("conversionType", "txt-to-pdf")
+      .attach("file", Buffer.from("Example text"), { filename: "report.txt", contentType: "application/octet-stream" })
+      .expect(200);
+    expect(txtToPdf).toHaveBeenCalledOnce();
+    expect(await readdir(uploadDirectory)).toEqual([]);
+  });
   it("dispatches a TXT upload to the TXT-to-PDF controller", async () => {
     vi.mocked(txtToPdf).mockImplementationOnce(async (_req, res) => {
       res.status(200).json({

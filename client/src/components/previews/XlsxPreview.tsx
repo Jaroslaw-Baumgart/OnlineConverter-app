@@ -13,8 +13,9 @@ function XlsxSheetPreview({
   showName: boolean;
 }) {
   const { t } = useTranslation();
-  const previewRows = sheet.rows.slice(0, 100);
+  const previewRows = sheet.rows;
   const columnCount = sheet.rows[0]?.length ?? 0;
+  const totalRows = sheet.totalRows ?? sheet.rows.length;
 
   return (
     <section className={styles["xlsx-sheet-preview"]}>
@@ -50,9 +51,9 @@ function XlsxSheetPreview({
         )}
       </div>
 
-      {sheet.rows.length > previewRows.length && (
+      {totalRows > previewRows.length && (
         <p>
-          {t("preview.showingRows", { shown: previewRows.length, total: sheet.rows.length })}
+          {t("preview.showingRows", { shown: previewRows.length, total: totalRows })}
         </p>
       )}
     </section>
@@ -75,11 +76,12 @@ export function XlsxPreview({
 
   useEffect(() => {
     let active = true;
+    const controller = new AbortController();
 
     setIsParsing(true);
     setHasError(false);
 
-    parseXlsxFile(file)
+    parseXlsxFile(file, controller.signal)
       .then((parsedSheets) => {
         if (!active) return;
         const initialSheetName = parsedSheets[0]?.name ?? "";
@@ -100,6 +102,7 @@ export function XlsxPreview({
 
     return () => {
       active = false;
+      controller.abort();
     };
   }, [file, onXlsxSheetChange]);
 

@@ -23,6 +23,14 @@ afterEach(async () => {
 });
 
 describe("cleanupExpiredOutputs", () => {
+  it("allows overlapping cleanup runs to remove the same expired files", async () => {
+    outputDirectory = await mkdtemp(path.join(tmpdir(), "converter-retention-race-"));
+    const file = path.join(outputDirectory, "expired.pdf");
+    await writeFile(file, "old result");
+    await utimes(file, new Date(0), new Date(0));
+    await Promise.all([cleanupExpiredOutputs(outputDirectory), cleanupExpiredOutputs(outputDirectory)]);
+    expect(await readdir(outputDirectory)).toEqual([]);
+  });
   it("does nothing when the output directory does not exist", async () => {
     const missingDirectory = path.join(
       tmpdir(),
