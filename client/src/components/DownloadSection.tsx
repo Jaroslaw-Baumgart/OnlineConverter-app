@@ -19,6 +19,7 @@ interface DownloadSectionProps {
   isPreparingArchive: boolean;
   previewRef?: Ref<HTMLDivElement>;
   onPreviewReady?: () => void;
+  embedded?: boolean;
 }
 
 export default function DownloadSection({
@@ -28,6 +29,7 @@ export default function DownloadSection({
   isPreparingArchive,
   previewRef,
   onPreviewReady,
+  embedded = false,
 }: DownloadSectionProps) {
   const { t } = useTranslation();
   const downloadButtonRef = useRef<HTMLButtonElement>(null);
@@ -56,7 +58,7 @@ export default function DownloadSection({
   }, [onPreviewReady, previewUrl]);
 
   return (
-    <div className={`${panelStyles.panel} ${styles["download-section"]}`}>
+    <div className={`${panelStyles.panel} ${styles["download-section"]} ${embedded ? styles.embedded : ""}`}>
       <div className={styles["download-header"]}>
         <div className={styles["download-title"]}>
           <span className={styles["success-icon"]}>
@@ -90,11 +92,11 @@ export default function DownloadSection({
           )}
         </div>
       </div>
-      <div className={styles["result-details"]}>
+      {!embedded && <div className={styles["result-details"]}>
         <FileIcon className={styles["result-file-icon"]} />
         <span className={styles["result-file-name"]}>{activeResult.file.name}</span>
         {targetFormat ? <span className={styles["format-badge"]}>{targetFormat}</span> : null}
-      </div>
+      </div>}
       {convertedResults.length > 1 && (
         <div
           className={styles["result-picker"]}

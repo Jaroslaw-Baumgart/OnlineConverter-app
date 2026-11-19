@@ -1,6 +1,7 @@
 import { parseXlsxFile, type XlsxSheet } from "../../utils/xlsx";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useContext } from "react";
 import styles from "./XlsxPreview.module.css";
+import { PreviewExpandContext } from "../PreviewExpandContext";
 import tableStyles from "./DataTable.module.css";
 import stateStyles from "../PreviewState.module.css";
 import { useTranslation } from "react-i18next";
@@ -68,6 +69,7 @@ export function XlsxPreview({
   onXlsxSheetChange?: (sheetName: string | undefined) => void;
 }) {
   const { t } = useTranslation();
+  const setExpandTarget = useContext(PreviewExpandContext);
   const [sheets, setSheets] = useState<XlsxSheet[]>([]);
   const [hasError, setHasError] = useState(false);
   const [isParsing, setIsParsing] = useState(true);
@@ -163,12 +165,14 @@ export function XlsxPreview({
             {t("preview.allSheets")}
           </button>
         </div>
-      </div>
       {!isAllSheetsSelected && (
         <p className={styles["xlsx-dependency-notice"]} role="note">
           {t("preview.dependency")}
         </p>
       )}
+      </div>
+      <div className={styles["xlsx-table-row"]}>
+      <div className={styles["xlsx-tables"]}>
       {previewSheets.map((sheet) => (
         <XlsxSheetPreview
           key={sheet.name}
@@ -176,6 +180,9 @@ export function XlsxPreview({
           showName={isAllSheetsSelected}
         />
       ))}
+      </div>
+      <div className={styles["xlsx-expand-slot"]} ref={setExpandTarget} />
+      </div>
       <p className={styles["xlsx-chart-notice"]} role="note">
         {t("preview.charts")}
       </p>

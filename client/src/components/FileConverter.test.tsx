@@ -196,11 +196,6 @@ describe("FileConverter", () => {
   it("clears the previous conversion result when a new file is selected", async () => {
     const initialFile = createTestFile.jpg();
     const newFile = createTestFile.pdf();
-    vi.spyOn(HTMLElement.prototype, "scrollIntoView").mockImplementation(
-      function (this: HTMLElement) {
-        this.dataset.scrolledIntoView = "true";
-      },
-    );
 
     server.use(
       http.post("http://localhost:5000/convert", () => {
@@ -239,12 +234,7 @@ describe("FileConverter", () => {
     expect(
       screen.getByRole("button", { name: "Download file" }),
     ).toHaveFocus();
-    await waitFor(() => {
-      expect(screen.getByTestId("converted-file-preview")).toHaveAttribute(
-        "data-scrolled-into-view",
-        "true",
-      );
-    });
+    expect(screen.getByRole("button", { name: "Result" })).toHaveAttribute("aria-pressed", "true");
 
     expect(screen.queryByRole("status")).not.toBeInTheDocument();
     expect(getConvertButton("JPG→PNG")).toBeEnabled();
@@ -891,6 +881,7 @@ describe("FileConverter", () => {
     expect(selectedSheetFormData.get("pageSize")).toBe("A3");
     expect(selectedSheetFormData.get("pageOrientation")).toBe("landscape");
 
+    await user.click(screen.getByRole("button", { name: "Source file" }));
     await user.click(screen.getByRole("button", { name: "All sheets" }));
 
     await user.click(

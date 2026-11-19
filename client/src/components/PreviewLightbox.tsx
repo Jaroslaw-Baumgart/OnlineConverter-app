@@ -1,6 +1,8 @@
 import { useEffect, useRef, useState } from "react";
 import type { ReactNode } from "react";
 import styles from "./PreviewLightbox.module.css";
+import { createPortal } from "react-dom";
+import { PreviewExpandContext } from "./PreviewExpandContext";
 import { useTranslation } from "react-i18next";
 
 type PreviewLightboxProps = {
@@ -15,6 +17,7 @@ export default function PreviewLightbox({
 }: PreviewLightboxProps) {
   const { t } = useTranslation();
   const [isOpen, setIsOpen] = useState(false);
+  const [expandTarget, setExpandTarget] = useState<HTMLDivElement | null>(null);
   const openButtonRef = useRef<HTMLButtonElement>(null);
   const closeButtonRef = useRef<HTMLButtonElement>(null);
   const panelRef = useRef<HTMLElement>(null);
@@ -72,18 +75,27 @@ export default function PreviewLightbox({
     };
   }, [isOpen]);
 
-  return (
-    <div className={`${styles["preview-lightbox"]} ${isOpen ? styles["is-open"] : ""}`}>
+  const expandButton = (
       <button
+        data-preview-expand
         ref={openButtonRef}
         type="button"
         className={styles["preview-expand-btn"]}
+        aria-label={t("preview.expand")}
+        title={t("preview.expand")}
         aria-haspopup="dialog"
         aria-expanded={isOpen}
         onClick={() => setIsOpen(true)}
       >
-        {t("preview.expand")}
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+          <path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7" />
+        </svg>
       </button>
+  );
+
+  return (
+    <div data-preview-lightbox data-preview-open={isOpen} className={`${styles["preview-lightbox"]} ${isOpen ? styles["is-open"] : ""}`}>
+      {expandTarget ? createPortal(expandButton, expandTarget) : expandButton}
 
       {isOpen ? (
         <div
@@ -111,7 +123,7 @@ export default function PreviewLightbox({
           </button>
         ) : null}
 
-        <div className={styles["preview-lightbox-content"]}>{children}</div>
+        <div className={styles["preview-lightbox-content"]}><PreviewExpandContext.Provider value={setExpandTarget}>{children}</PreviewExpandContext.Provider></div>
       </section>
     </div>
   );

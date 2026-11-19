@@ -1,4 +1,5 @@
 export const en = {
+  workspace: { previewLabel: "File preview", source: "Source file", result: "Result", chooseFile: "Choose a file to convert" },
   navigation: {
     converter: "Converter",
     about: "About",

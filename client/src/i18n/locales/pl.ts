@@ -1,4 +1,5 @@
 export const pl = {
+  workspace: { previewLabel: "Podgląd pliku", source: "Plik źródłowy", result: "Wynik", chooseFile: "Wybierz plik do konwersji" },
   navigation: {
     converter: "Konwerter",
     about: "O aplikacji",

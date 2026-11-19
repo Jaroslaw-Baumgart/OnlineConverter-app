@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import styles from "./FileConverter.module.css";
 import stateStyles from "./PreviewState.module.css";
 import panelStyles from "./ConverterPanel.module.css";
@@ -52,6 +52,8 @@ export default function FileConverter({
   } = useConversion();
 
   const [hasFormError, setHasFormError] = useState(false);
+  const [sourceForResults, setSourceForResults] = useState<typeof convertedResults>(null);
+  const showResults = Boolean(convertedResults && sourceForResults !== convertedResults);
   const error = conversionError ?? (hasFormError ? t("converter.uploadFirst") : null);
 
   const previewUrl = useObjectUrl(file);
@@ -63,16 +65,8 @@ export default function FileConverter({
     string | undefined | null
   >(null);
 
-  const convertedPreviewRef = useRef<HTMLDivElement>(null);
   const errorRef = useRef<HTMLDivElement>(null);
   const previousErrorRef = useRef<string | null>(null);
-
-  const scrollToConvertedPreview = useCallback(() => {
-    convertedPreviewRef.current?.scrollIntoView({
-      behavior: "smooth",
-      block: "start",
-    });
-  }, []);
 
   useEffect(() => {
     const isNewError = error !== null && previousErrorRef.current === null;
@@ -86,6 +80,7 @@ export default function FileConverter({
 
   const handleFileSelect = (selectedFile: File) => {
     setHasFormError(false);
+    setSourceForResults(null);
     selectFile(selectedFile);
     setSelectedXlsxSheetName(null);
   };
@@ -122,23 +117,18 @@ export default function FileConverter({
             className={`${panelStyles.panel} ${styles["source-preview-section"]}`}
             aria-labelledby="source-preview-heading"
           >
-            <h2
-              id="source-preview-heading"
-              className={panelStyles.heading}
-            >
-              {t("converter.preview")}
-            </h2>
-
+            <div className={styles["preview-switcher"]} role="group" aria-label={t("workspace.previewLabel")}>
+              <button type="button" aria-pressed={!showResults} onClick={() => setSourceForResults(convertedResults)}>{t("workspace.source")}</button>
+              <button type="button" aria-pressed={showResults} disabled={!convertedResults} onClick={() => setSourceForResults(null)}>{t("workspace.result")}</button>
+              <button type="button" className={styles["remove-file-btn"]} onClick={handleFileRemove}>{t("converter.remove")}</button>
+            </div>
+            <h2 id="source-preview-heading" className={styles["visually-hidden"]}>{t("workspace.previewLabel")}</h2>
+            <div className={styles["source-body"]} hidden={showResults}>
             <div className={styles["preview-file-actions"]}>
-              <span className={styles["preview-file-name"]}>{file.name}</span>
-
-              <button
-                type="button"
-                className={styles["remove-file-btn"]}
-                onClick={handleFileRemove}
-              >
-                {t("converter.remove")}
-              </button>
+              <div className={styles["file-details"]}>
+                <span className={styles["preview-file-name"]} title={file.name}>{file.name}</span>
+                <span className={styles.metadata}>{file.name.split(".").pop()?.toUpperCase()} {"\u00b7"} {new Intl.NumberFormat(undefined, { maximumFractionDigits: 2 }).format(file.size / 1_000_000)} MB</span>
+              </div>
             </div>
 
             <div className={styles["file-preview"]}>
@@ -147,6 +137,11 @@ export default function FileConverter({
                 onXlsxSheetChange={setSelectedXlsxSheetName}
               />
             </div>
+            </div>
+            {showResults && convertedResults && (
+              <DownloadSection embedded convertedResults={convertedResults} onDownload={handleDownloadBlob}
+                isPreparingArchive={isPreparingArchive} onDownloadAll={downloadAllConvertedFiles} />
+            )}
           </section>
           <aside className={styles["conversion-sidebar"]}>
             <ConversionOptions
@@ -162,7 +157,11 @@ export default function FileConverter({
           {t("converter.preparing")}
         </p>
       ) : (
-        <FileUpload onFileSelect={handleFileSelect} />
+        <div className={styles["start-screen"]}>
+          <svg className={styles["start-icon"]} width="38" height="38" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6M12 18v-7m-3 3 3-3 3 3"/></svg>
+          <h1>{t("workspace.chooseFile")}</h1>
+          <FileUpload onFileSelect={handleFileSelect} />
+        </div>
       )}
 
       {error && (
@@ -176,16 +175,6 @@ export default function FileConverter({
         </div>
       )}
 
-      {convertedResults && (
-        <DownloadSection
-          convertedResults={convertedResults}
-          onDownload={handleDownloadBlob}
-          isPreparingArchive={isPreparingArchive}
-          onDownloadAll={downloadAllConvertedFiles}
-          previewRef={convertedPreviewRef}
-          onPreviewReady={scrollToConvertedPreview}
-        />
-      )}
     </div>
   );
 }

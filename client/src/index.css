@@ -1,4 +1,5 @@
 :root {
+  --title-bar-height: 30px;
   --color-page: #f8fafc;
   --color-surface: #ffffff;
   --color-text: #0f172a;
@@ -31,13 +32,19 @@
   --transition-fast: 150ms ease;
 }
 
+@media (max-width: 1280px), (max-height: 800px) {
+  :root {
+    font-size: 15px;
+    --space-5: 1.25rem;
+    --space-6: 1.5rem;
+  }
+}
+
 body {
   margin: 0;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
-    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
-    sans-serif;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
+  font-family: 'Segoe UI', system-ui, sans-serif;
+  font-weight: 400;
+  line-height: 1.45;
   background-color: var(--color-page);
   color: var(--color-text);
 }
@@ -45,3 +52,5 @@ body {
 * {
   box-sizing: border-box;
 }
+
+button, input, select, textarea { font-family: inherit; }
