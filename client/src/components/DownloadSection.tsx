@@ -67,6 +67,7 @@ export default function DownloadSection({
           <div>
             <h2 className={panelStyles.heading}>{t("download.title")}</h2>
             <p className={styles["success-message"]}>{t("download.complete")}</p>
+            {embedded && <p className={styles["embedded-file-name"]} title={activeResult.file.name}>{activeResult.file.name}</p>}
           </div>
         </div>
 

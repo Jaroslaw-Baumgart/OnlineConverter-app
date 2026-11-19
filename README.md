@@ -1,11 +1,10 @@
 # Online File Converter
 
-Online File Converter is a local full-stack application for converting common
-document and image formats. It validates an uploaded file, shows a preview,
-lets the user choose conversion settings, and provides downloadable results.
+[![CI](https://github.com/Jaroslaw-Baumgart/OnlineConverter-app/actions/workflows/ci.yml/badge.svg)](https://github.com/Jaroslaw-Baumgart/OnlineConverter-app/actions/workflows/ci.yml)
 
-The project is designed to run on the user's own computer. It is not a hosted
-file-conversion service.
+A file converter built with React, TypeScript, and Express. Choose a document or
+image, preview it, configure the output, and download the result. The app runs
+locally; it is not a hosted conversion service. Files are limited to 10 MB.
 
 ## See it in action
 
@@ -33,18 +32,37 @@ The example below shows a JPG-to-PNG conversion through the local server.
 
 ## Features
 
-- File validation by extension, detected MIME type, and conversion type.
-- Source previews for images, PDF, TXT, CSV, DOCX, XLSX, and PPTX files.
-- XLSX sheet selection, including an **All sheets** preview.
-- XLSX previews parsed in a cancellable Web Worker, with bounded preview data.
-- Settings for PNG to JPG quality and background color.
-- Page size and orientation settings for PDF output.
-- Downloadable results, including ZIP download for multi-file conversions.
-- Result previews use downloaded files, so they remain available after server cleanup.
-- English and Polish UI with the selected language stored locally.
-- Keyboard-accessible conversion workflow and an expandable preview dialog.
-- Temporary upload and output cleanup on the server.
-- CSV-to-PDF tables preserve long cell contents across multiple pages.
+- Convert common document and image formats, with a choice of output settings.
+- Preview images, PDF, TXT, CSV, DOCX, XLSX, and PPTX files before conversion.
+- Choose a single XLSX sheet or preview all sheets.
+- Preview and download results, including ZIP downloads for multi-file conversions.
+- Expand previews and use the conversion workflow with a keyboard.
+- Switch between English and Polish; the chosen language is saved locally.
+
+## How it works
+
+```mermaid
+flowchart LR
+    A[React client] -->|Upload and settings| B[Express API]
+    A -->|Local XLSX preview| W[Web Worker]
+    B -->|Validate and convert| C[Conversion tools]
+    C --> D[Temporary output]
+    D -->|Download| A
+```
+
+The client handles previews and sends the selected file and settings to the API.
+The server validates the request and uses the appropriate conversion tool. The
+client downloads the result for its preview and can package multiple files into a
+ZIP archive.
+
+A few implementation details:
+
+- XLSX previews use a cancellable Web Worker when available, with a fallback to
+  the main thread. Preview rows, columns, and sheets are limited.
+- The server checks file types and enforces limits on uploads, archive contents,
+  page counts, and concurrent conversions.
+- Uploads and generated files are temporary. Result previews use the downloaded
+  files, so they remain available after server cleanup.
 
 ## Supported conversions
 
@@ -90,17 +108,16 @@ Its contents are ignored by Git, so converter binaries are never committed.
 Alternatively, set the `LIBRE_OFFICE_PATH` environment variable to a local
 executable (for example `/usr/bin/libreoffice` on Linux). Windows uses Poppler
 binaries bundled by `pdf-poppler`; `POPPLER_BIN_DIR` can override their location.
-PDF conversions run external tools with a two-minute timeout.
+LibreOffice and Poppler processes have a two-minute timeout.
 
 ## Setup
 
-Install dependencies and the Playwright browser:
+Install dependencies:
 
 ```bash
 npm ci
 npm ci --prefix client
 npm ci --prefix server
-npx playwright install chromium
 ```
 
 Start the client and server together:
@@ -116,6 +133,11 @@ The API binds to `127.0.0.1`. CORS permits the local Vite development and previe
 origins; set `CLIENT_ORIGIN` to allow a different frontend origin.
 
 ## Processing limits
+
+Uploads are limited to 10 MB. Other limits depend on the conversion and preview type.
+
+<details>
+<summary>All processing limits</summary>
 
 | Operation | Limit |
 | --- | --- |
@@ -133,6 +155,8 @@ a time. LibreOffice jobs run one at a time. Removing a file cancels browser
 requests and XLSX preview parsing; server processing already started may
 continue until completion or its timeout.
 
+</details>
+
 ## Quality checks
 
 ```bash
@@ -144,12 +168,18 @@ npm run check
 npm run test:e2e
 ```
 
-`check` runs frontend linting, type checks for both applications, unit and
-integration tests (including actual PDF and LibreOffice output checks), and the
-client production build. `test:e2e` starts the development servers when needed
-and tests the application in Chromium, including real conversions and ZIP
-contents. Both commands require the external tools listed above. GitHub Actions
-runs both checks for pushes and pull requests to `main`.
+`check` runs linting, type checks, unit and integration tests, and a production
+build. `test:e2e` starts the development servers when needed and runs Playwright
+in Chromium. The E2E scenarios cover real conversions, ZIP downloads, error
+handling, and the layout on a narrow viewport. Install the browser before
+running E2E tests:
+
+```bash
+npx playwright install chromium
+```
+
+Some tests also require the external tools listed above. GitHub Actions runs
+both checks for pushes and pull requests to `main`.
 
 On Windows PowerShell, use `npm.cmd` and `npx.cmd` if script execution policy
 blocks `npm.ps1`. To run tests for each application separately:
@@ -158,9 +188,6 @@ blocks `npm.ps1`. To run tests for each application separately:
 npm.cmd run test:run --prefix client
 npm.cmd run test:run --prefix server
 ```
-
-The latest full verification passed 185 frontend tests, 101 backend tests and
-6 Chromium E2E tests, along with linting, type checks and the production build.
 
 ## File handling and privacy
 

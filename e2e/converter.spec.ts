@@ -192,12 +192,13 @@ test("keeps the converter usable on a narrow viewport", async ({ page }) => {
     .setInputFiles(fixturePath("sample.jpg"));
 
   await expect(
-    page.getByRole("heading", { name: "1. File preview" }),
+    page.getByRole("button", { name: "Source file" }),
   ).toBeVisible();
   await expect(
     page.getByRole("heading", { name: "2. Convert this file" }),
   ).toBeVisible();
   await expect(page.getByRole("button", { name: jpgToPngButton })).toBeVisible();
+  await expect(page.getByRole("img", { name: "Preview" })).toBeVisible();
 
   expect(
     await page.evaluate(() => document.documentElement.scrollWidth),
