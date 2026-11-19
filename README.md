@@ -7,6 +7,30 @@ lets the user choose conversion settings, and provides downloadable results.
 The project is designed to run on the user's own computer. It is not a hosted
 file-conversion service.
 
+## See it in action
+
+Choose a file, select an output format, and download the converted result.
+The example below shows a JPG-to-PNG conversion through the local server.
+
+![Animated walkthrough of a JPG-to-PNG conversion](assets/readme/conversion.gif)
+
+<details>
+<summary>More screenshots</summary>
+
+**Choose a file**
+
+![File selection screen](assets/readme/start.png)
+
+**Preview and conversion settings**
+
+![Source preview and format selection](assets/readme/preview.png)
+
+**Conversion result**
+
+![Converted file preview and download button](assets/readme/result.png)
+
+</details>
+
 ## Features
 
 - File validation by extension, detected MIME type, and conversion type.
@@ -157,7 +181,7 @@ server/       Express API and conversion logic
 shared/       API response types and backend error codes used by both applications
 e2e/          Playwright scenarios and deterministic fixtures
 tools/        Local LibreOffice location; binaries are ignored by Git
-docs/         Local learning documentation; ignored by Git
+docs/         Personal documentation; ignored by Git
 ```
 
 ## License and third-party software
